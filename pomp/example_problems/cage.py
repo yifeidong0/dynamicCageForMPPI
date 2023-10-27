@@ -7,61 +7,65 @@ from ..spaces.edgechecker import *
 from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
 
-class FlappyControlSpace(ControlSpace):
-    def __init__(self,flappy):
-        self.flappy = flappy
+class CageControlSpace(ControlSpace):
+    def __init__(self,cage):
+        self.cage = cage
     def configurationSpace(self):
-        return self.flappy.configurationSpace()
+        return self.cage.configurationSpace()
     def controlSet(self,x):
-        return MultiSet(TimeBiasSet(self.flappy.time_range,self.flappy.controlSet()),self.flappy.controlSet())
-        #return MultiSet(BoxSet([0],[self.flappy.time_range]),self.flappy.controlSet())
+        return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
+        #return MultiSet(BoxSet([0],[self.cage.time_range]),self.cage.controlSet())
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):
-        x_i,y_i,vy_i = x
-        t,thrust = u
-        print(u)
+        x_i,y_i,vx_i,vy_i = x
+        t,thrust_x,thrust_y = u
         tc = t*amount
-        #instantaneous version
-        #net_acceler = self.flappy.gravity
-        #vy_i += thrust*self.flappy.thrust
-        #yilun's version
-        net_acceler = self.flappy.gravity + thrust*self.flappy.thrust
-        return [x_i+self.flappy.v_x*tc, 
-                y_i+vy_i*tc+0.5*net_acceler*(tc**2), 
-                vy_i+net_acceler*tc]
-
+        net_acceler_x = thrust_x
+        net_acceler_y = self.cage.gravity + thrust_y
+        return [x_i+vx_i*tc+0.5*net_acceler_x*(tc**2), 
+                y_i+vy_i*tc+0.5*net_acceler_y*(tc**2), 
+                vx_i+net_acceler_x*tc,
+                vy_i+net_acceler_y*tc,
+                ]
+    
     def interpolator(self,x,u):
         return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
 
-class Flappy:
+class Cage:
     def __init__(self):
         self.x_range = 1000
-        self.y_range = 600
-        self.min_altitude = 300
+        self.y_range = 1000
+        # self.min_altitude = 300
         self.max_velocity = 40
+        self.max_acceleration = 20
 
-        self.start_state = [50, 250, 0]
-        self.goal_state = [950, 200, 0]
+        self.start_state = [450, 350, 0, 0]
+        self.goal_state = [950, 900, 0, 0]
         self.goal_radius = 50
         self.time_range = 10
         #u = lambda:round(random.random())
 
         self.obstacles = []
-        self.obstacles = [(175, 450, 50, 100), (175, 0, 50, 100), (175, 150, 50, 200), 
-             (375,200, 50, 300),(375, 0, 50, 100), 
-             (575, 500, 50, 100), (575, 0, 50, 125), (575, 200, 50, 200), 
-             (775, 200, 50, 400)]
-
+        self.obstacles = [
+            #  (175, 450, 50, 100), (175, 0, 50, 100), (175, 150, 50, 200), 
+             (375, 200, 50, 200), 
+             (575, 200, 50, 200), 
+             (375, 400, 250, 50), 
+            #  (775, 200, 50, 400)
+             ]
         self.v_x = 5
-        self.gravity = -1
-        self.thrust = 4
+        self.gravity = -9.8
+        # self.thrust = 4
 
     def controlSet(self):
-        return FiniteSet([[0],[1]])
+        # return FiniteSet([[0],[1]])
+        return BoxSet([-self.max_acceleration, -self.max_acceleration], 
+                      [self.max_acceleration, self.max_acceleration])
 
     def controlSpace(self):
-        return FlappyControlSpace(self)
+        # System dynamics
+        return CageControlSpace(self)
 
     def workspace(self):
         wspace = Geometric2DCSpace()
@@ -77,7 +81,10 @@ class Flappy:
         wspace.box.bmax = [self.x_range,self.y_range]
         for o in self.obstacles:
             wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
-        res =  MultiConfigurationSpace(wspace,BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]))
+        res =  MultiConfigurationSpace(wspace,
+                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
+                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity])
+                                       )
         return res
 
     def startState(self):
@@ -85,17 +92,17 @@ class Flappy:
 
     def goalSet(self):
         r = self.goal_radius
-        return BoxSet([self.goal_state[0]-r,self.goal_state[1]-r,-self.max_velocity],
-                      [self.goal_state[0]+r,self.goal_state[1]+r,self.max_velocity])
+        return BoxSet([self.goal_state[0]-r,self.goal_state[1]-r,-self.max_velocity,-self.max_velocity],
+                      [self.goal_state[0]+r,self.goal_state[1]+r,self.max_velocity,self.max_velocity])
 
 
-class FlappyObjectiveFunction(ObjectiveFunction):
+class CageObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
-    def __init__(self,flappy,timestep=0.2):
-        self.flappy = flappy
-        self.space = flappy.controlSpace()
+    def __init__(self,cage,timestep=0.2):
+        self.cage = cage
+        self.space = cage.controlSpace()
         self.timestep = timestep
     def incremental(self,x,u):
         e = self.space.interpolator(x,u)
@@ -110,9 +117,9 @@ class FlappyObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def flappyTest():
-    p = Flappy()
-    objective = FlappyObjectiveFunction(p)
+def cageTest():
+    p = Cage()
+    objective = CageObjectiveFunction(p)
     return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
