@@ -18,8 +18,8 @@ class CageControlSpace(ControlSpace):
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):
-        x_i,y_i,vx_i,vy_i = x
-        t,thrust_x,thrust_y = u
+        x_i,y_i,vx_i,vy_i = x # state space
+        t,thrust_x,thrust_y = u # control space
         tc = t*amount
         net_acceler_x = thrust_x
         net_acceler_y = self.cage.gravity + thrust_y
@@ -109,11 +109,28 @@ class CageObjectiveFunction(ObjectiveFunction):
         tmax = u[0]
         t = 0
         c = 0
-        while t < tmax:
-            t = min(tmax,t+self.timestep)
-            xnext = e.eval(t / tmax)
-            c += vectorops.distance(x,xnext)
-            x = xnext
+        
+        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
+        xnext = self.space.nextState(x,u)
+        E = -self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
+        Enext = -self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
+        c = max((Enext-E), 0.0)
+
+        # Energy Fs cost
+        # xnext = self.space.nextState(x,u)
+        # c = (xnext[0]-x[0])*u[1] + (xnext[1]-x[1])*u[2]
+
+        # # Distance cost
+        # while t < tmax:
+        #     t = min(tmax,t+self.timestep)
+        #     xnext = e.eval(t / tmax)
+        #     c += vectorops.distance(x,xnext)
+        #     x = xnext
+        #     print(x)
+
+        # # delte_v quadratic cost
+        # c = sum([(u[i]*u[0])**2 for i in range(1, len(u))]) # (v1x-v2x)^2+(v1y-v2y)^2
+
         return c
 
 
