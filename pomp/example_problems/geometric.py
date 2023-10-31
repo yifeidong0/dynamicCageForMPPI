@@ -45,20 +45,41 @@ class Box(BoxSet):
         glEnd()
 
 
-class Geometric2DCSpace (BoxConfigurationSpace):
+class Geometric2DCSpace(BoxConfigurationSpace):
     def __init__(self):
         BoxConfigurationSpace.__init__(self,[0,0],[1,1])
         self.obstacles = []
+        self.obstacleParams = None
+
+    def addObstacleParam(self,params):
+        self.obstacleParams = params
 
     def addObstacle(self,obs):
-        self.obstacles.append(obs)
+        self.obstacles.append(obs) # initial obstacle params
 
-    def feasible(self,x):
+    def feasible(self,x,obstaclePos=None):
+        """Collision detection.
+            input - x: list[2], position of object. 
+        """
+        # print("geometric2D feasible", x)
         if not BoxConfigurationSpace.feasible(self,x): return False
-        for o in self.obstacles:
-            if o.contains(x): return False
-        return True
-
+        if self.obstacleParams is None: # static obstacles
+            for o in self.obstacles:
+                if o.contains(x): return False
+            return True
+        else: # moving obstacles
+            for i in range(len(self.obstacles)):
+                # print("obstaclePos", obstaclePos)
+                topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
+                topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
+                o = Box(topLeftX,
+                        topLeftY,
+                        topLeftX+self.obstacleParams[i][2],
+                        topLeftY+self.obstacleParams[i][3]
+                        )
+                if o.contains(x): return False
+            return True
+    
     def toScreen(self,q):
         return (q[0]-self.box.bmin[0])/(self.box.bmax[0]-self.box.bmin[0]),(q[1]-self.box.bmin[1])/(self.box.bmax[1]-self.box.bmin[1])
 

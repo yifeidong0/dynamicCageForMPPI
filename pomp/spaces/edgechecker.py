@@ -15,16 +15,20 @@ class EpsilonEdgeChecker(EdgeChecker):
             - space: a subclass of ConfigurationSpace
             - resolution: an edge checking resolution
         """
-        self.space = space
+        self.space = space # it means C-space, MultiConfigurationSpace
         self.resolution = resolution
-    def feasible(self,interpolator):
+    def feasible(self,interpolator,movingObstacles=False):
         l = interpolator.length()
         k = int(math.ceil(l / self.resolution))
-        if not self.space.feasible(interpolator.start()) or not self.space.feasible(interpolator.end()):
+        # print("interpolator.start()", interpolator.start())
+        # print("interpolator.end()", interpolator.end())
+        # obs_pos = obs_pos_init + x[4:]
+        if not self.space.feasible(interpolator.start(), movingObstacles) or not self.space.feasible(interpolator.end(), movingObstacles):
             return False
         for i in range(k):
             u = float(i+1)/float(k+2)
             x = interpolator.eval(u)
-            if not self.space.feasible(x):
+            # print("interpolator.x", x)
+            if not self.space.feasible(x, movingObstacles):
                 return False
         return True

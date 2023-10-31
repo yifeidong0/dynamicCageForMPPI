@@ -304,6 +304,11 @@ class RRT(TreePlanner):
         self.nextSampleList = []
         if len(params) != 0:
             print("Warning, unused params",params)
+
+        try:
+            self.movingObstacles = controlSpace.baseSpace.movingObstacles
+        except AttributeError:
+            self.movingObstacles = False
         
     def destroy(self):
         TreePlanner.destroy(self)
@@ -359,7 +364,8 @@ class RRT(TreePlanner):
                 xrand = self.goalSampler.sample()
             else:
                 xrand = self.configurationSampler.sample()
-            if not self.cspace.feasible(xrand):
+            # print("xrand", xrand)
+            if not self.cspace.feasible(xrand, self.movingObstacles, isxrand=True): # TODO: do not check xrand workspace feasibility since obstacle is indefinite.
                 return None
         else:
             xrand = self.nextSampleList.pop(0)
@@ -385,7 +391,7 @@ class RRT(TreePlanner):
             return None
         #self.stats.stopwatch('edgeCheck').begin()
         edge = self.controlSpace.interpolator(nnear.x,u)
-        if not self.edgeChecker.feasible(edge):
+        if not self.edgeChecker.feasible(edge, self.movingObstacles): # TODO: remind Geometric2DCSpace() of updated obstsacle position, x[4:6]
             #self.stats.stopwatch('edgeCheck').end()
             if self.dynamicDomain:
                 if hasattr(nnear,'ddRadius'):
@@ -408,6 +414,8 @@ class RRT(TreePlanner):
         nnear.numExpansionsSuccessful += 1
         nnew.numExpansionsAttempted = 0
         nnew.numExpansionsSuccessful = 0
+        # print("nnew: ", nnew.x)
+        # print("u: ", u)
         return nnew
         
     def prune(self,node):
@@ -427,7 +435,7 @@ class RRT(TreePlanner):
             newchildren = []
             delchildren = []
             for c in n.children:
-                if self.prune(c) or not self.cspace.feasible(c.x):
+                if self.prune(c) or not self.cspace.feasible(c.x, self.movingObstacles):
                     delchildren.append(c)
                 else:
                     newchildren.append(c)
@@ -892,8 +900,8 @@ class CostEdgeChecker(EdgeChecker):
         self.edgeChecker = edgeChecker
         self.costMax = None
 
-    def feasible(self,interpolator):
-        return self.edgeChecker.feasible(interpolator.components[0]) and (self.costMax is None or interpolator.components[1].end()[0] <= self.costMax)
+    def feasible(self,interpolator,movingObstacles=False):
+        return self.edgeChecker.feasible(interpolator.components[0], movingObstacles) and (self.costMax is None or interpolator.components[1].end()[0] <= self.costMax)
 
 
 class CostMetric:
