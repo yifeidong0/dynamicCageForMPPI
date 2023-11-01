@@ -11,6 +11,9 @@ from .planners.optimization import iLQR
 from .spaces.objectives import *
 from OpenGL.GL import *
 import os,errno
+import time
+import random
+from OpenGL.GLUT import *
 
 def mkdir_p(path):
     """Quiet path making"""
@@ -41,6 +44,8 @@ class PlanVisualizationProgram(GLProgram):
         self.painted = False
         self.save_movie = False
         self.movie_frame = 0
+        self.prev_path_x = None
+        self.display_new_path = False
 
     def mousefunc(self,button,state,x,y):
         if state == 0:
@@ -49,7 +54,7 @@ class PlanVisualizationProgram(GLProgram):
                 print(self.planner.nextSampleList)
             self.refresh()
 
-    def idlefunc (self):
+    def idlefunc(self):
         if self.save_movie:
             if self.painted:
                 try:
@@ -136,18 +141,7 @@ class PlanVisualizationProgram(GLProgram):
             for p in self.planner.nextSampleList:
                 self.problem.visualizer.drawRobotGL(p)
 
-        if self.G:            #draw graph
-            V,E = self.G
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
-            glColor4f(0,0,0,0.5)
-            glPointSize(3.0)
-            self.problem.visualizer.drawVerticesGL(V)
-            glColor4f(0.5,0.5,0.5,0.5)
-            for (i,j,e) in E:
-                interpolator = self.problem.space.interpolator(V[i],e)
-                self.problem.visualizer.drawInterpolatorGL(interpolator)
-            glDisable(GL_BLEND)
+        self.draw_graph()
 
         #Debug extension cache
         est = None
@@ -165,7 +159,7 @@ class PlanVisualizationProgram(GLProgram):
             glDisable(GL_BLEND)
             glLineWidth(1.0)
 
-        #debug density
+        # Debug density
         """
         if est:
             for n in est.nodes:
@@ -173,17 +167,99 @@ class PlanVisualizationProgram(GLProgram):
                     self.problem.visualizer.drawRobotGL(n.x)
         """
 
+        # Draw static/animated path found by the planner
+        self.draw_path_animation()
+
+    def draw_graph(self):
+        if self.G:            #draw graph
+            V,E = self.G
+            glLineWidth(0.5)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
+            glColor4f(0,0,0,0.5)
+            glPointSize(3.0)
+            self.problem.visualizer.drawVerticesGL(V)
+            glColor4f(0.5,0.5,0.5,0.5)
+            for (i,j,e) in E:
+                interpolator = self.problem.space.interpolator(V[i],e)
+                self.problem.visualizer.drawInterpolatorGL(interpolator)
+            glDisable(GL_BLEND)
+
+    def draw_path_animation(self):
+        if hasattr(self.problem.controlSpace, "movingObstacles"):
+            if self.path is not None:
+                # if len(self.path[0]) != self.prev_path_length: # TODO: compare and examine the two paths
+                if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
+                    self.display_new_path = True
+                    self.prev_path_x = self.path[0]
+            
+            if self.display_new_path:
+                self.problem.visualizer.drawRobotGL(self.problem.start)
+                self.problem.visualizer.drawGoalGL(self.problem.goal)
+
+                if self.path and len(self.path[0]) > 1:
+                    for k in range(len(self.path[0]) - 1):
+                        print("k", k)
+                        if k >= len(self.path[0])-1:
+                            break
+                        q1, u = self.path[0][k], self.path[1][k]
+                        q2 = self.path[0][k+1]
+
+                        # Clear the previous obstacle by drawing a background color (e.g., white)
+                        glColor3f(1, 1, 1)
+                        self.problem.visualizer.drawObstaclesGL(q1[4:6])
+
+                        # Draw the new obstacle at q2
+                        glColor3f(0.2,0.2,0.2)
+                        self.problem.visualizer.drawObstaclesGL(q2[4:6])
+
+                        # Draw the graph again
+                        self.draw_graph()
+
+                        # Interpolate and draw the line segment
+                        glColor3f(0, 0.75, 0)
+                        glLineWidth(7.0)
+                        interpolator = self.problem.space.interpolator(q1, u)
+                        self.problem.visualizer.drawInterpolatorGL(interpolator)
+
+                        # Draw the node q2
+                        glLineWidth(1)
+                        self.problem.visualizer.drawRobotGL(q2)
+
+                        # Process events to update the display
+                        glutSwapBuffers()
+                        glutMainLoopEvent()
+
+                        # Pause and save screen
+                        if self.display_new_path:
+                            time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+                        if self.save_movie:
+                            self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                            self.movie_frame += 1
+
+            else: # draw static path without animation if no path update
+                self.draw_path_static()
+
+            self.display_new_path = False
+            
+        else: # cases other than cageMO
+            self.draw_path_static()
+
+    def draw_path_static(self):
         if self.path:
-            #draw path
+            # Plot path edges
             glColor3f(0,0.75,0)
-            glLineWidth(5.0)
+            glLineWidth(7.0)
             for q,u in zip(self.path[0][:-1],self.path[1]):
                 interpolator = self.problem.space.interpolator(q,u)
                 self.problem.visualizer.drawInterpolatorGL(interpolator)
+
+            # Plot path nodes
             glLineWidth(1)
             for q in self.path[0]:
                 self.problem.visualizer.drawRobotGL(q)
-        #else:
+            
+        # Draw start and goal region
         self.problem.visualizer.drawRobotGL(self.problem.start)
         self.problem.visualizer.drawGoalGL(self.problem.goal)
 
@@ -191,6 +267,23 @@ class PlanVisualizationProgram(GLProgram):
         GLProgram.displayfunc(self)
         self.painted = True
 
+def are_nested_lists_equal(list1, list2):
+    # Check if the lengths of the lists are equal
+    if list1 is None or list2 is None:
+        return False
+    if len(list1) != len(list2):
+        return False
+
+    # Iterate through the elements of the lists
+    for i in range(len(list1)):
+        if isinstance(list1[i], list) and isinstance(list2[i], list):
+            if not are_nested_lists_equal(list1[i], list2[i]):
+                return False
+        else:
+            if list1[i] != list2[i]:
+                return False
+
+    return True
 
 def runVisualizer(problem,**plannerParams):   
     if 'type' in plannerParams:
@@ -204,4 +297,5 @@ def runVisualizer(problem,**plannerParams):
     program = PlanVisualizationProgram(problem,planner,os.path.join("data",allplanners.filename[plannerType]))
     program.width = program.height = 640
     program.run()
+
 

@@ -165,7 +165,7 @@ class GLProgram:
     def save_screen(self,fn):
         """Saves a screenshot"""
         try:
-            import Image
+            from PIL import Image
         except ImportError:
             print("Cannot save screens to disk, the Python Imaging Library is not installed")
             return

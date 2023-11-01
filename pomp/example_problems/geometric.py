@@ -97,11 +97,23 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         if self.box.bmin != [0,0] or self.box.bmin != [1,1]:
             glPopMatrix()
 
-    def drawObstaclesGL(self):
+    def drawObstaclesGL(self, obstaclePos=None):
         self.beginDraw()
-        glColor3f(0.2,0.2,0.2)
-        for o in self.obstacles:
-            o.drawGL()
+        if obstaclePos is None:
+            glColor3f(0.2,0.2,0.2)
+            for o in self.obstacles:
+                o.drawGL()
+        else: # moving obstacles
+            for i in range(len(self.obstacles)):
+                # print("obstaclePos", obstaclePos)
+                topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
+                topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
+                o = Box(topLeftX,
+                        topLeftY,
+                        topLeftX+self.obstacleParams[i][2],
+                        topLeftY+self.obstacleParams[i][3]
+                        )
+                o.drawGL()
         self.endDraw()
 
     def drawVerticesGL(self,qs):

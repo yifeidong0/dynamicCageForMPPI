@@ -44,8 +44,8 @@ class CageMO:
         self.max_acceleration = 20
 
         # Gripper moving velocity (constant)
-        self.gripper_vel_x = 4.0
-        self.gripper_vel_y = 0
+        self.gripper_vel_x = 0.0
+        self.gripper_vel_y = 3.0
 
         self.start_state = [450, 350, 0, 0, 0, 0]
         self.goal_state = [950, 900, 0, 0, 0, 0]
@@ -75,6 +75,7 @@ class CageMO:
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [0,0]
         wspace.box.bmax = [self.x_range,self.y_range]
+        wspace.addObstacleParam(self.obstacles)
         for o in self.obstacles:
             wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
         return wspace
