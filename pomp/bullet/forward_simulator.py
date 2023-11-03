@@ -6,8 +6,8 @@ import math
 class forward_simulation():
     def __init__(self):
         self.visualShapeId = -1
-        physicsClient = p.connect(p.GUI) # p.GUI
-        # physicsClient = p.connect(p.DIRECT) # p.GUI
+        # physicsClient = p.connect(p.GUI) # p.GUI
+        physicsClient = p.connect(p.DIRECT) # p.GUI
         # p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
 
@@ -98,10 +98,10 @@ class forward_simulation():
 
         # Print the positions and velocities
         # print(f"Gripper Pos: {gripper_pos}, Gripper Vel: {gripper_vel}, Gripper Ang Vel: {gripper_ang_vel}, Object Pos: {object_pos}, Object Vel: {object_vel}")
-        new_states = (self.pos_object[0], self.pos_object[2], self.vel_object[0], self.vel_object[2],
+        new_states = [self.pos_object[0], self.pos_object[2], self.vel_object[0], self.vel_object[2],
                       self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
-                      )
+                      ]
         return new_states
     
     def finish_sim(self):
@@ -109,11 +109,12 @@ class forward_simulation():
         p.disconnect()
 
 
-sim = forward_simulation()
-states = (1,1,0,0,
-          1,0,0,0,0,0)
-inputs = (2,0,10,.001)
-sim.reset_states(states)
-new_states = sim.run_forward_sim(inputs)
-print(new_states)
-sim.finish_sim()
+# Test
+# sim = forward_simulation()
+# states = (1,1,0,0,
+#           1,0,0,0,0,0)
+# inputs = (2,0,10,.01)
+# sim.reset_states(states)
+# new_states = sim.run_forward_sim(inputs)
+# print(new_states)
+# sim.finish_sim()

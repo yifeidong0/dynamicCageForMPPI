@@ -199,7 +199,6 @@ class PlanVisualizationProgram(GLProgram):
 
                 if self.path and len(self.path[0]) > 1:
                     for k in range(len(self.path[0]) - 1):
-                        print("k", k)
                         if k >= len(self.path[0])-1:
                             break
                         q1, u = self.path[0][k], self.path[1][k]

@@ -20,6 +20,7 @@ class CageMOControlSpace(ControlSpace):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):
         x_i,y_i,vx_i,vy_i,xr_i,yr_i = x # state space, 6D (4: cage, 2: robot gripper)
+        print(x)
         t,thrust_x,thrust_y = u # control space
         tc = t*amount
         net_acceler_x = thrust_x
