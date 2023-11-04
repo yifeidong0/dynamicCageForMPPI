@@ -45,6 +45,39 @@ class Box(BoxSet):
         glEnd()
 
 
+class AxisNotAlignedBox:
+    def __init__(self, gripperPose, halfExtent):
+        self.center_x = gripperPose[0]
+        self.center_y = gripperPose[1]
+        self.theta = gripperPose[2]
+        self.half_length = halfExtent[0]
+        self.half_height = halfExtent[2]
+
+    def drawGL(self):
+        # Calculate the corner points of the rotated box
+        cos_theta = math.cos(self.theta)
+        sin_theta = math.sin(self.theta)
+
+        p1 = (self.center_x - cos_theta * self.half_length + sin_theta * self.half_height,
+              self.center_y - sin_theta * self.half_length - cos_theta * self.half_height)
+        
+        p2 = (self.center_x + cos_theta * self.half_length + sin_theta * self.half_height,
+              self.center_y + sin_theta * self.half_length - cos_theta * self.half_height)
+
+        p3 = (self.center_x + cos_theta * self.half_length - sin_theta * self.half_height,
+              self.center_y + sin_theta * self.half_length + cos_theta * self.half_height)
+
+        p4 = (self.center_x - cos_theta * self.half_length - sin_theta * self.half_height,
+              self.center_y - sin_theta * self.half_length + cos_theta * self.half_height)
+
+        glBegin(GL_QUADS)
+        glVertex2f(*p1)
+        glVertex2f(*p2)
+        glVertex2f(*p3)
+        glVertex2f(*p4)
+        glEnd()
+
+
 class Geometric2DCSpace(BoxConfigurationSpace):
     def __init__(self):
         BoxConfigurationSpace.__init__(self,[0,0],[1,1])
@@ -114,6 +147,15 @@ class Geometric2DCSpace(BoxConfigurationSpace):
                         topLeftY+self.obstacleParams[i][3]
                         )
                 o.drawGL()
+        self.endDraw()
+
+    def drawGripperGL(self, gripperPose, halfExtent):
+        self.beginDraw()
+        # print("obstaclePos", obstaclePos)
+        # topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
+        # topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
+        gripper = AxisNotAlignedBox(gripperPose, halfExtent)
+        gripper.drawGL()
         self.endDraw()
 
     def drawVerticesGL(self,qs):

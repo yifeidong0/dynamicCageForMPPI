@@ -20,7 +20,6 @@ class CageMOControlSpace(ControlSpace):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):
         x_i,y_i,vx_i,vy_i,xr_i,yr_i = x # state space, 6D (4: cage, 2: robot gripper)
-        print(x)
         t,thrust_x,thrust_y = u # control space
         tc = t*amount
         net_acceler_x = thrust_x
@@ -60,7 +59,7 @@ class CageMO:
              (575, 200, 50, 200), 
              (375, 400, 250, 50), 
              ]
-        self.gravity = -9.8
+        self.gravity = 9.8
 
     def controlSet(self):
         # return FiniteSet([[0],[1]])
@@ -125,8 +124,8 @@ class CageMOObjectiveFunction(ObjectiveFunction):
         
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        E = -self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        Enext = -self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
+        E = self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
+        Enext = self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
         c = max((Enext-E), 0.0)
 
         return c

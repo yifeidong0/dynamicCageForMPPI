@@ -6,8 +6,11 @@ import math
 class forward_simulation():
     def __init__(self):
         self.visualShapeId = -1
-        # physicsClient = p.connect(p.GUI) # p.GUI
-        physicsClient = p.connect(p.DIRECT) # p.GUI
+        self.gui = 0
+        if self.gui:
+            p.connect(p.GUI) # p.GUI
+        else:
+            p.connect(p.DIRECT) # p.GUI
         # p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
 
@@ -16,12 +19,12 @@ class forward_simulation():
     
     def set_params(self):
         # Kinodynamics
-        self.mass_object = 0.01
+        self.mass_object = 1
         self.pos_object = [0,0,1]
         self.quat_object = p.getQuaternionFromEuler([math.pi/2,0,0])
         self.vel_object = [.1,0,0]
         
-        self.mass_gripper = 1
+        self.mass_gripper = 10
         self.moment_gripper = 1 # moment of inertia
         self.pos_gripper = [0,0,0]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
@@ -29,13 +32,13 @@ class forward_simulation():
         self.vel_ang_gripper = [0,0,0]
 
         # Geometrics
-        self.half_extents_gripper = [1, .05, .2]
-        self.radius_object = 0.1
-        self.radius_height = 0.1
+        self.half_extents_gripper = [.5, .05, .1] # movement on x-z plane
+        self.radius_object = 0.01
+        self.height_object = 0.1
 
     def create_shapes(self):
         # Create an object
-        objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=.1)
+        objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=self.radius_object, height=self.height_object)
         self.objectUid = p.createMultiBody(self.mass_object, 
                                            objectId, 
                                            self.visualShapeId, 
@@ -87,7 +90,8 @@ class forward_simulation():
                                 [self.moment_gripper*alpha, 0, 0], 
                                 p.LINK_FRAME)
             p.stepSimulation()
-            time.sleep(1/240)
+            if self.gui:
+                time.sleep(1/240)
 
         # Get the object and gripper states
         self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
@@ -109,11 +113,10 @@ class forward_simulation():
         p.disconnect()
 
 
-# Test
+# # Test
 # sim = forward_simulation()
-# states = (1,1,0,0,
-#           1,0,0,0,0,0)
-# inputs = (2,0,10,.01)
+# states = [0, 2.5, 0, 0, 0, 2, 0, 0, 0, 0]
+# inputs = [8.032344484826663, -0.06558542151210961, 9.752551248665608, 0.008577437961553996]
 # sim.reset_states(states)
 # new_states = sim.run_forward_sim(inputs)
 # print(new_states)

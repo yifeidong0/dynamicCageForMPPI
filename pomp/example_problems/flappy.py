@@ -20,7 +20,6 @@ class FlappyControlSpace(ControlSpace):
     def eval(self,x,u,amount):
         x_i,y_i,vy_i = x
         t,thrust = u
-        print(u)
         tc = t*amount
         #instantaneous version
         #net_acceler = self.flappy.gravity
