@@ -50,7 +50,6 @@ class CageMO:
         self.goal_state = [950, 900, 0, 0, 0, 0]
         self.goal_radius = 50
         self.time_range = 10
-        #u = lambda:round(random.random())
 
         self.obstacles = []
         self.obstacles = [
@@ -61,7 +60,6 @@ class CageMO:
         self.gravity = 9.8
 
     def controlSet(self):
-        # return FiniteSet([[0],[1]])
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
                       [self.max_acceleration, self.max_acceleration])
 
@@ -116,11 +114,6 @@ class CageMOObjectiveFunction(ObjectiveFunction):
         self.space = cage.controlSpace()
         self.timestep = timestep
     def incremental(self,x,u):
-        e = self.space.interpolator(x,u)
-        tmax = u[0]
-        t = 0
-        c = 0
-        
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
         E = self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)

@@ -197,32 +197,36 @@ class PlanVisualizationProgram(GLProgram):
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 
                 if self.path and len(self.path[0]) > 1:
+                    print("x", self.path[0])
+                    print("u", self.path[1])
                     for k in range(len(self.path[0]) - 1):
                         if k >= len(self.path[0])-1:
                             break
-                        q1, u = self.path[0][k], self.path[1][k]
-                        q2 = self.path[0][k+1]
+                        x1, u = self.path[0][k], self.path[1][k]
+                        x2 = self.path[0][k+1]
 
                         # Clear the previous obstacle by drawing a background color (e.g., white)
                         glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawObstaclesGL(q1[4:6])
+                        self.problem.visualizer.drawObstaclesGL(x1[4:6])
 
                         # Draw the new obstacle at q2
                         glColor3f(0.2,0.2,0.2)
-                        self.problem.visualizer.drawObstaclesGL(q2[4:6])
+                        self.problem.visualizer.drawObstaclesGL(x2[4:6])
 
                         # Draw the graph again
                         self.draw_graph()
 
-                        # Interpolate and draw the line segment
-                        glColor3f(0, 0.75, 0)
-                        glLineWidth(7.0)
-                        interpolator = self.problem.space.interpolator(q1, u)
-                        self.problem.visualizer.drawInterpolatorGL(interpolator)
-
-                        # Draw the node q2
-                        glLineWidth(1)
-                        self.problem.visualizer.drawRobotGL(q2)
+                        for m in range(k+1):
+                            x1, u = self.path[0][m], self.path[1][m]
+                            x2 = self.path[0][k+1]
+                            # Interpolate and draw all previous line segments
+                            glColor3f(0, 0.75, 0)
+                            glLineWidth(7.0)
+                            interpolator = self.problem.space.interpolator(x1, u)
+                            self.problem.visualizer.drawInterpolatorGL(interpolator)
+                            # Draw the node x2
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2)
 
                         # Process events to update the display
                         glutSwapBuffers()
@@ -247,8 +251,8 @@ class PlanVisualizationProgram(GLProgram):
                     self.prev_path_x = self.path[0]
             
             if self.display_new_path:
-                print("x", self.path[0])
-                print("u", self.path[1])
+                # print("x", self.path[0])
+                # print("u", self.path[1])
                 self.problem.visualizer.drawRobotGL(self.problem.start)
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 
