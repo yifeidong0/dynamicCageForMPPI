@@ -52,7 +52,7 @@ customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
                     'Flappy':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
                     'Cage':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
                     'CageMovingObstacle':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
-                    'CagePlanner':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
+                    'CagePlanner':{'maxTime':120,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05},
                     'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
                     'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
                     'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2}

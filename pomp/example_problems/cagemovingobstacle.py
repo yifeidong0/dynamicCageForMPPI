@@ -15,7 +15,6 @@ class CageMOControlSpace(ControlSpace):
         return self.cage.configurationSpace()
     def controlSet(self,x):
         return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
-        #return MultiSet(BoxSet([0],[self.cage.time_range]),self.cage.controlSet())
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):

@@ -9,20 +9,24 @@ from ..planners.problem import PlanningProblem
 from ..bullet.forward_simulator import *
 import math
 
+# TODO: 1. Discontinuity of movement in Pybullet replay
+# 2. Cage-based robustness penalty term in the objective function
+# 3. Continuous visualization in OpenGL
+
 class CagePlannerControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forward_simulation()
+        self.dynamics_sim = forward_simulation(cage.params)
         self.cagePlanner = True
-        self.gripper_size = self.dynamics_sim.half_extents_gripper # [x,y,z]
+        self.half_extents_gripper = cage.half_extents_gripper # [x,z]
     def configurationSpace(self):
         return self.cage.configurationSpace()
     def controlSet(self,x):
         return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
-        #return MultiSet(BoxSet([0],[self.cage.time_range]),self.cage.controlSet())
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
     def toBulletStateInput(self, x, u):
+        # OpenGL (O) Cartesian coordiantes are different from Bullet (B)
         # O--->---------
         # |             | 
         # \/     *      | 
@@ -51,15 +55,8 @@ class CagePlannerControlSpace(ControlSpace):
         u = [tc,thrust_x,thrust_y,alpha]
         q, mu = self.toBulletStateInput(x, u)
         self.dynamics_sim.reset_states(q)
-        # print("=========")
-        # print("states x", x)
-        # print("states q", q)
-        # print("inputs u ", u)
-        # print("inputs mu ", mu)
         q_new = self.dynamics_sim.run_forward_sim(mu)
         x_new = self.toOpenglStateInput(q_new)
-        # print("q_new", q_new)
-        # print("x_new", x_new)
 
         return x_new
     
@@ -70,21 +67,31 @@ class CagePlanner:
     def __init__(self):
         self.x_range = 10
         self.y_range = 10
-        self.max_velocity = 5
-        self.max_acceleration = .3
+        self.max_velocity = 10
+        self.max_acceleration = 10
 
-        self.start_state = [2,2,0,0,2,2.1,0,0,0,0]
-        self.goal_state = [8,8.1,0,0,0,0,0,0,0,0]
+        # Parameters passing to Pybullet
+        self.mass_object = 1
+        self.mass_gripper = 10
+        self.moment_gripper = 1 # moment of inertia
+        self.half_extents_gripper = [.5, .1] # movement on x-z plane
+        self.radius_object = 0.01
+        self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
+                       self.half_extents_gripper, self.radius_object]
+        
+        yo_init = 4
+        yo_goal = 8
+        self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
+        self.goal_state = [8,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = .5
         self.time_range = 1
-        #u = lambda:round(random.random())
 
-        self.obstacles = [] # bar-gripper size 1.0*0.2
+        self.obstacles = []
         self.gravity = 9.81 # downward in openGL vis
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 
-                      [self.max_acceleration, -self.gravity+self.max_acceleration, .1])
+                      [self.max_acceleration, -self.gravity+self.max_acceleration/10, .1])
 
     def controlSpace(self):
         # System dynamics
@@ -142,14 +149,36 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         self.cage = cage
         self.space = cage.controlSpace()
         self.timestep = timestep
+        self.masso = cage.params[0]
+        self.massg = cage.params[1]
+        self.momentg = cage.params[2]
     def incremental(self,x,u):
-        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        E = -self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        Enext = -self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
-        c = max((Enext-E), 0.0)
+        g = self.cage.gravity
+        
+        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
+        # E = -g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
+        # Enext = -g*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
+        # c = max((Enext-E), 0.0)
 
-        return c
+        # Distance from goal region
+        xo_goal = self.cage.goal_state[:2]
+        xo = x[:2]
+        xo_next = xnext[:2]
+        dis = math.sqrt(sum([(xo_goal[i]-xo[i])**2 for i in range(len(xo))]))
+        dis_next = math.sqrt(sum([(xo_goal[i]-xo_next[i])**2 for i in range(len(xo))]))
+        c1 = max(dis_next-dis, 0.01)
+
+        # Object and gripper total energy (kinetic and potential)
+        E_o = self.masso * (g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2))
+        Enext_o = self.masso * (g*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2))
+        E_g = g*self.massg*(self.cage.y_range-x[5]) + 0.5*(self.massg*(x[7]**2+x[8]**2)+self.momentg*(x[9]**2))
+        Enext_g = g*self.massg*(self.cage.y_range-xnext[5]) + 0.5*(self.massg*(xnext[7]**2+xnext[8]**2)+self.momentg*(x[9]**2))
+        c2 = max((Enext_g+Enext_o-E_o-E_g), 0.0)
+
+        # Time is penalized
+        return c1 + 0.001*u[0]
+        # return 10*c1 + 0.001*c2 + u[0]
 
 
 def CagePlannerTest():

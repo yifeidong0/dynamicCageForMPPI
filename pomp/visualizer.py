@@ -188,10 +188,6 @@ class PlanVisualizationProgram(GLProgram):
     def draw_path_animation(self):
         if hasattr(self.problem.controlSpace, "movingObstacles"):
             if self.path is not None:
-                # print("x", self.path[0])
-                # print("u", self.path[1])
-
-                # if len(self.path[0]) != self.prev_path_length: # TODO: compare and examine the two paths
                 if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                     self.display_new_path = True
                     self.prev_path_x = self.path[0]
@@ -246,13 +242,13 @@ class PlanVisualizationProgram(GLProgram):
 
         if hasattr(self.problem.controlSpace, "cagePlanner"):
             if self.path is not None:
-                # print("x", self.path[0])
-                # print("u", self.path[1])
                 if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                     self.display_new_path = True
                     self.prev_path_x = self.path[0]
             
             if self.display_new_path:
+                print("x", self.path[0])
+                print("u", self.path[1])
                 self.problem.visualizer.drawRobotGL(self.problem.start)
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 
@@ -265,24 +261,26 @@ class PlanVisualizationProgram(GLProgram):
 
                         # Clear the previous obstacle by drawing a background color (e.g., white)
                         glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.gripper_size)
+                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
 
                         # Draw the new obstacle at x2
                         glColor3f(0.2,0.2,0.2)
-                        self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.gripper_size)
+                        self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
 
                         # Draw the graph again
                         self.draw_graph()
 
-                        # Interpolate and draw the line segment
-                        glColor3f(0, 0.75, 0)
-                        glLineWidth(7.0)
-                        interpolator = self.problem.space.interpolator(x1, u)
-                        self.problem.visualizer.drawInterpolatorGL(interpolator)
-
-                        # Draw the node x2
-                        glLineWidth(1)
-                        self.problem.visualizer.drawRobotGL(x2)
+                        for m in range(k+1):
+                            x1, u = self.path[0][m], self.path[1][m]
+                            x2 = self.path[0][k+1]
+                            # Interpolate and draw all previous line segments
+                            glColor3f(0, 0.75, 0)
+                            glLineWidth(7.0)
+                            interpolator = self.problem.space.interpolator(x1, u)
+                            self.problem.visualizer.drawInterpolatorGL(interpolator)
+                            # Draw the node x2
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2)
 
                         # Process events to update the display
                         glutSwapBuffers()
