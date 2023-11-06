@@ -12,20 +12,24 @@ import math
 # TODO: 1. Discontinuity of movement in Pybullet replay
 # 2. Cage-based robustness penalty term in the objective function
 # 3. Continuous visualization in OpenGL
+# 4. scattered nodes and edges in the graph of OpenGL
 
 class CagePlannerControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
         self.dynamics_sim = forward_simulation(cage.params)
-        self.cagePlanner = True
+        self.is_cage_planner = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
+
     def configurationSpace(self):
         return self.cage.configurationSpace()
+    
     def controlSet(self,x):
         return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
-    def toBulletStateInput(self, x, u):
+    
+    def toBulletStateInput(self, x, u=None):
         # OpenGL (O) Cartesian coordiantes are different from Bullet (B)
         # O--->---------
         # |             | 
@@ -38,7 +42,10 @@ class CagePlannerControlSpace(ControlSpace):
              x[2],-x[3],
              x[4],self.cage.y_range-x[5],-x[6],
              x[7],-x[8],-x[9]]
-        mu = [u[0],u[1],-u[2],-u[3]]
+        if u:
+            mu = [u[0],u[1],-u[2],-u[3]]
+        else:
+            mu = None
         return q, mu
     
     def toOpenglStateInput(self, q):
@@ -47,7 +54,17 @@ class CagePlannerControlSpace(ControlSpace):
              q[4],self.cage.y_range-q[5],-q[6],
              q[7],-q[8],-q[9]]
         return x
-         
+        
+    def check_state_feasibility(self, x, max_distance=-0.007):
+        """Check if the state indicates a collision between the object and the gripper."""
+        q, _ = self.toBulletStateInput(x)
+        self.dynamics_sim.reset_states(q)
+        obj = self.dynamics_sim.objectUid
+        grip = self.dynamics_sim.gripperUid
+        is_feasible = (len(p.getClosestPoints(bodyA=obj, bodyB=grip, distance=max_distance)) == 0)
+
+        return is_feasible
+
     def eval(self,x,u,amount):
         # xo,yo,vox,voy,xg,yg,thetag,vgx,vgy,omegag = x # state space, 10D (4: cage, 6: gripper)
         t,thrust_x,thrust_y,alpha = u # control space, 4D
@@ -79,11 +96,11 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 4
-        yo_goal = 8
+        yo_init = 8
+        yo_goal = 4
         self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
-        self.goal_state = [8,yo_goal,0,0,0,0,0,0,0,0]
-        self.goal_radius = .5
+        self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
+        self.goal_radius = 1
         self.time_range = 1
 
         self.obstacles = []

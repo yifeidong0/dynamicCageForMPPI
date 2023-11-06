@@ -94,7 +94,6 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         """Collision detection.
             input - x: list[2], position of object. 
         """
-        # print("geometric2D feasible", x)
         if not BoxConfigurationSpace.feasible(self,x): return False
         if self.obstacleParams is None: # static obstacles
             for o in self.obstacles:
@@ -102,7 +101,6 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             return True
         else: # moving obstacles
             for i in range(len(self.obstacles)):
-                # print("obstaclePos", obstaclePos)
                 topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
                 topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
                 o = Box(topLeftX,

@@ -186,7 +186,7 @@ class PlanVisualizationProgram(GLProgram):
             glDisable(GL_BLEND)
 
     def draw_path_animation(self):
-        if hasattr(self.problem.controlSpace, "movingObstacles"):
+        if hasattr(self.problem.controlSpace, "is_moving_obstacle"):
             if self.path is not None:
                 if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                     self.display_new_path = True
@@ -197,8 +197,8 @@ class PlanVisualizationProgram(GLProgram):
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 
                 if self.path and len(self.path[0]) > 1:
-                    print("x", self.path[0])
-                    print("u", self.path[1])
+                    # print("x", self.path[0])
+                    # print("u", self.path[1])
                     for k in range(len(self.path[0]) - 1):
                         if k >= len(self.path[0])-1:
                             break
@@ -244,7 +244,7 @@ class PlanVisualizationProgram(GLProgram):
 
             self.display_new_path = False
 
-        if hasattr(self.problem.controlSpace, "cagePlanner"):
+        if hasattr(self.problem.controlSpace, "is_cage_planner"):
             if self.path is not None:
                 if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                     self.display_new_path = True

@@ -17,18 +17,14 @@ class EpsilonEdgeChecker(EdgeChecker):
         """
         self.space = space # it means C-space, MultiConfigurationSpace
         self.resolution = resolution
-    def feasible(self,interpolator,movingObstacles=False):
+    def feasible(self,interpolator,control_space=False):
         l = interpolator.length()
         k = int(math.ceil(l / self.resolution))
-        # print("interpolator.start()", interpolator.start())
-        # print("interpolator.end()", interpolator.end())
-        # obs_pos = obs_pos_init + x[4:]
-        if not self.space.feasible(interpolator.start(), movingObstacles) or not self.space.feasible(interpolator.end(), movingObstacles):
+        if not self.space.feasible(interpolator.start(), control_space) or not self.space.feasible(interpolator.end(), control_space):
             return False
         for i in range(k):
             u = float(i+1)/float(k+2)
             x = interpolator.eval(u)
-            # print("interpolator.x", x)
-            if not self.space.feasible(x, movingObstacles):
+            if not self.space.feasible(x, control_space):
                 return False
         return True

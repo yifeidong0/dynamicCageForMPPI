@@ -80,9 +80,6 @@ class forward_simulation():
     def run_forward_sim(self, inputs):
         t, ax, az, alpha = inputs
 
-        # Reset execution duration
-        # p.setTimeStep(t)
-
         # Step the simulation
         for _ in range(int(t*240)):
             # Apply external force
@@ -101,8 +98,6 @@ class forward_simulation():
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
         self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
 
-        # Print the positions and velocities
-        # print(f"Gripper Pos: {gripper_pos}, Gripper Vel: {gripper_vel}, Gripper Ang Vel: {gripper_ang_vel}, Object Pos: {object_pos}, Object Vel: {object_vel}")
         new_states = [self.pos_object[0], self.pos_object[2], self.vel_object[0], self.vel_object[2],
                       self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
@@ -114,7 +109,7 @@ class forward_simulation():
         p.disconnect()
 
 
-# # Test
+# Test
 def toBulletStateInput(x, u):
     q = [x[0],y_range-x[1],
             x[2],-x[3],
@@ -142,6 +137,10 @@ inputs = [[0.26041288977332316, -6.204326694977351, -17.95028134004808, -0.00863
 for i in range(len(inputs)):
     q, mu = toBulletStateInput(states[i],inputs[i])
     sim.reset_states(q)
+
+    obj = sim.objectUid
+    grip = sim.gripperUid
+
     new_states = sim.run_forward_sim(mu)
     # print(new_states)
 sim.finish_sim()

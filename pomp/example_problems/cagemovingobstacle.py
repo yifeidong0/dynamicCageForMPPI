@@ -10,7 +10,7 @@ from ..planners.problem import PlanningProblem
 class CageMOControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.movingObstacles = True
+        self.is_moving_obstacle = True
     def configurationSpace(self):
         return self.cage.configurationSpace()
     def controlSet(self,x):

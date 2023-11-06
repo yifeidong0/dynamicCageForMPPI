@@ -294,7 +294,7 @@ class RRT(TreePlanner):
         self.dynamicDomain = popdefault(params,'dynamicDomain',False)
         if self.dynamicDomain:
             self.dynamicDomainInitialRadius = popdefault(params,'dynamicDomainInitialRadius',0.1)
-            self.dynamicDomainInitialRadius = popdefault(params,'dynamicDomainGrowithParameter',0.5)
+            self.dynamicDomainGrowthParameter = popdefault(params,'dynamicDomainGrowthParameter',0.5)
         nnmethod = popdefault(params,'nearestNeighborMethod','kdtree')
         self.nearestNeighbors = NearestNeighbors(self.metric,nnmethod)
 
@@ -305,11 +305,6 @@ class RRT(TreePlanner):
         if len(params) != 0:
             print("Warning, unused params",params)
 
-        try:
-            self.movingObstacles = controlSpace.baseSpace.movingObstacles
-        except AttributeError:
-            self.movingObstacles = False
-        
     def destroy(self):
         TreePlanner.destroy(self)
         self.goalNodes = []
@@ -364,22 +359,15 @@ class RRT(TreePlanner):
                 xrand = self.goalSampler.sample()
             else:
                 xrand = self.configurationSampler.sample()
-            # print("xrand", xrand)
-            if not self.cspace.feasible(xrand, self.movingObstacles, isxrand=True): # TODO: do not check xrand workspace feasibility since obstacle is indefinite.
+            if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
                 return None
         else:
             xrand = self.nextSampleList.pop(0)
-        #self.stats.stopwatch('pickNode').begin()
         nnear = self.pickNode(xrand)
-        #self.stats.stopwatch('pickNode').end()
         if nnear is None:
-            #self.stats.count('pickNodeFailure').add(1)
             return None
-        #self.stats.stopwatch('selectControl').begin()
         nnear.numExpansionsAttempted += 1
         u = self.controlSelector.select(nnear.x,xrand)
-        #self.stats.stopwatch('selectControl').end()
-        #print("Expanding",nnear.x,"toward",xrand,"selected control",u)
         if u is None:
             #do we want to adjust the dynamic domain?
             if self.dynamicDomain:
@@ -389,18 +377,14 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
-        #self.stats.stopwatch('edgeCheck').begin()
         edge = self.controlSpace.interpolator(nnear.x,u)
-        if not self.edgeChecker.feasible(edge, self.movingObstacles): # TODO: remind Geometric2DCSpace() of updated obstsacle position, x[4:6]
-            #self.stats.stopwatch('edgeCheck').end()
+        if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
             if self.dynamicDomain:
                 if hasattr(nnear,'ddRadius'):
                     nnear.ddRadius *= (1.0-self.dynamicDomainGrowthParameter)
                 else:
                     nnear.ddRadius = self.dynamicDomainInitialRadius
-            #self.stats.count('infeasibleEdges').add(1)
             return None
-        #self.stats.stopwatch('edgeCheck').end()
         #feasible edge, add it
         if self.dynamicDomain:
             if hasattr(nnear,'ddRadius'):
@@ -414,8 +398,6 @@ class RRT(TreePlanner):
         nnear.numExpansionsSuccessful += 1
         nnew.numExpansionsAttempted = 0
         nnew.numExpansionsSuccessful = 0
-        # print("nnew: ", nnew.x)
-        # print("u: ", u)
         return nnew
         
     def prune(self,node):
@@ -435,7 +417,7 @@ class RRT(TreePlanner):
             newchildren = []
             delchildren = []
             for c in n.children:
-                if self.prune(c) or not self.cspace.feasible(c.x, self.movingObstacles):
+                if self.prune(c) or not self.cspace.feasible(c.x, self.controlSpace.baseSpace):
                     delchildren.append(c)
                 else:
                     newchildren.append(c)
@@ -900,8 +882,8 @@ class CostEdgeChecker(EdgeChecker):
         self.edgeChecker = edgeChecker
         self.costMax = None
 
-    def feasible(self,interpolator,movingObstacles=False):
-        return self.edgeChecker.feasible(interpolator.components[0], movingObstacles) and (self.costMax is None or interpolator.components[1].end()[0] <= self.costMax)
+    def feasible(self,interpolator,is_moving_obstacle=False):
+        return self.edgeChecker.feasible(interpolator.components[0], is_moving_obstacle) and (self.costMax is None or interpolator.components[1].end()[0] <= self.costMax)
 
 
 class CostMetric:
