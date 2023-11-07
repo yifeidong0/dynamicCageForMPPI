@@ -170,6 +170,8 @@ class PlanVisualizationProgram(GLProgram):
         # Draw static/animated path found by the planner
         self.draw_path_animation()
 
+        # TODO: print the cost - self.planner.bestPathCost - on the window
+
     def draw_graph(self):
         if self.G:
             V,E = self.G
@@ -302,6 +304,7 @@ class PlanVisualizationProgram(GLProgram):
                         if self.save_movie:
                             self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                             self.movie_frame += 1
+                        time.sleep(0.5)
 
             else: # draw static path without animation if no path update
                 self.draw_path_static()

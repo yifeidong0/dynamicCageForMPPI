@@ -38,26 +38,25 @@ class CageMO:
     def __init__(self):
         self.x_range = 1000
         self.y_range = 1000
-        # self.min_altitude = 300
         self.max_velocity = 40
         self.max_acceleration = 20
 
         # Gripper moving velocity (constant)
         self.gripper_vel_x = 0.0
-        self.gripper_vel_y = 3.0
+        self.gripper_vel_y = -3.0
 
-        self.start_state = [450, 350, 0, 0, 0, 0]
+        self.start_state = [450, 390, 0, -3.0, 0, 0]
         self.goal_state = [950, 900, 0, 0, 0, 0]
         self.goal_radius = 50
         self.time_range = 10
 
         self.obstacles = []
         self.obstacles = [
-             (375, 200, 50, 200), 
-             (575, 200, 50, 200), 
+            #  (375, 200, 50, 200), 
+            #  (575, 200, 50, 200), 
              (375, 400, 250, 50), 
              ]
-        self.gravity = 9.8
+        self.gravity = 9.81
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
@@ -118,7 +117,7 @@ class CageMOObjectiveFunction(ObjectiveFunction):
         xnext = self.space.nextState(x,u)
         E = self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
         Enext = self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
-        c = max((Enext-E), 0.0)
+        c = max((Enext-E), 0.001)
 
         return c
 

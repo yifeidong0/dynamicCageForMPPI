@@ -91,8 +91,10 @@ class forward_simulation():
                                 p.LINK_FRAME)
             p.stepSimulation()
 
-            # Print object via-points along the trajectory
-            if print_via_points and (i % int(int(t*240)/num_via_points) == 0 or i == int(t*240)-1):
+            # Print object via-points along the trajectory for visualization
+            interval = int(int(t*240)/num_via_points)
+            interval = 3 if interval==0 else interval
+            if print_via_points and (i % interval == 0 or i == int(t*240)-1):
                 pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
                 via_points.append([pos_object[0], pos_object[2]])
 

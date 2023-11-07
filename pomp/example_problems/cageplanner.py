@@ -178,11 +178,6 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         xnext = self.space.nextState(x,u)
         g = self.cage.gravity
         
-        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
-        # E = -g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        # Enext = -g*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
-        # c = max((Enext-E), 0.0)
-
         # Distance from goal region
         xo_goal = self.cage.goal_state[:2]
         xo = x[:2]
@@ -199,8 +194,8 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         # c2 = max((Enext_g+Enext_o-E_o-E_g), 0.0)
 
         # Time is penalized
-        return c1 + 0.001*u[0]
         # return 10*c1 + 0.001*c2 + u[0]
+        return c1 + 0.001*u[0]
 
 
 def CagePlannerTest():

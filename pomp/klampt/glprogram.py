@@ -171,7 +171,7 @@ class GLProgram:
             return
         screenshot = glReadPixels( 0,0, self.width, self.height, GL_RGBA, GL_UNSIGNED_BYTE)
         im = Image.frombuffer("RGBA", (self.width, self.height), screenshot, "raw", "RGBA", 0, 0)
-        print("Saving screen to",fn)
+        # print("Saving screen to",fn)
         im.save(fn)
 
     
