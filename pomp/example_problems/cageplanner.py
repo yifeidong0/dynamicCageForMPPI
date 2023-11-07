@@ -20,6 +20,7 @@ class CagePlannerControlSpace(ControlSpace):
         self.dynamics_sim = forward_simulation(cage.params)
         self.is_cage_planner = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
+        self.xo_via_points = None
 
     def configurationSpace(self):
         return self.cage.configurationSpace()
@@ -65,15 +66,19 @@ class CagePlannerControlSpace(ControlSpace):
 
         return is_feasible
 
-    def eval(self,x,u,amount):
+    def eval(self,x,u,amount,print_via_points=False):
+        """amount: float within [0,1], scale the duration for interpolator."""
         # xo,yo,vox,voy,xg,yg,thetag,vgx,vgy,omegag = x # state space, 10D (4: cage, 6: gripper)
         t,thrust_x,thrust_y,alpha = u # control space, 4D
         tc = t*amount
         u = [tc,thrust_x,thrust_y,alpha]
         q, mu = self.toBulletStateInput(x, u)
         self.dynamics_sim.reset_states(q)
-        q_new = self.dynamics_sim.run_forward_sim(mu)
+        q_new, qo_via_points = self.dynamics_sim.run_forward_sim(mu, print_via_points)
         x_new = self.toOpenglStateInput(q_new)
+
+        if print_via_points:
+            self.xo_via_points = [[q[0], self.cage.y_range-q[1]] for q in qo_via_points]
 
         return x_new
     
@@ -186,12 +191,12 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         dis_next = math.sqrt(sum([(xo_goal[i]-xo_next[i])**2 for i in range(len(xo))]))
         c1 = max(dis_next-dis, 0.01)
 
-        # Object and gripper total energy (kinetic and potential)
-        E_o = self.masso * (g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2))
-        Enext_o = self.masso * (g*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2))
-        E_g = g*self.massg*(self.cage.y_range-x[5]) + 0.5*(self.massg*(x[7]**2+x[8]**2)+self.momentg*(x[9]**2))
-        Enext_g = g*self.massg*(self.cage.y_range-xnext[5]) + 0.5*(self.massg*(xnext[7]**2+xnext[8]**2)+self.momentg*(x[9]**2))
-        c2 = max((Enext_g+Enext_o-E_o-E_g), 0.0)
+        # # Object and gripper total energy (kinetic and potential)
+        # E_o = self.masso * (g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2))
+        # Enext_o = self.masso * (g*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2))
+        # E_g = g*self.massg*(self.cage.y_range-x[5]) + 0.5*(self.massg*(x[7]**2+x[8]**2)+self.momentg*(x[9]**2))
+        # Enext_g = g*self.massg*(self.cage.y_range-xnext[5]) + 0.5*(self.massg*(xnext[7]**2+xnext[8]**2)+self.momentg*(x[9]**2))
+        # c2 = max((Enext_g+Enext_o-E_o-E_g), 0.0)
 
         # Time is penalized
         return c1 + 0.001*u[0]

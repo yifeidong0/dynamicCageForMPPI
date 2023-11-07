@@ -171,7 +171,7 @@ class PlanVisualizationProgram(GLProgram):
         self.draw_path_animation()
 
     def draw_graph(self):
-        if self.G:            #draw graph
+        if self.G:
             V,E = self.G
             glLineWidth(0.5)
             glEnable(GL_BLEND)
@@ -180,9 +180,19 @@ class PlanVisualizationProgram(GLProgram):
             glPointSize(3.0)
             self.problem.visualizer.drawVerticesGL(V)
             glColor4f(0.5,0.5,0.5,0.5)
-            for (i,j,e) in E:
-                interpolator = self.problem.space.interpolator(V[i],e)
-                self.problem.visualizer.drawInterpolatorGL(interpolator)
+            for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
+                if hasattr(self.problem.controlSpace, "is_cage_planner"):
+                    self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
+                    xo_via_points = self.problem.controlSpace.xo_via_points
+                    self.problem.visualizer.beginDraw()
+                    glBegin(GL_LINE_STRIP)
+                    for p in xo_via_points:
+                        glVertex2f(p[0],p[1])
+                    glEnd()
+                    self.problem.visualizer.endDraw()
+                else:
+                    interpolator = self.problem.space.interpolator(V[i], u)
+                    self.problem.visualizer.drawInterpolatorGL(interpolator)
             glDisable(GL_BLEND)
 
     def draw_path_animation(self):
@@ -197,8 +207,6 @@ class PlanVisualizationProgram(GLProgram):
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 
                 if self.path and len(self.path[0]) > 1:
-                    # print("x", self.path[0])
-                    # print("u", self.path[1])
                     for k in range(len(self.path[0]) - 1):
                         if k >= len(self.path[0])-1:
                             break
@@ -251,8 +259,6 @@ class PlanVisualizationProgram(GLProgram):
                     self.prev_path_x = self.path[0]
             
             if self.display_new_path:
-                # print("x", self.path[0])
-                # print("u", self.path[1])
                 self.problem.visualizer.drawRobotGL(self.problem.start)
                 self.problem.visualizer.drawGoalGL(self.problem.goal)
 

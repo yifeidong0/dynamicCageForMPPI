@@ -77,17 +77,25 @@ class forward_simulation():
         p.resetBaseVelocity(self.objectUid, self.vel_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim(self, inputs):
+    def run_forward_sim(self, inputs, print_via_points=False):
         t, ax, az, alpha = inputs
 
         # Step the simulation
-        for _ in range(int(t*240)):
+        via_points = []
+        num_via_points = 10
+        for i in range(int(t*240)):
             # Apply external force
             p.applyExternalForce(self.gripperUid, -1, 
                                 [self.mass_gripper*ax, 0, self.mass_gripper*az], 
                                 [self.moment_gripper*alpha, 0, 0], 
                                 p.LINK_FRAME)
             p.stepSimulation()
+
+            # Print object via-points along the trajectory
+            if print_via_points and (i % int(int(t*240)/num_via_points) == 0 or i == int(t*240)-1):
+                pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
+                via_points.append([pos_object[0], pos_object[2]])
+
             if self.gui:
                 time.sleep(10/240)
 
@@ -102,7 +110,7 @@ class forward_simulation():
                       self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
                       ]
-        return new_states
+        return new_states, via_points
     
     def finish_sim(self):
         # Clean up and close the simulation
