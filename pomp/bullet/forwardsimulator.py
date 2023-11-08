@@ -87,8 +87,11 @@ class forwardSimulation():
             # Apply external force
             p.applyExternalForce(self.gripperUid, -1, 
                                 [self.mass_gripper*ax, 0, self.mass_gripper*az], 
-                                [self.moment_gripper*alpha, 0, 0], 
+                                [0, 0, 0], 
                                 p.LINK_FRAME)
+            p.applyExternalTorque(self.gripperUid, -1, 
+                                 [0, self.moment_gripper*alpha, 0],
+                                 p.LINK_FRAME)
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization

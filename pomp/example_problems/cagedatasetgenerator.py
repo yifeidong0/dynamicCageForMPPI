@@ -20,12 +20,14 @@ class dataGeneratorSim(forwardSimulation):
             # Apply external force
             p.applyExternalForce(self.gripperUid, -1, 
                                 [self.mass_gripper*ax, 0, self.mass_gripper*az], 
-                                [self.moment_gripper*alpha, 0, 0], 
+                                [0, 0, 0], 
                                 p.LINK_FRAME)
+            p.applyExternalTorque(self.gripperUid, -1, 
+                                 [0, self.moment_gripper*alpha, 0],
+                                 p.LINK_FRAME)
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
-            print("ang vel gripper",p.getBaseVelocity(self.gripperUid)[1][1])
             interval = int(int(t*240)/num_via_points)
             interval = 3 if interval==0 else interval
             if i % interval == 0 or i == int(t*240)-1:
@@ -44,7 +46,7 @@ class dataGeneratorSim(forwardSimulation):
                 via_points.append(new_state)
 
             if self.gui:
-                time.sleep(20/240)
+                time.sleep(10/240)
 
         return via_points
     
@@ -68,9 +70,6 @@ def check_bounds(x, bd):
     for i, xi in enumerate(x):
         lower_bound, upper_bound = bd[i]
         if xi < lower_bound or xi > upper_bound:
-            print("check bounds", lower_bound, upper_bound)
-            print("check bounds", i)
-            print("check bounds", xi)
             return False
     return True
 

@@ -101,8 +101,8 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 2
-        yo_goal = 9
+        yo_init = 6
+        yo_goal = 3
         self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
@@ -115,8 +115,8 @@ class CagePlanner:
                                  [-3.0,3.0], [-3.0,3.0],
                                  [0.0,self.x_range], [0.0,self.x_range], [-math.pi/2,math.pi/2],
                                  [-3.0,3.0], [-3.0,3.0],[-math.pi/9,math.pi/9]]
-        self.u_boundary = [[0.0, -1.0, -self.gravity-5.0, -math.pi/27], 
-                           [self.time_range, 1.0, -self.gravity+1.0, math.pi/27]]
+        self.u_boundary = [[0.0, -0.3, -self.gravity-5.0, -math.pi/27], 
+                           [self.time_range, 0.3, -self.gravity+1.0, math.pi/27]]
 
     def controlSet(self):
         # return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 
@@ -145,16 +145,6 @@ class CagePlanner:
         wspace.addObstacleParam(self.obstacles)
         for o in self.obstacles:
             wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
-        # res =  MultiConfigurationSpace(wspace,
-        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
-        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-        #                                BoxConfigurationSpace([0],[self.x_range]),
-        #                                BoxConfigurationSpace([0],[self.y_range]),
-        #                                BoxConfigurationSpace([-math.pi],[math.pi]), 
-        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
-        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-        #                                )
         cbd = self.c_space_boundary
         res =  MultiConfigurationSpace(wspace,
                                        BoxConfigurationSpace([cbd[2][0]],[cbd[2][1]]), 
