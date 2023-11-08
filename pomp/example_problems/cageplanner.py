@@ -6,7 +6,7 @@ from ..spaces.configurationspace import *
 from ..spaces.edgechecker import *
 from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
-from ..bullet.forward_simulator import *
+from ..bullet.forwardsimulator import *
 import math
 
 # TODO: 1. Discontinuity of movement in Pybullet replay
@@ -17,7 +17,7 @@ import math
 class CagePlannerControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forward_simulation(cage.params)
+        self.dynamics_sim = forwardSimulation(cage.params)
         self.is_cage_planner = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.xo_via_points = None
@@ -101,8 +101,8 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 8
-        yo_goal = 4
+        yo_init = 2
+        yo_goal = 9
         self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
@@ -111,9 +111,18 @@ class CagePlanner:
         self.obstacles = []
         self.gravity = 9.81 # downward in openGL vis
 
+        self.c_space_boundary = [[0.0,self.x_range], [0.0,self.y_range],
+                                 [-3.0,3.0], [-3.0,3.0],
+                                 [0.0,self.x_range], [0.0,self.x_range], [-math.pi/2,math.pi/2],
+                                 [-3.0,3.0], [-3.0,3.0],[-math.pi/9,math.pi/9]]
+        self.u_boundary = [[0.0, -1.0, -self.gravity-5.0, -0.1], 
+                           [self.time_range, 1.0, -self.gravity+1.0, 0.1]]
+
     def controlSet(self):
-        return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 
-                      [self.max_acceleration, -self.gravity+self.max_acceleration/10, .1])
+        # return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 
+        #               [self.max_acceleration, -self.gravity+self.max_acceleration/10, .1])
+        return BoxSet(self.u_boundary[0][1:], 
+                      self.u_boundary[1][1:])
 
     def controlSpace(self):
         # System dynamics
@@ -136,15 +145,26 @@ class CagePlanner:
         wspace.addObstacleParam(self.obstacles)
         for o in self.obstacles:
             wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
+        # res =  MultiConfigurationSpace(wspace,
+        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
+        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
+        #                                BoxConfigurationSpace([0],[self.x_range]),
+        #                                BoxConfigurationSpace([0],[self.y_range]),
+        #                                BoxConfigurationSpace([-math.pi],[math.pi]), 
+        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
+        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
+        #                                BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
+        #                                )
+        cbd = self.c_space_boundary
         res =  MultiConfigurationSpace(wspace,
-                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
-                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([0],[self.x_range]),
-                                       BoxConfigurationSpace([0],[self.y_range]),
-                                       BoxConfigurationSpace([-math.pi],[math.pi]), 
-                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
-                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
+                                       BoxConfigurationSpace([cbd[2][0]],[cbd[2][1]]), 
+                                       BoxConfigurationSpace([cbd[3][0]],[cbd[3][1]]),
+                                       BoxConfigurationSpace([cbd[4][0]],[cbd[4][1]]),
+                                       BoxConfigurationSpace([cbd[5][0]],[cbd[5][1]]),
+                                       BoxConfigurationSpace([cbd[6][0]],[cbd[6][1]]), 
+                                       BoxConfigurationSpace([cbd[7][0]],[cbd[7][1]]), 
+                                       BoxConfigurationSpace([cbd[8][0]],[cbd[8][1]]), 
+                                       BoxConfigurationSpace([cbd[9][0]],[cbd[9][1]]), 
                                        )
         return res
 
@@ -184,7 +204,8 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         xo_next = xnext[:2]
         dis = math.sqrt(sum([(xo_goal[i]-xo[i])**2 for i in range(len(xo))]))
         dis_next = math.sqrt(sum([(xo_goal[i]-xo_next[i])**2 for i in range(len(xo))]))
-        c1 = max(dis_next-dis, 0.01)
+        # c1 = max(dis_next-dis, 0.01)
+        c1 = dis_next
 
         # # Object and gripper total energy (kinetic and potential)
         # E_o = self.masso * (g*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2))
@@ -195,7 +216,8 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
 
         # Time is penalized
         # return 10*c1 + 0.001*c2 + u[0]
-        return c1 + 0.001*u[0]
+        # return c1 + 0.001*u[0]
+        return c1 + 0.1*u[0]
 
 
 def CagePlannerTest():

@@ -43,9 +43,9 @@ class CageMO:
 
         # Gripper moving velocity (constant)
         self.gripper_vel_x = 0.0
-        self.gripper_vel_y = -3.0
+        self.gripper_vel_y = 3.0
 
-        self.start_state = [450, 390, 0, -3.0, 0, 0]
+        self.start_state = [450, 390, 0, self.gripper_vel_y, 0, 0]
         self.goal_state = [950, 900, 0, 0, 0, 0]
         self.goal_radius = 50
         self.time_range = 10

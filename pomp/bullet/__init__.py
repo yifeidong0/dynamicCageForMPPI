@@ -1,1 +1,1 @@
-__all__ = ['forward_simulator']
+__all__ = ['forwardsimulator']
