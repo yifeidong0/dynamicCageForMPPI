@@ -115,8 +115,8 @@ class CagePlanner:
                                  [-3.0,3.0], [-3.0,3.0],
                                  [0.0,self.x_range], [0.0,self.x_range], [-math.pi/2,math.pi/2],
                                  [-3.0,3.0], [-3.0,3.0],[-math.pi/9,math.pi/9]]
-        self.u_boundary = [[0.0, -1.0, -self.gravity-5.0, -0.1], 
-                           [self.time_range, 1.0, -self.gravity+1.0, 0.1]]
+        self.u_boundary = [[0.0, -1.0, -self.gravity-5.0, -math.pi/27], 
+                           [self.time_range, 1.0, -self.gravity+1.0, math.pi/27]]
 
     def controlSet(self):
         # return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 

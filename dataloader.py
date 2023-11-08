@@ -9,9 +9,9 @@ import numpy as np
 # 2. random C-space sampling (low quality)
 
 # 1. Data points generated from Bullet
-num_trajs = 3
-num_via_points = 10
-gui = 0
+num_trajs = 1
+num_via_points = 3
+gui = 1
 
 cage_planner = CagePlanner()
 params = cage_planner.params
@@ -89,7 +89,7 @@ with open(filename, mode='w', newline='') as file:
 
 
 # 2. Random sampling in the C-space
-num_rand_data = 10
+num_rand_data = 0
 data_points_rand_O = []
 
 for i in range(num_rand_data):
