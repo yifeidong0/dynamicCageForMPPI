@@ -93,7 +93,7 @@ def runTests(problems = None,planners = None):
         problems = all_problems.keys()
 
     for prname in problems:
-        pr = all_problems[prname]
+        pr = all_problems[prname] # PlanningProblem
         for p in planners:
             p,params = parseParameters(prname,p)
             maxTime = params['maxTime']

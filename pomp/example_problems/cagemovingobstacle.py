@@ -112,6 +112,7 @@ class CageMOObjectiveFunction(ObjectiveFunction):
         self.cage = cage
         self.space = cage.controlSpace()
         self.timestep = timestep
+        
     def incremental(self,x,u):
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)

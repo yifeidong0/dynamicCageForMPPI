@@ -119,8 +119,6 @@ class CagePlanner:
                            [self.time_range, 0.3, -self.gravity+1.0, math.pi/27]]
 
     def controlSet(self):
-        # return BoxSet([-self.max_acceleration, -self.gravity-self.max_acceleration, -.1], 
-        #               [self.max_acceleration, -self.gravity+self.max_acceleration/10, .1])
         return BoxSet(self.u_boundary[0][1:], 
                       self.u_boundary[1][1:])
 
