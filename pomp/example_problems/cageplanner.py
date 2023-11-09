@@ -182,6 +182,7 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         self.masso = cage.params[0]
         self.massg = cage.params[1]
         self.momentg = cage.params[2]
+        
     def incremental(self,x,u):
         xnext = self.space.nextState(x,u)
         g = self.cage.gravity

@@ -128,7 +128,7 @@ class PlanVisualizationProgram(GLProgram):
     def display(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0,1,1,0,-1,1);
+        glOrtho(0,1,1,0,-1,1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glEnable(GL_POINT_SMOOTH)
