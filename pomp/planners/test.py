@@ -6,12 +6,16 @@ from .profiler import Profiler
 import time
 
 def testPlanner(planner,numTrials,maxTime,filename,**params):
-    # if 'data_id' in params:
-    #     data_id
+    id = 0
+    if 'data_id' in params:
+        id = params['data_id']
     print("Testing planner for %d trials, %f seconds"%(numTrials,maxTime))
     print("Saving to",filename)
-    f = open(filename,'w')
-    f.write("trial,plan iters,plan time,best cost\n")
+    if id == 0:
+        f = open(filename,'w')
+        f.write("data_id,trial,plan iters,plan time,best cost\n")
+    elif id > 0:
+        f = open(filename,'a')
     for trial in range(numTrials):
         print()
         print("Trial",trial+1)
@@ -40,7 +44,7 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
                 numupdates += 1
                 curCost = planner.bestPathCost
                 t1 = time.time()
-                f.write(str(trial)+","+str(iters)+","+str(t1-t0)+","+str(curCost)+'\n')
+                # f.write(str(id)+","+str(trial)+","+str(iters)+","+str(t1-t0)+","+str(curCost)+'\n')
         if hasattr(planner,'stats'):
             print
             temp = Profiler()
@@ -50,5 +54,5 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
         print("Final cost:",curCost)
         print()
 
-        f.write(str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+'\n')
+        f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+'\n')
     f.close()

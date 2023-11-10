@@ -9,9 +9,10 @@ import numpy as np
 # 2. random C-space sampling (low quality)
 
 # 1. Data points generated from Bullet
-num_trajs = 5
-num_via_points = 5
+num_trajs = 500
+num_via_points = 10
 gui = 0
+filename = "data_points_O.csv"
 
 cage_planner = CagePlanner()
 params = cage_planner.params
@@ -25,8 +26,8 @@ ubd = cage_planner.u_boundary
 
 sim = dataGeneratorSim(params, gui=gui)
 
-
 data_points_O = [] # in OpenGL coordinates (x) not in Bullet coordinates (q)
+k = 0
 for i in range(num_trajs):
     # time.sleep(2)
     # Generate random state and input as initialization in OpenGL coordinates
@@ -60,14 +61,15 @@ for i in range(num_trajs):
         # Check if inside C-space boundaries
         is_valid = check_bounds(x_new, cbd)
         if is_valid:
-            data_points_O.append(x_new)
+            data = [k,] + x_new # data_i
+            data_points_O.append(data)
+            k += 1
 
 # print("data_points_O",len(data_points_O))
 sim.finish_sim()
 
 # Save data to a CSV file with headers
-headers = ['xo', 'yo', 'vxo', 'vyo', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-filename = "data_points_O.csv"
+headers = ['data_id', 'xo', 'yo', 'vxo', 'vyo', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
 with open(filename, mode='w', newline='') as file:
     writer = csv.writer(file)
     # Write the headers first
@@ -77,7 +79,7 @@ with open(filename, mode='w', newline='') as file:
 
 
 # 2. Random sampling in the C-space
-num_rand_data = 10
+num_rand_data = 1000
 data_points_rand_O = []
 
 for i in range(num_rand_data):
@@ -85,7 +87,9 @@ for i in range(num_rand_data):
     controlSpace = cage_planner.controlSpace()
     is_feasible = controlSpace.check_state_feasibility(x_rand) # check collision
     if is_feasible:
-        data_points_rand_O.append(x_rand)
+        data = [k,] + x_rand
+        data_points_rand_O.append(data)
+        k += 1
 # print("data_points_rand_O",len(data_points_rand_O))
 
 with open(filename, mode='a', newline='') as file:

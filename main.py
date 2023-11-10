@@ -10,7 +10,7 @@ import copy
 import sys
 import os,errno
 
-numTrials = 2
+numTrials = 1
 
 def mkdir_p(path):
     """Quiet path making"""
@@ -32,7 +32,7 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
                      numTrials,
                      maxTime,
                      os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
-                     data_id)
+                     data_id=data_id)
 
 
 all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','rrt*','anytime-rrt','stable-sparse-rrt']
