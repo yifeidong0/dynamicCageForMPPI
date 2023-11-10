@@ -9,7 +9,7 @@ from main import *
 import os
 
 vis = 0
-maxTime = 30
+maxTime = 3
 
 # Read from the CSV file
 rows = []
