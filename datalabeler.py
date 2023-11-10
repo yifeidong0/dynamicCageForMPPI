@@ -5,8 +5,11 @@ from pomp.planners import allplanners
 from pomp.visualizer import *
 import time
 import csv
-from main import parseParameters
+from main import *
 import os
+
+vis = 0
+maxTime = 5
 
 # Read from the CSV file
 rows = []
@@ -16,9 +19,9 @@ with open('data_points_O.csv', 'r') as file:
     for row in csv_reader:
         rows.append([float(d) for d in row])
 
-problem = 'CageMovingObstacle'
 planner = 'ao-rrt'
-planner,params = parseParameters(problem, planner)
+prname = 'CageEnergyLabeler'
+params = {'maxTime':maxTime,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05}
 if 'maxTime' in params:
     del params['maxTime']
 
@@ -26,10 +29,11 @@ print("Parameters:")
 for (k,v) in iteritems(params):
     print(" ",k,":",v)
 
-
 for i, data_i in enumerate(rows):
     problem = cageELTest(data_i)
-
-    runVisualizer(problem,type=planner,**params)
+    if vis:
+        runVisualizer(problem,type=planner,**params)
+    else:
+        testPlannerDefault(problem,prname,maxTime,planner,**params)
 
     # Save escape energy labels to the original csv file

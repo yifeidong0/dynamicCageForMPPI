@@ -11,7 +11,9 @@ import math
 class CageELControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.is_moving_obstacle = True
+        self.is_energy_labeler = True
+        self.half_extents_gripper = cage.half_extents_gripper # [x,z]
+        self.obstacles = self.cage.obstacles[0]
     def configurationSpace(self):
         return self.cage.configurationSpace()
     def controlSet(self,x):
@@ -19,7 +21,7 @@ class CageELControlSpace(ControlSpace):
     def nextState(self,x,u):
         return self.eval(x,u,1.0)
     def eval(self,x,u,amount):
-        x_i,y_i,vx_i,vy_i,xr_i,yr_i = x # state space, 6D (4: cage, 2: robot gripper)
+        x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
         t,thrust_x,thrust_y = u # control space
         tc = t*amount
         net_acceler_x = thrust_x
@@ -30,6 +32,7 @@ class CageELControlSpace(ControlSpace):
                 vy_i+net_acceler_y*tc,
                 xr_i+self.cage.gripper_vel_x*tc,
                 yr_i+self.cage.gripper_vel_y*tc,
+                thetar_i+self.cage.gripper_vel_theta*tc,
                 ]
     
     def interpolator(self,x,u):
@@ -39,12 +42,12 @@ class CageEL:
     def __init__(self, data):
         self.x_range = 10
         self.y_range = 10
-        self.max_velocity = 3
-        self.max_acceleration = 1
+        self.max_velocity = 10
+        self.max_acceleration = 20
         self.mass_object = 1 # import params from cageplanner
         self.half_extents_gripper = [.5, .1] # movement on x-z plane
-        self.gripper_l = self.half_extents_gripper[0]*2.0
-        self.gripper_w = self.half_extents_gripper[1]*2.0
+        self.half_gripper_l = self.half_extents_gripper[0]
+        self.half_gripper_w = self.half_extents_gripper[1]
 
         # Gripper moving velocity (constant)
         self.gripper_vel_x = data[7]
@@ -52,12 +55,12 @@ class CageEL:
         self.gripper_vel_theta = data[9]
 
         self.start_state = data[:7]
-        self.goal_state = [9, 9, 0, 0, 0, 0, 0]
-        self.goal_radius = 1
+        self.goal_state = [5, 9.8, 0, 0, 0, 0, 0]
+        self.goal_radius = .2
         self.time_range = 1
 
         self.obstacles = [
-             (data[4], data[5], self.gripper_l, self.gripper_w, data[6]), # centerx,centery,length,width,orientation 
+             (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
              ]
         self.gravity = 9.81
 
@@ -74,9 +77,6 @@ class CageEL:
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [0,0]
         wspace.box.bmax = [self.x_range,self.y_range]
-        # wspace.addObstacleParam(self.obstacles)
-        # for o in self.obstacles:
-        #     wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
         return wspace
     
     def configurationSpace(self):
@@ -84,8 +84,8 @@ class CageEL:
         wspace.box.bmin = [0,0]
         wspace.box.bmax = [self.x_range, self.y_range]
         wspace.addObstacleParam(self.obstacles)
-        for o in self.obstacles:
-            wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
+        # for o in self.obstacles:
+        #     wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
         res =  MultiConfigurationSpace(wspace,
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
@@ -100,10 +100,10 @@ class CageEL:
 
     def goalSet(self):
         r = self.goal_radius
-        return BoxSet([self.goal_state[0]-r,self.goal_state[1]-r,
+        return BoxSet([0,self.goal_state[1]-r,
                        self.goal_state[2]-self.max_velocity,self.goal_state[3]-self.max_velocity, 
                        0.0, 0.0, -math.pi/2],
-                      [self.goal_state[0]+r,self.goal_state[1]+r,
+                      [self.x_range,self.goal_state[1]+r,
                        self.goal_state[2]+self.max_velocity,self.goal_state[3]+self.max_velocity, 
                        self.x_range, self.y_range, math.pi/2])
 

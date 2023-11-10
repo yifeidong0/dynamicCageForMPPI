@@ -5,7 +5,9 @@ from builtins import range
 from .profiler import Profiler
 import time
 
-def testPlanner(planner,numTrials,maxTime,filename):    
+def testPlanner(planner,numTrials,maxTime,filename,**params):
+    # if 'data_id' in params:
+    #     data_id
     print("Testing planner for %d trials, %f seconds"%(numTrials,maxTime))
     print("Saving to",filename)
     f = open(filename,'w')

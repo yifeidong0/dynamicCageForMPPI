@@ -77,6 +77,21 @@ class AxisNotAlignedBox:
         glVertex2f(*p4)
         glEnd()
 
+    def contains(self, point):
+        """point: list[2]"""
+        # Translate the point to the box's coordinate system
+        translated_x = point[0] - self.center_x
+        translated_y = point[1] - self.center_y
+
+        # Rotate the point in the opposite direction of the box
+        cos_theta = math.cos(-self.theta)
+        sin_theta = math.sin(-self.theta)
+
+        rotated_x = translated_x * cos_theta - translated_y * sin_theta
+        rotated_y = translated_x * sin_theta + translated_y * cos_theta
+
+        # Check if the rotated point is within the axis-aligned box
+        return (abs(rotated_x) <= self.half_length) and (abs(rotated_y) <= self.half_height)
 
 class Geometric2DCSpace(BoxConfigurationSpace):
     def __init__(self):
@@ -99,7 +114,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             for o in self.obstacles:
                 if o.contains(x): return False
             return True
-        else: # moving obstacles
+        elif len(self.obstacleParams[0])==4: # moving obstacles with horizontal gripper
             for i in range(len(self.obstacles)):
                 topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
                 topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
@@ -110,7 +125,13 @@ class Geometric2DCSpace(BoxConfigurationSpace):
                         )
                 if o.contains(x): return False
             return True
-    
+        else: # len(self.obstacleParams[0])==5, tilting gripper
+            gripperPose = obstaclePos # xc, yc, theta
+            halfExtent = self.obstacleParams[0][3:]
+            o = AxisNotAlignedBox(gripperPose, halfExtent)
+            if o.contains(x): return False
+            return True
+
     def toScreen(self,q):
         return (q[0]-self.box.bmin[0])/(self.box.bmax[0]-self.box.bmin[0]),(q[1]-self.box.bmin[1])/(self.box.bmax[1]-self.box.bmin[1])
 
@@ -136,7 +157,6 @@ class Geometric2DCSpace(BoxConfigurationSpace):
                 o.drawGL()
         else: # moving obstacles
             for i in range(len(self.obstacles)):
-                # print("obstaclePos", obstaclePos)
                 topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
                 topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
                 o = Box(topLeftX,
@@ -148,6 +168,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         self.endDraw()
 
     def drawGripperGL(self, gripperPose, halfExtent):
+        """For cagePlanner and cageEL"""
         self.beginDraw()
         gripper = AxisNotAlignedBox(gripperPose, halfExtent)
         gripper.drawGL()

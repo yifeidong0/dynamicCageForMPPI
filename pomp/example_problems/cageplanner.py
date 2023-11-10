@@ -20,6 +20,7 @@ class CagePlannerControlSpace(ControlSpace):
         self.dynamics_sim = forwardSimulation(cage.params)
         self.is_cage_planner = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
+        self.obstacle_pose = cage.start_state[4:7] # xc, zc, theta
         self.xo_via_points = None
 
     def configurationSpace(self):

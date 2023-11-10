@@ -135,7 +135,18 @@ class PlanVisualizationProgram(GLProgram):
         glDisable(GL_DEPTH_TEST)
 
         glDisable(GL_LIGHTING)
-        self.problem.visualizer.drawObstaclesGL()
+        
+        # Draw initial gripper pose
+        if hasattr(self.problem.controlSpace, "is_cage_planner"):
+            gripperPose = self.problem.controlSpace.obstacle_pose
+            halfExtent = self.problem.controlSpace.half_extents_gripper
+            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+        elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
+            gripperPose = self.problem.controlSpace.obstacles[:3]
+            halfExtent = self.problem.controlSpace.obstacles[3:]
+            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+        else: # cageMO and cage 
+            self.problem.visualizer.drawObstaclesGL()
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:
@@ -254,7 +265,7 @@ class PlanVisualizationProgram(GLProgram):
 
             self.display_new_path = False
 
-        if hasattr(self.problem.controlSpace, "is_cage_planner"):
+        if hasattr(self.problem.controlSpace, "is_cage_planner") or hasattr(self.problem.controlSpace, "is_energy_labeler"):
             if self.path is not None:
                 if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                     self.display_new_path = True

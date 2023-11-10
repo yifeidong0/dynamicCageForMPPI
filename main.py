@@ -10,7 +10,7 @@ import copy
 import sys
 import os,errno
 
-numTrials = 10
+numTrials = 2
 
 def mkdir_p(path):
     """Quiet path making"""
@@ -26,7 +26,13 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
     planner = problem.planner(plannerType,**plannerParams)
     folder = os.path.join("data",problemName)
     mkdir_p(folder)
-    test.testPlanner(planner,numTrials,maxTime,os.path.join(folder,allplanners.filename[plannerType]+'.csv'))
+    if 'data_id' in plannerParams: # TODO
+        data_id = plannerParams['data_id']
+    test.testPlanner(planner,
+                     numTrials,
+                     maxTime,
+                     os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
+                     data_id)
 
 
 all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','rrt*','anytime-rrt','stable-sparse-rrt']
@@ -41,7 +47,6 @@ all_problems = {'Kink':geometric.kinkTest(),
                 'Cage':cage.cageTest(),
                 'CageMovingObstacle':cagemovingobstacle.cageMOTest(),
                 'CagePlanner':cageplanner.cagePlannerTest(),
-                'CageEnergyLabeler':cageenergylabeler.cageELTest(),
                 'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
                 'Pendulum':pendulum.pendulumTest(),
                 'LQR':lqr.lqrTest()}

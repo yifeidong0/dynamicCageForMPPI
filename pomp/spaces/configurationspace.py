@@ -202,6 +202,10 @@ class MultiConfigurationSpace(MultiSet,GeodesicConfigurationSpace):
             is_cage_planner = controlSpace.is_cage_planner
         except AttributeError:
             is_cage_planner = False
+        try:
+            is_energy_labeler = controlSpace.is_energy_labeler
+        except AttributeError:
+            is_energy_labeler = False
 
         # Check if gripper in collision with object in the case of CagePlanner
         if is_cage_planner:
@@ -213,6 +217,13 @@ class MultiConfigurationSpace(MultiSet,GeodesicConfigurationSpace):
             # C-space point / xrand checker for updated moving obstacles in cageMO
             if type(c).__name__=='Geometric2DCSpace' and is_moving_obstacle: 
                 if not c.feasible(xi,obstaclePos=x[4:6]):
+                    return False # in collision
+                else: 
+                    continue
+
+            # C-space point / xrand checker for updated moving obstacles in cageEL
+            if type(c).__name__=='Geometric2DCSpace' and is_energy_labeler: 
+                if not c.feasible(xi,obstaclePos=x[4:7]):
                     return False # in collision
                 else: 
                     continue
