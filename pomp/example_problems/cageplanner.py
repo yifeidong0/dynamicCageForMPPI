@@ -209,7 +209,7 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         return c1 + 0.1*u[0]
 
 
-def CagePlannerTest():
+def cagePlannerTest():
     p = CagePlanner()
     objective = CagePlannerObjectiveFunction(p)
     return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),

@@ -62,7 +62,7 @@ for i in range(num_trajs):
         if is_valid:
             data_points_O.append(x_new)
 
-print("data_points_O",len(data_points_O))
+# print("data_points_O",len(data_points_O))
 sim.finish_sim()
 
 # Save data to a CSV file with headers
@@ -86,7 +86,7 @@ for i in range(num_rand_data):
     is_feasible = controlSpace.check_state_feasibility(x_rand) # check collision
     if is_feasible:
         data_points_rand_O.append(x_rand)
-print("data_points_rand_O",len(data_points_rand_O))
+# print("data_points_rand_O",len(data_points_rand_O))
 
 with open(filename, mode='a', newline='') as file:
     writer = csv.writer(file)

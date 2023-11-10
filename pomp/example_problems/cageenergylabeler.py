@@ -6,8 +6,9 @@ from ..spaces.configurationspace import *
 from ..spaces.edgechecker import *
 from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
+import math
 
-class CageMOControlSpace(ControlSpace):
+class CageELControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
         self.is_moving_obstacle = True
@@ -34,26 +35,29 @@ class CageMOControlSpace(ControlSpace):
     def interpolator(self,x,u):
         return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
 
-class CageMO:
-    def __init__(self):
-        self.x_range = 1000
-        self.y_range = 1000
-        self.max_velocity = 40
-        self.max_acceleration = 20
+class CageEL:
+    def __init__(self, data):
+        self.x_range = 10
+        self.y_range = 10
+        self.max_velocity = 3
+        self.max_acceleration = 1
+        self.mass_object = 1 # import params from cageplanner
+        self.half_extents_gripper = [.5, .1] # movement on x-z plane
+        self.gripper_l = self.half_extents_gripper[0]*2.0
+        self.gripper_w = self.half_extents_gripper[1]*2.0
 
         # Gripper moving velocity (constant)
-        self.gripper_vel_x = 0.0
-        self.gripper_vel_y = 3.0
+        self.gripper_vel_x = data[7]
+        self.gripper_vel_y = data[8]
+        self.gripper_vel_theta = data[9]
 
-        self.start_state = [450, 390, 0, self.gripper_vel_y, 0, 0]
-        self.goal_state = [950, 900, 0, 0, 0, 0]
-        self.goal_radius = 50
-        self.time_range = 10
+        self.start_state = data[:7]
+        self.goal_state = [9, 9, 0, 0, 0, 0, 0]
+        self.goal_radius = 1
+        self.time_range = 1
 
         self.obstacles = [
-            #  (375, 200, 50, 200), 
-            #  (575, 200, 50, 200), 
-             (375, 400, 250, 50), 
+             (data[4], data[5], self.gripper_l, self.gripper_w, data[6]), # centerx,centery,length,width,orientation 
              ]
         self.gravity = 9.81
 
@@ -63,30 +67,31 @@ class CageMO:
 
     def controlSpace(self):
         # System dynamics
-        return CageMOControlSpace(self)
+        return CageELControlSpace(self)
 
     def workspace(self):
         # For visualization
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [0,0]
         wspace.box.bmax = [self.x_range,self.y_range]
-        wspace.addObstacleParam(self.obstacles)
-        for o in self.obstacles:
-            wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
+        # wspace.addObstacleParam(self.obstacles)
+        # for o in self.obstacles:
+        #     wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
         return wspace
     
     def configurationSpace(self):
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [0,0]
-        wspace.box.bmax = [self.x_range,self.y_range]
+        wspace.box.bmax = [self.x_range, self.y_range]
         wspace.addObstacleParam(self.obstacles)
         for o in self.obstacles:
             wspace.addObstacle(Box(o[0],o[1],o[0]+o[2],o[1]+o[3]))
         res =  MultiConfigurationSpace(wspace,
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([-self.x_range/2],[self.x_range/2]),
-                                       BoxConfigurationSpace([-self.y_range/2],[self.y_range/2])
+                                       BoxConfigurationSpace([0.0],[self.x_range]),
+                                       BoxConfigurationSpace([0.0],[self.y_range]),
+                                       BoxConfigurationSpace([-math.pi/2],[math.pi/2])
                                        )
         return res
 
@@ -97,13 +102,13 @@ class CageMO:
         r = self.goal_radius
         return BoxSet([self.goal_state[0]-r,self.goal_state[1]-r,
                        self.goal_state[2]-self.max_velocity,self.goal_state[3]-self.max_velocity, 
-                       self.goal_state[4]-self.x_range/2, self.goal_state[5]-self.y_range/2],
+                       0.0, 0.0, -math.pi/2],
                       [self.goal_state[0]+r,self.goal_state[1]+r,
                        self.goal_state[2]+self.max_velocity,self.goal_state[3]+self.max_velocity, 
-                       self.goal_state[4]+self.x_range/2, self.goal_state[5]+self.y_range/2])
+                       self.x_range, self.y_range, math.pi/2])
 
 
-class CageMOObjectiveFunction(ObjectiveFunction):
+class CageELObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -113,18 +118,23 @@ class CageMOObjectiveFunction(ObjectiveFunction):
         self.timestep = timestep
 
     def incremental(self,x,u):
+        m = self.cage.mass_object
+        g = self.cage.gravity
+        y_range = self.cage.y_range
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        E = self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        Enext = self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
-        c = max((Enext-E), 0.001)
+        E = m*g*(y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
+        Enext = m*g*(y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
+
+        # c = max((Enext-E), 0.001)
+        c = max((Enext-E), 0.001) + u[0]
 
         return c
 
 
-def cageMOTest():
-    p = CageMO()
-    objective = CageMOObjectiveFunction(p)
+def cageELTest(data):
+    p = CageEL(data)
+    objective = CageELObjectiveFunction(p)
     return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
