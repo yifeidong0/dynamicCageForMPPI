@@ -9,15 +9,17 @@ from main import *
 import os
 
 vis = 0
-maxTime = 3
+maxTime = 20
 
 # Read from the CSV file
 rows = []
+ids = []
 with open('data_points_O.csv', 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for row in csv_reader:
         rows.append([float(d) for d in row[1:]])
+        ids.append(float(row[0]))
 
 planner = 'ao-rrt'
 prname = 'CageEnergyLabeler'
@@ -34,6 +36,7 @@ for i, data_i in enumerate(rows):
     if vis:
         runVisualizer(problem,type=planner,**params)
     else:
-        testPlannerDefault(problem,prname,maxTime,planner,data_id=i,**params)
+        print(ids[i])
+        testPlannerDefault(problem,prname,maxTime,planner,data_id=ids[i],**params)
 
     # Save escape energy labels to the original csv file
