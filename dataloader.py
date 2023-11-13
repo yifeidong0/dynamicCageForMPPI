@@ -72,9 +72,7 @@ sim.finish_sim()
 headers = ['data_id', 'xo', 'yo', 'vxo', 'vyo', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
 with open(filename, mode='w', newline='') as file:
     writer = csv.writer(file)
-    # Write the headers first
     writer.writerow(headers)
-    # Write the data
     writer.writerows(data_points_O)
 
 

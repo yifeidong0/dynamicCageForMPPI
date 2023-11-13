@@ -128,6 +128,7 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
         # c = max((Enext-E), 0.001)
         c = max((Enext-E), 0.001) + u[0]
+        # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
 
         return c
 

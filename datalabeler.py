@@ -8,13 +8,23 @@ import csv
 from main import *
 import os
 
-vis = 0
+# TODO: inf labels: 
+# object and gripper small ypos; 
+# object in collision with gripper;
+# sol: penalize small ypos
+# multiple trials might be useful
+
+# data with excessively large escape energy labels affect the training greatly.
+# sol: EST, the current RRT version does not expand nodes adequetly, which might be better with a bit hyperparameter tuning.
+# Overall, the dataset is not of high quality for now.
+
+vis = 1
 maxTime = 20
 
 # Read from the CSV file
 rows = []
 ids = []
-with open('data_points_O.csv', 'r') as file:
+with open('data/planar-gripper-dynamic-cage-dataset/data_points_O.csv', 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for row in csv_reader:

@@ -110,27 +110,30 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             input - x: list[2], position of object. 
         """
         if not BoxConfigurationSpace.feasible(self,x): return False
-        if self.obstacleParams is None: # static obstacles
+        if self.obstacleParams is None: # static obstacles [Cage]
             for o in self.obstacles:
                 if o.contains(x): return False
             return True
-        elif len(self.obstacleParams[0])==4: # moving obstacles with horizontal gripper
-            for i in range(len(self.obstacles)):
-                topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
-                topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
-                o = Box(topLeftX,
-                        topLeftY,
-                        topLeftX+self.obstacleParams[i][2],
-                        topLeftY+self.obstacleParams[i][3]
-                        )
+        elif self.obstacleParams is not None:
+            if len(self.obstacleParams)==0: # [CagePlanner]
+                return True
+            if len(self.obstacleParams[0])==4: # moving obstacles with horizontal gripper [CageMovingObstacle]
+                for i in range(len(self.obstacles)):
+                    topLeftX = self.obstacleParams[i][0] + obstaclePos[0]
+                    topLeftY = self.obstacleParams[i][1] + obstaclePos[1]
+                    o = Box(topLeftX,
+                            topLeftY,
+                            topLeftX+self.obstacleParams[i][2],
+                            topLeftY+self.obstacleParams[i][3]
+                            )
+                    if o.contains(x): return False
+                return True
+            else: # len(self.obstacleParams[0])==5, tilting gripper, [CageEnergyLabeler]
+                gripperPose = obstaclePos # xc, yc, theta
+                halfExtent = self.obstacleParams[0][3:]
+                o = AxisNotAlignedBox(gripperPose, halfExtent)
                 if o.contains(x): return False
-            return True
-        else: # len(self.obstacleParams[0])==5, tilting gripper
-            gripperPose = obstaclePos # xc, yc, theta
-            halfExtent = self.obstacleParams[0][3:]
-            o = AxisNotAlignedBox(gripperPose, halfExtent)
-            if o.contains(x): return False
-            return True
+                return True
 
     def toScreen(self,q):
         return (q[0]-self.box.bmin[0])/(self.box.bmax[0]-self.box.bmin[0]),(q[1]-self.box.bmin[1])/(self.box.bmax[1]-self.box.bmin[1])
