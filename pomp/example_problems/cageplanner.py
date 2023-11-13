@@ -8,6 +8,8 @@ from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 import math
+import joblib
+from tensorflow.keras.models import load_model
 
 # TODO: 1. Discontinuity of movement in Pybullet replay
 # 2. Cage-based robustness penalty term in the objective function
@@ -102,8 +104,8 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 6
-        yo_goal = 3
+        yo_init = 3
+        yo_goal = 6
         self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
@@ -183,16 +185,24 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         self.masso = cage.params[0]
         self.massg = cage.params[1]
         self.momentg = cage.params[2]
+        self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
+        self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
         
     def incremental(self,x,u):
         xnext = self.space.nextState(x,u)
-        g = self.cage.gravity
-        
+        # g = self.cage.gravity
+
+        # Instability cost (inverse of escape energy)
+        # Normalize the data
+        x_tran = self.scaler.transform([xnext])
+        cage_metric = self.model.predict(x_tran, verbose=0)
+        c0 = 1/(1+max(cage_metric,1e-4))
+
         # Distance from goal region
         xo_goal = self.cage.goal_state[:2]
         xo = x[:2]
         xo_next = xnext[:2]
-        dis = math.sqrt(sum([(xo_goal[i]-xo[i])**2 for i in range(len(xo))]))
+        # dis = math.sqrt(sum([(xo_goal[i]-xo[i])**2 for i in range(len(xo))]))
         dis_next = math.sqrt(sum([(xo_goal[i]-xo_next[i])**2 for i in range(len(xo))]))
         # c1 = max(dis_next-dis, 0.01)
         c1 = dis_next
@@ -204,10 +214,11 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         # Enext_g = g*self.massg*(self.cage.y_range-xnext[5]) + 0.5*(self.massg*(xnext[7]**2+xnext[8]**2)+self.momentg*(x[9]**2))
         # c2 = max((Enext_g+Enext_o-E_o-E_g), 0.0)
 
-        # Time is penalized
+        # Time penalty
         # return 10*c1 + 0.001*c2 + u[0]
         # return c1 + 0.001*u[0]
-        return c1 + 0.1*u[0]
+        # return c1 + 0.1*u[0]
+        return c1 + 10.0*c0
 
 
 def cagePlannerTest():
