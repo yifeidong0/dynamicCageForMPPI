@@ -78,6 +78,7 @@ class forwardSimulation():
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
     def run_forward_sim(self, inputs, print_via_points=False):
+        # print('run_forward_sim')
         t, ax, az, alpha = inputs
 
         # Step the simulation

@@ -19,7 +19,7 @@ from tensorflow.keras.models import load_model
 class CagePlannerControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forwardSimulation(cage.params)
+        self.dynamics_sim = forwardSimulation(cage.params, gui=0)
         self.is_cage_planner = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacle_pose = cage.start_state[4:7] # xc, zc, theta

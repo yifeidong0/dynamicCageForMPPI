@@ -17,8 +17,8 @@ import random
 
 if __name__ == "__main__":
     # ENV_NAME = "Pendulum-v0"
-    TIMESTEPS = 15  # T, MPPI horizon
-    N_SAMPLES = 100  # K
+    TIMESTEPS = 5  # T, MPPI horizon
+    N_SAMPLES = 500  # K
     N_ITER = 1000 # max no. of iterations
     nx = 10
     nu = 4
@@ -33,9 +33,9 @@ if __name__ == "__main__":
     noise_sigma = torch.tensor(10, device=d, dtype=dtype)
     # noise_mu = torch.tensor([0, 0], device=d, dtype=dtype)
     # u_init = torch.zeros_like(noise_mu)
-    u_init = torch.tensor([0.5, 0.0, gravity, 0.0], device=d, dtype=dtype)
+    u_init = torch.tensor([0.5, 0.0, -gravity, 0.0], device=d, dtype=dtype)
     noise_mu = torch.zeros_like(u_init, device=d, dtype=dtype)
-    noise_sigma = .3 * torch.eye(nu, device=d, dtype=dtype)
+    noise_sigma = .03 * torch.eye(nu, device=d, dtype=dtype)
 
     # For reproducibility
     # randseed = 5

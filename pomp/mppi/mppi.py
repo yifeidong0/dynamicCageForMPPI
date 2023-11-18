@@ -64,6 +64,7 @@ class MPPI():
     def _compute_total_cost(self, k):
         state = self.state.clone()
         for t in range(self.T):
+            # max(wrange_d[0], min(wrange_d[1], w_nom))
             perturbed_action_t = self.U[t] + self.noise[k, t] # TODO crop the action to satisfy the boundary conditions 
             # state = self.F(state, perturbed_action_t)
             # print('state', state)
@@ -82,7 +83,7 @@ class MPPI():
 
             self.cost_total[k] += self.running_cost(state, perturbed_action_t, self.state_goal).item()
             # add action perturbation cost
-            self.cost_total[k] += perturbed_action_t @ self.action_cost[k, t]
+            # self.cost_total[k] += perturbed_action_t @ self.action_cost[k, t]
         # this is the additional terminal cost (running state cost at T already accounted for)
         if self.terminal_state_cost:
             self.cost_total[k] += self.terminal_state_cost(state)
@@ -120,8 +121,11 @@ class MPPI():
 def run_mppi(mppi, iter=10):
     # dataset = torch.zeros((retrain_after_iter, mppi.nx + mppi.nu), dtype=mppi.U.dtype, device=mppi.d)
     state = mppi.state_start
-    for i in range(iter):
-        print('iter', i)
+    xhist = torch.zeros((iter+1, mppi.nx))
+    uhist = torch.zeros((iter, mppi.nu))
+    xhist[0] = state
+    for t in range(iter):
+        print('----------iter----------', t)
         command_start = time.perf_counter()
         action = mppi.command(state)
         elapsed = time.perf_counter() - command_start
@@ -133,6 +137,11 @@ def run_mppi(mppi, iter=10):
         cost = 0. # TODO
         logger.debug("action taken: %.4f cost received: %.4f time taken: %.5fs", action, cost, elapsed)
         # env.render()
+
+        # Log and visualize
+        xhist[t+1] = state
+        uhist[t] = action
+        visualize_mppi(mppi, xhist, t)
 
         # Check if goal is reached
         curr = state[:2] # object position
@@ -152,16 +161,20 @@ def run_mppi(mppi, iter=10):
         # dataset[di, mppi.nx:] = action
 
 import matplotlib.pyplot as plt
-def visualize_mppi(mppi):
+def visualize_mppi(mppi, xhist, t):
+    print('xhist',xhist[t+1])
     starto = mppi.state_start[:2]
     goalo = mppi.state_goal[:2]
+    startg = mppi.state_start[4:6]
     goal_rad = mppi.goal_radius
     
-    # Visualize the basic set up
+    # Visualize the basic set up # TODO OpenGL state to Bullet state
     fig, ax = plt.subplots()
-    ax.plot([starto[0]], [starto[1]], 'ro', markersize=10, markerfacecolor='none', label="Start")
-    # ax.plot([xhist[t+1, 0]], [xhist[t+1, 1]], 'ro', markersize=10, label="Curr. State", zorder=5)
-    # c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=3, fill=False, label="Goal", zorder=7)
+    ax.plot([starto[0]], [starto[1]], 'ro', markersize=5, markerfacecolor='none', label="StartO")
+    ax.plot([startg[0]], [startg[1]], 'go', markersize=5, markerfacecolor='none', label="StartG")
+    ax.plot([xhist[t+1, 0]], [xhist[t+1, 1]], 'ro', markersize=8, label="Curr. StateO", zorder=5)
+    ax.plot([xhist[t+1, 4]], [xhist[t+1, 5]], 'go', markersize=8, label="Curr. StateG", zorder=5)
+    c1 = plt.Circle(goalo.tolist(), goal_rad, color='b', linewidth=3, fill=True, label="Goal", zorder=7) # TODO not shown
     # ax.add_patch(c1)
 
     # # # Show obstacles
@@ -172,14 +185,17 @@ def visualize_mppi(mppi):
     # # Get rollout states from subset of maps for visualization? (e.g., 50)
     # rollout_states_vis = mppi.get_state_rollout()
     
-    # ax.plot(xhist[:,0], xhist[:,1], 'r', label="Past State")
+    ax.plot(xhist[:t+2,0], xhist[:t+2,1], 'r', label="Past StateO")
+    ax.plot(xhist[:t+2,4], xhist[:t+2,5], 'g', label="Past StateG")
     # # ax.plot(rollout_states_vis[:,-1,0].T, rollout_states_vis[:,-1,1].T, 'r.', zorder=4)
     # ax.plot(rollout_states_vis[:,:,0].T, rollout_states_vis[:,:,1].T, 'k', alpha=0.5, zorder=3)
     # ax.plot(rollout_states_vis[0,:,0], rollout_states_vis[0,:,1], 'k', alpha=0.5, label="Rollouts")
     # ax.set_xlim(vis_xlim)
     # ax.set_ylim(vis_ylim)
 
-    ax.legend(loc="upper left")
+    ax.set_xlim([0.,10.0])
+    ax.set_ylim([0.,10.0])
+    ax.legend(loc="upper right")
     ax.set_aspect("equal")
     plt.tight_layout()
     plt.show()
