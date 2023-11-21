@@ -104,10 +104,12 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 8
-        yo_goal = 2
-        self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
-        self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
+        xo_init = 8
+        yo_init = 5
+        xo_goal = 3
+        yo_goal = 5
+        self.start_state = [xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
+        self.goal_state = [xo_goal,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
         self.time_range = 1
 

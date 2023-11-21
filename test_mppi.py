@@ -18,7 +18,7 @@ import random
 if __name__ == "__main__":
     # ENV_NAME = "Pendulum-v0"
     TIMESTEPS = 5  # T, MPPI horizon
-    N_SAMPLES = 500  # K
+    N_SAMPLES = 1000  # K
     N_ITER = 1000 # max no. of iterations
     nx = 10
     nu = 4
@@ -36,8 +36,8 @@ if __name__ == "__main__":
 
     u_init = torch.tensor([0.5, 0.0, -1.1*gravity, 0.0], device=d, dtype=dtype) # in OpenGL frame
     noise_mu = torch.zeros_like(u_init, device=d, dtype=dtype)
-    noise_sigma = .1 * torch.eye(nu, device=d, dtype=dtype)
-    noise_sigma[2,2] = 0.3
+    noise_sigma = .03 * torch.eye(nu, device=d, dtype=dtype)
+    noise_sigma[2,2] = 0.2
 
     # For reproducibility
     # randseed = 5
