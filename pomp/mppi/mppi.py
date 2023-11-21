@@ -8,7 +8,8 @@ from ..example_problems.cageplanner import CagePlannerControlSpace, CagePlanner
 import copy
 import math 
 import matplotlib.pyplot as plt
-
+import joblib
+from tensorflow.keras.models import load_model
 logger = logging.getLogger(__name__)
 
 # Function to check if x is within boundaries
@@ -24,19 +25,6 @@ def get_gripper_corners(pose, half_extents_gripper):
     center_x, center_y, theta = pose
     cos_theta = math.cos(theta)
     sin_theta = math.sin(theta)
-
-    # TODO: Why it is wrong??
-    # p1 = (center_x - cos_theta * half_length + sin_theta * half_height,
-    #         center_y - sin_theta * half_length - cos_theta * half_height)
-    
-    # p2 = (center_x + cos_theta * half_length + sin_theta * half_height,
-    #         center_y + sin_theta * half_length - cos_theta * half_height)
-
-    # p3 = (center_x + cos_theta * half_length - sin_theta * half_height,
-    #         center_y + sin_theta * half_length + cos_theta * half_height)
-
-    # p4 = (center_x - cos_theta * half_length - sin_theta * half_height,
-    #         center_y - sin_theta * half_length + cos_theta * half_height)
 
     p1 = (center_x - cos_theta * half_length + sin_theta * half_height,
             center_y + sin_theta * half_length + cos_theta * half_height)
@@ -72,12 +60,12 @@ class MPPI():
         self.d = device
         self.K = K  # N_SAMPLES
         self.T = T  # TIMESTEPS
+        self.dt = .5
 
         # dimensions of state and control
         self.nx = nx
         self.nu = nu
         self.lambda_ = lambda_
-        # self.nu = 1 if len(u_init.shape) == 0 else u_init.shape[0]
 
         # # handle 1D edge case
         # if self.nu == 1:
@@ -89,15 +77,15 @@ class MPPI():
         self.noise_sigma_inv = torch.inverse(self.noise_sigma)
         self.noise_dist = MultivariateNormal(self.noise_mu, covariance_matrix=self.noise_sigma)
         # T x nu control sequence
-        # self.U = U_init # initial control sequence
         self.u_init = u_init
-        # if self.U is None:
         self.U = u_init.repeat(self.T,1).to(self.d) + self.noise_dist.sample((self.T,)) # T x nu, initial control sequence
 
         # self.F = dynamics
         self.running_cost = running_cost
         self.terminal_state_cost = terminal_state_cost
         self.state = None
+        self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
+        self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
 
         self.cage = CagePlanner()
         self.control_space = self.cage.controlSpace()
@@ -115,31 +103,31 @@ class MPPI():
         # cache action cost
         self.action_cost = self.lambda_ * self.noise @ self.noise_sigma_inv
 
-    def _compute_total_cost(self, k):
+    def _compute_total_cost(self, k, weight=0.06):
         state = self.state.clone()
         for t in range(self.T):
             perturbed_action_t = self.U[t] + self.noise[k, t]
             # Clamping each element in u to its respective boundary
             for i in range(len(perturbed_action_t)):
                 perturbed_action_t[i] = torch.clamp(perturbed_action_t[i], min=self.u_boundary[0][i], max=self.u_boundary[1][i])
-            # print('state', state)
-            # print('perturbed_action_t', perturbed_action_t)
+            perturbed_action_t[0] = self.dt
             state = self.control_space.nextState(state, perturbed_action_t)
-            state = torch.tensor(state)
             # is_valid_state = is_within_boundaries(state, self.c_space_boundary)
             # if not is_valid_state:
             #     # print('is_valid_state NO')
             #     self.cost_total[k] += 1e8
             #     break
 
-            # # cage cost TODO
-            # self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
-            # self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
-            # xnext = self.space.nextState(x,u)
-            # x_tran = self.scaler.transform([xnext])
-            # cage_metric = self.model.predict(x_tran, verbose=0)
+            # # cage cost TODO: the inference can be done in parallel once every K*T times
+            x_tran = self.scaler.transform([state])
+            cage_metric = self.model.predict(x_tran, verbose=0)
+            c_cage = 1/(1+max(cage_metric[0,0],1e-4))
+            state = torch.tensor(state)
+            c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
+            # print('c_cage',c_cage)
+            # print('c_dis_to_goal',0.01*c_dis_to_goal)
+            self.cost_total[k] += (weight*c_dis_to_goal + c_cage)
 
-            self.cost_total[k] += self.running_cost(state, perturbed_action_t, self.state_goal).item()
             # add action perturbation cost
             # self.cost_total[k] += perturbed_action_t @ self.action_cost[k, t]
 
@@ -179,7 +167,6 @@ class MPPI():
 
 
 def run_mppi(mppi, iter=10):
-    # dataset = torch.zeros((retrain_after_iter, mppi.nx + mppi.nu), dtype=mppi.U.dtype, device=mppi.d)
     state = mppi.state_start
     xhist = torch.zeros((iter+1, mppi.nx))
     uhist = torch.zeros((iter, mppi.nu))
@@ -191,15 +178,12 @@ def run_mppi(mppi, iter=10):
         print('----------iter----------', t)
         command_start = time.perf_counter()
         action = mppi.command(state)
-        elapsed = time.perf_counter() - command_start
-        # s, r, _, _ = env.step(action.numpy())
+        action[0] = mppi.dt
         state = mppi.control_space.nextState(state, action)
         state = torch.tensor(state)
-        print('state x',state)
-        print('action x',action)
-        cost = 0. # TODO
-        # logger.debug("action taken: %.4f cost received: %.4f time taken: %.5fs", action, cost, elapsed)
-        # env.render()
+        # print('state x',state)
+        # print('action x',action)
+        cost = 0. # TODO: print cost
 
         # Log and visualize
         state_q, action_q = mppi.control_space.toBulletStateInput(state, action)
@@ -208,7 +192,7 @@ def run_mppi(mppi, iter=10):
         xhist[t+1] = torch.tensor(state_q)
         gripperhist[t+1] = torch.tensor(get_gripper_corners(state_q[4:7], mppi.half_extents_gripper))
         uhist[t] = torch.tensor(action_q)
-        if t % 5 == 4:
+        if t % 1 == 0:
             visualize_mppi(mppi, xhist, gripperhist, t)
 
         # Check if goal is reached
@@ -220,14 +204,6 @@ def run_mppi(mppi, iter=10):
             print('REACHED!')
             visualize_mppi(mppi, xhist, gripperhist, t)
             break
-
-        # di = i % retrain_after_iter
-        # if di == 0 and i > 0:
-        #     retrain_dynamics(dataset)
-        #     # don't have to clear dataset since it'll be overridden, but useful for debugging
-        #     dataset.zero_()
-        # dataset[di, :mppi.nx] = torch.tensor(state, dtype=mppi.U.dtype)
-        # dataset[di, mppi.nx:] = action
 
 def visualize_mppi(mppi, xhist, gripperhist, t):
     # print('xhist',xhist[t+1])
@@ -255,7 +231,7 @@ def visualize_mppi(mppi, xhist, gripperhist, t):
     # # Get rollout states from subset of maps for visualization? (e.g., 50)
     # rollout_states_vis = mppi.get_state_rollout()
     
-    ax.plot(xhist[:t+2,0], xhist[:t+2,1], 'ro', markersize=3)
+    ax.plot(xhist[:t+2,0], xhist[:t+2,1], 'ro-', markersize=3)
     # ax.plot(xhist[:t+2,4], xhist[:t+2,5], 'go', markersize=3, label="Past StateG")
     for i in range(t+2):
         draw_gripper(gripperhist[i], ax, alpha=float((i+1)/(t+2)))
@@ -270,4 +246,5 @@ def visualize_mppi(mppi, xhist, gripperhist, t):
     ax.legend(loc="upper right")
     ax.set_aspect("equal")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    fig.savefig('box_plot-{}.png'.format(t), dpi=300)

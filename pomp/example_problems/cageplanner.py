@@ -105,9 +105,9 @@ class CagePlanner:
                        self.half_extents_gripper, self.radius_object]
         
         xo_init = 8
-        yo_init = 5
+        yo_init = 2
         xo_goal = 3
-        yo_goal = 5
+        yo_goal = 7
         self.start_state = [xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [xo_goal,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
