@@ -5,6 +5,7 @@ import time
 import logging
 from torch.distributions.multivariate_normal import MultivariateNormal
 from ..example_problems.cageplanner import CagePlannerControlSpace, CagePlanner
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,7 @@ class MPPI():
         return torch.exp(-factor * (cost - beta))
 
     def command(self, state):
+        """MPPI algorithm block II in the paper."""
         if not torch.is_tensor(state):
             state = torch.tensor(state)
         self.state = state.to(dtype=self.U.dtype, device=self.d) # get state estimate
@@ -123,7 +125,8 @@ def run_mppi(mppi, iter=10):
     state = mppi.state_start
     xhist = torch.zeros((iter+1, mppi.nx))
     uhist = torch.zeros((iter, mppi.nu))
-    xhist[0] = state
+    state_q, _ = mppi.control_space.toBulletStateInput(state)
+    xhist[0] = torch.tensor(state_q)
     for t in range(iter):
         print('----------iter----------', t)
         command_start = time.perf_counter()
@@ -135,13 +138,15 @@ def run_mppi(mppi, iter=10):
         print('state',state)
         print('action',action)
         cost = 0. # TODO
-        logger.debug("action taken: %.4f cost received: %.4f time taken: %.5fs", action, cost, elapsed)
+        # logger.debug("action taken: %.4f cost received: %.4f time taken: %.5fs", action, cost, elapsed)
         # env.render()
 
         # Log and visualize
-        xhist[t+1] = state
-        uhist[t] = action
-        visualize_mppi(mppi, xhist, t)
+        state_q, action_q = mppi.control_space.toBulletStateInput(state, action)
+        xhist[t+1] = torch.tensor(state_q)
+        uhist[t] = torch.tensor(action_q)
+        if t % 10 == 0:
+            visualize_mppi(mppi, xhist, t)
 
         # Check if goal is reached
         curr = state[:2] # object position
@@ -150,6 +155,7 @@ def run_mppi(mppi, iter=10):
         print('dist_to_goal',dist_to_goal)
         if dist_to_goal < mppi.goal_radius:
             print('REACHED!')
+            visualize_mppi(mppi, xhist, t)
             break
 
         # di = i % retrain_after_iter
@@ -162,20 +168,22 @@ def run_mppi(mppi, iter=10):
 
 import matplotlib.pyplot as plt
 def visualize_mppi(mppi, xhist, t):
-    print('xhist',xhist[t+1])
-    starto = mppi.state_start[:2]
-    goalo = mppi.state_goal[:2]
+    # print('xhist',xhist[t+1])
+    starto = copy.deepcopy(mppi.state_start[:2])
+    goalo = copy.deepcopy(mppi.state_goal[:2])
+    goalo[1] = 10-goalo[1]
+    goalo = goalo.tolist()
     startg = mppi.state_start[4:6]
     goal_rad = mppi.goal_radius
     
     # Visualize the basic set up # TODO OpenGL state to Bullet state
     fig, ax = plt.subplots()
-    ax.plot([starto[0]], [starto[1]], 'ro', markersize=5, markerfacecolor='none', label="StartO")
-    ax.plot([startg[0]], [startg[1]], 'go', markersize=5, markerfacecolor='none', label="StartG")
+    ax.plot([starto[0]], [10-starto[1]], 'ro', markersize=5, markerfacecolor='none', label="StartO")
+    ax.plot([startg[0]], [10-startg[1]], 'go', markersize=5, markerfacecolor='none', label="StartG")
     ax.plot([xhist[t+1, 0]], [xhist[t+1, 1]], 'ro', markersize=8, label="Curr. StateO", zorder=5)
     ax.plot([xhist[t+1, 4]], [xhist[t+1, 5]], 'go', markersize=8, label="Curr. StateG", zorder=5)
-    c1 = plt.Circle(goalo.tolist(), goal_rad, color='b', linewidth=3, fill=True, label="Goal", zorder=7) # TODO not shown
-    # ax.add_patch(c1)
+    c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=3, fill=False, label="Goal", zorder=7) # TODO not shown
+    ax.add_patch(c1)
 
     # # # Show obstacles
     # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):

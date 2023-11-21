@@ -30,12 +30,14 @@ if __name__ == "__main__":
     d = "cuda"
     dtype = torch.double
 
-    noise_sigma = torch.tensor(10, device=d, dtype=dtype)
+    # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
     # noise_mu = torch.tensor([0, 0], device=d, dtype=dtype)
     # u_init = torch.zeros_like(noise_mu)
-    u_init = torch.tensor([0.5, 0.0, -gravity, 0.0], device=d, dtype=dtype)
+
+    u_init = torch.tensor([0.5, 0.0, -1.1*gravity, 0.0], device=d, dtype=dtype) # in OpenGL frame
     noise_mu = torch.zeros_like(u_init, device=d, dtype=dtype)
-    noise_sigma = .03 * torch.eye(nu, device=d, dtype=dtype)
+    noise_sigma = .1 * torch.eye(nu, device=d, dtype=dtype)
+    noise_sigma[2,2] = 0.3
 
     # For reproducibility
     # randseed = 5

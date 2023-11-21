@@ -46,7 +46,7 @@ class CagePlannerControlSpace(ControlSpace):
              x[2],-x[3],
              x[4],self.cage.y_range-x[5],-x[6],
              x[7],-x[8],-x[9]]
-        if u:
+        if u is not None:
             mu = [u[0],u[1],-u[2],-u[3]]
         else:
             mu = None
@@ -104,8 +104,8 @@ class CagePlanner:
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
         
-        yo_init = 3
-        yo_goal = 6
+        yo_init = 8
+        yo_goal = 2
         self.start_state = [2,yo_init,0,0,2,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [5,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
