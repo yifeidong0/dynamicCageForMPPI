@@ -55,7 +55,7 @@ class CageEL:
         self.gripper_vel_theta = data[9]
 
         self.start_state = data[:7]
-        self.goal_state = [5, 9.8, 0, 0, 0, 0, 0]
+        self.goal_state = [5, min(self.y_range-0.5, data[1]+1.3), 0, 0, 0, 0, 0] # varying goal region
         self.goal_radius = .2
         self.time_range = 1
 
@@ -100,11 +100,11 @@ class CageEL:
 
     def goalSet(self):
         r = self.goal_radius
-        return BoxSet([0,self.goal_state[1]-r,
-                       self.goal_state[2]-self.max_velocity,self.goal_state[3]-self.max_velocity, 
+        return BoxSet([0, self.goal_state[1],
+                       self.goal_state[2]-self.max_velocity, self.goal_state[3]-self.max_velocity, 
                        0.0, 0.0, -math.pi/2],
-                      [self.x_range,self.goal_state[1]+r,
-                       self.goal_state[2]+self.max_velocity,self.goal_state[3]+self.max_velocity, 
+                      [self.x_range, self.y_range,
+                       self.goal_state[2]+self.max_velocity, self.goal_state[3]+self.max_velocity, 
                        self.x_range, self.y_range, math.pi/2])
 
 

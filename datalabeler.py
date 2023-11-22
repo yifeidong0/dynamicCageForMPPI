@@ -18,8 +18,8 @@ import os
 # sol: EST, the current RRT version does not expand nodes adequetly, which might be better with a bit hyperparameter tuning.
 # Overall, the dataset is not of high quality for now.
 
-vis = 1
-maxTime = 20
+vis = 0
+maxTime = 12
 
 # Read from the CSV file
 rows = []
