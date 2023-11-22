@@ -7,7 +7,6 @@ import logging
 import math
 from pomp.mppi.mppi import *
 import random
-# from gym import wrappers, logger as gym_log
 
 # gym_log.set_level(gym_log.INFO)
 # logger = logging.getLogger(__name__)
@@ -16,20 +15,20 @@ import random
 #                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
-    # ENV_NAME = "Pendulum-v0"
-    TIMESTEPS = 5  # T, MPPI horizon
-    N_SAMPLES = 100 # 1000  # K
-    N_ITER = 1000 # max no. of iterations
+    N_HORIZON = 15  # T, MPPI horizon
+    N_SAMPLES = 1000  # K
+    N_ITER = 100 # max no. of iterations
     nx = 10
     nu = 4
+    dt = 0.15
     lambda_ = 1.
     gravity = 9.81
     d = "cuda"
     dtype = torch.double
     u_init = torch.tensor([0.5, 0.0, -1.1*gravity, 0.0], device=d, dtype=dtype) # in OpenGL frame
     noise_mu = torch.zeros_like(u_init, device=d, dtype=dtype)
-    noise_sigma = .03 * torch.eye(nu, device=d, dtype=dtype)
-    noise_sigma[2,2] = 0.2
+    noise_sigma = .3 * torch.eye(nu, device=d, dtype=dtype)
+    noise_sigma[2,2] = 0.5
 
     # For reproducibility
     # randseed = 5
@@ -47,9 +46,8 @@ if __name__ == "__main__":
         # cost = angle_normalize(theta) ** 2 + 0.1 * theta_dt ** 2 + 0.001 * action ** 2
         return weight * cost
 
-    mppi_gym = MPPI(nx, nu, K=N_SAMPLES, T=TIMESTEPS, running_cost=running_cost, lambda_=lambda_,
-                    noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init)
-    # init_state = mppi_gym.state_start
+    mppi_gym = MPPI(nx, nu, K=N_SAMPLES, T=N_HORIZON, running_cost=running_cost, lambda_=lambda_,
+                    noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init, dt=dt)
     run_mppi(mppi_gym, iter=N_ITER)
 
 

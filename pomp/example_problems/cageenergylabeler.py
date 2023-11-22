@@ -127,8 +127,9 @@ class CageELObjectiveFunction(ObjectiveFunction):
         Enext = m*g*(y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
 
         # c = max((Enext-E), 0.001)
-        c = max((Enext-E), 0.001) + u[0]
         # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
+        c = max((Enext-E), 0.001) + u[0]
+        # c = max((Enext-E), 1e-6) + (1e-3)*u[0]
 
         return c
 

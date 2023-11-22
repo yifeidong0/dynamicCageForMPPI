@@ -55,12 +55,15 @@ class MPPI():
                  lambda_=1.,
                  noise_mu=torch.tensor(0., dtype=torch.double),
                  noise_sigma=torch.tensor(1., dtype=torch.double),
-                 u_init=torch.tensor(1., dtype=torch.double),):
+                 u_init=torch.tensor(1., dtype=torch.double),
+                 dt=0.5):
                 #  U_init=None):
         self.d = device
         self.K = K  # N_SAMPLES
-        self.T = T  # TIMESTEPS
-        self.dt = .5
+        self.T = T  # HORIZON
+        # self.I = 10 # N_ITERATIONS
+        self.dt = dt
+        self.num_vis_samples = 8 # nu. of rollouts
 
         # dimensions of state and control
         self.nx = nx
@@ -84,6 +87,7 @@ class MPPI():
         self.running_cost = running_cost
         self.terminal_state_cost = terminal_state_cost
         self.state = None
+        self.rollout_state = None
         self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
         self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
 
@@ -96,6 +100,9 @@ class MPPI():
         self.c_space_boundary = self.cage.c_space_boundary
         self.half_extents_gripper = self.cage.half_extents_gripper
 
+    def _initialize_rollout_container(self):
+        self.rollout_state = torch.zeros((self.num_vis_samples, self.T+1, self.nx))
+
     def _start_action_consideration(self):
         # reseample noise each time we take an action; these can be done at the start
         self.cost_total = torch.zeros(self.K, device=self.d)
@@ -103,33 +110,53 @@ class MPPI():
         # cache action cost
         self.action_cost = self.lambda_ * self.noise @ self.noise_sigma_inv
 
-    def _compute_total_cost(self, k, weight=0.06):
+    def _compute_total_cost(self, k, weight=1.0):
+        save_rollouts = False
+        if k < self.num_vis_samples: save_rollouts = True
         state = self.state.clone()
+        if save_rollouts: 
+            state_q, _ = self.control_space.toBulletStateInput(state)
+            self.rollout_state[k,0,:] = torch.tensor(state_q) # (self.num_vis_samples, self.T+1, self.nx)
+
         for t in range(self.T):
             perturbed_action_t = self.U[t] + self.noise[k, t]
+
             # Clamping each element in u to its respective boundary
-            for i in range(len(perturbed_action_t)):
+            for i in range(len(perturbed_action_t)): 
                 perturbed_action_t[i] = torch.clamp(perturbed_action_t[i], min=self.u_boundary[0][i], max=self.u_boundary[1][i])
-            perturbed_action_t[0] = self.dt
+            
+            perturbed_action_t[0] = self.dt # fixed time step
+
+            # Rollout TODO: break the for loop if current state is in goal
             state = self.control_space.nextState(state, perturbed_action_t)
+            
+            # State space boundary
             # is_valid_state = is_within_boundaries(state, self.c_space_boundary)
             # if not is_valid_state:
             #     # print('is_valid_state NO')
             #     self.cost_total[k] += 1e8
             #     break
 
-            # # cage cost TODO: the inference can be done in parallel once every K*T times
-            x_tran = self.scaler.transform([state])
-            cage_metric = self.model.predict(x_tran, verbose=0)
-            c_cage = 1/(1+max(cage_metric[0,0],1e-4))
+            # Cage cost TODO: the inference can be done in parallel once every K*T times
+            # x_tran = self.scaler.transform([state])
+            # cage_metric = self.model.predict(x_tran, verbose=0)
+            # c_cage = 1/(1+max(cage_metric[0,0],1e-4))
+            c_cage = 0.0
             state = torch.tensor(state)
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
-            # print('c_cage',c_cage)
-            # print('c_dis_to_goal',0.01*c_dis_to_goal)
-            self.cost_total[k] += (weight*c_dis_to_goal + c_cage)
+            decayed_weight = (t+1) / ((1+self.T)*self.T/2)
+            c_goal = weight*decayed_weight*c_dis_to_goal
+            self.cost_total[k] += (c_goal + c_cage)
+            # print('c_goal', c_goal)
 
-            # add action perturbation cost
-            # self.cost_total[k] += perturbed_action_t @ self.action_cost[k, t]
+            # Add action perturbation cost
+            # c_action = perturbed_action_t @ self.action_cost[k, t]
+            # self.cost_total[k] += c_action
+            # print('c_action', c_action)
+
+            if save_rollouts: 
+                state_q, _ = self.control_space.toBulletStateInput(state)
+                self.rollout_state[k,t+1,:] = torch.tensor(state_q) # save rollouts
 
         # this is the additional terminal cost (running state cost at T already accounted for)
         if self.terminal_state_cost:
@@ -147,19 +174,18 @@ class MPPI():
         self._start_action_consideration()
         # TODO dynamics not easily parallelizable - refer to this https://openreview.net/pdf?id=fvfZKL1hCx for robot simulation
         for k in range(self.K):
-            # print('sample id', k)
             self._compute_total_cost(k) # rollout dynamics and cost
 
         beta = torch.min(self.cost_total) # min cost
-        cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1 / self.lambda_)
+        cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
 
         eta = torch.sum(cost_total_non_zero) # normalizer
         omega = (1. / eta) * cost_total_non_zero # weights of each sample
-        for t in range(self.T): # retrieve the control sequence by importance sampling - 
+        for t in range(self.T): # retrieve the control sequence by importance sampling
             self.U[t] += torch.sum(omega.view(-1, 1) * self.noise[:, t], dim=0)
         action = self.U[0] # send to actuator
 
-        # shift command 1 time step
+        # Shift command 1 time step
         self.U = torch.roll(self.U, -1, dims=0)
         self.U[-1] = self.u_init
 
@@ -168,6 +194,8 @@ class MPPI():
 
 def run_mppi(mppi, iter=10):
     state = mppi.state_start
+    # mppi.I = iter
+    mppi._initialize_rollout_container()
     xhist = torch.zeros((iter+1, mppi.nx))
     uhist = torch.zeros((iter, mppi.nu))
     gripperhist = torch.zeros((iter, 4, 2)) # 4 corners, 2d points
@@ -176,9 +204,9 @@ def run_mppi(mppi, iter=10):
     gripperhist[0] = torch.tensor(get_gripper_corners(state_q[4:7], mppi.half_extents_gripper))
     for t in range(iter):
         print('----------iter----------', t)
-        command_start = time.perf_counter()
+        # command_start = time.perf_counter()
         action = mppi.command(state)
-        action[0] = mppi.dt
+        action[0] = mppi.dt # fixed time step
         state = mppi.control_space.nextState(state, action)
         state = torch.tensor(state)
         # print('state x',state)
@@ -211,7 +239,7 @@ def visualize_mppi(mppi, xhist, gripperhist, t):
     goalo = copy.deepcopy(mppi.state_goal[:2]) # opengl frame
     goalo[1] = 10-goalo[1]
     goalo = goalo.tolist() # bullet frame
-    startg = mppi.state_start[4:6]
+    # startg = mppi.state_start[4:6]
     goal_rad = mppi.goal_radius
     
     # Visualize the basic set up
@@ -222,6 +250,8 @@ def visualize_mppi(mppi, xhist, gripperhist, t):
     # ax.plot([xhist[t+1, 4]], [xhist[t+1, 5]], 'go', markersize=8, label="Curr. StateG", zorder=5)
     c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=1, fill=False, label="goal", zorder=7)
     ax.add_patch(c1)
+    ax.plot(mppi.rollout_state[:,:,0].T, mppi.rollout_state[:,:,1].T, 'k', alpha=0.5, zorder=3) # rollout obj states
+    ax.plot(mppi.rollout_state[0,:,0], mppi.rollout_state[0,:,1], 'k', alpha=0.02, label="rollouts")
 
     # # # Show obstacles
     # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):
