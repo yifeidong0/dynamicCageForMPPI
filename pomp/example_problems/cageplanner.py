@@ -105,9 +105,9 @@ class CagePlanner:
                        self.half_extents_gripper, self.radius_object]
         
         xo_init = 8
-        yo_init = 7
+        yo_init = 2
         xo_goal = 3
-        yo_goal = 2
+        yo_goal = 7
         self.start_state = [xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0]
         self.goal_state = [xo_goal,yo_goal,0,0,0,0,0,0,0,0]
         self.goal_radius = 1
@@ -121,9 +121,10 @@ class CagePlanner:
                                  [0.0,self.x_range], [0.0,self.x_range], [-math.pi/2,math.pi/2],
                                  [-3.0,3.0], [-3.0,3.0],[-math.pi/9,math.pi/9]]
         # self.u_boundary = [[0.0, -0.3, -self.gravity-5.0, -math.pi/27], 
-        #                    [self.time_range, 0.3, -self.gravity+1.0, math.pi/27]]
+        #                    [self.time_range, 0.3, -self.gravity+1.0, math.pi/27]] # parameter for initial dataset generation
         self.u_boundary = [[0.0, -0.9, -self.gravity-3.0, -math.pi/6], 
                            [self.time_range, 0.9, -self.gravity+3.0, math.pi/6]]
+
     def controlSet(self):
         return BoxSet(self.u_boundary[0][1:], 
                       self.u_boundary[1][1:])

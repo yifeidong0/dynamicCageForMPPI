@@ -95,10 +95,18 @@ class MPPI():
         self.control_space = self.cage.controlSpace()
         self.state_start = torch.tensor(self.cage.start_state)
         self.state_goal = torch.tensor(self.cage.goal_state)
+        self.obj_goal_pos = self.state_goal[:2].clone().detach()
         self.goal_radius = self.cage.goal_radius
         self.u_boundary = self.cage.u_boundary
         self.c_space_boundary = self.cage.c_space_boundary
+        self.radius_object = self.cage.radius_object
         self.half_extents_gripper = self.cage.half_extents_gripper
+
+    def _reset_start_goal(self, params):
+        xo_init, yo_init, xo_goal, yo_goal = params
+        self.state_start = torch.tensor([xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0])
+        self.state_goal = torch.tensor([xo_goal,yo_goal,0,0,0,0,0,0,0,0])
+        self.obj_goal_pos = self.state_goal[:2].clone().detach()
 
     def _initialize_rollout_container(self):
         self.rollout_state = torch.zeros((self.num_vis_samples, self.T+1, self.nx))
@@ -127,7 +135,7 @@ class MPPI():
             
             perturbed_action_t[0] = self.dt # fixed time step
 
-            # Rollout TODO: break the for loop if current state is in goal
+            # Rollout
             state = self.control_space.nextState(state, perturbed_action_t)
             
             # State space boundary
@@ -157,6 +165,13 @@ class MPPI():
             if save_rollouts: 
                 state_q, _ = self.control_space.toBulletStateInput(state)
                 self.rollout_state[k,t+1,:] = torch.tensor(state_q) # save rollouts
+
+            # Break the for loop if current state is in goal
+            if math.sqrt(c_dis_to_goal) < self.goal_radius:
+                if save_rollouts and t+2 <= self.T: 
+                    stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+2)+1, -1)
+                    self.rollout_state[k,t+2:,:] = stacked_state_q # save rollouts
+                break
 
         # this is the additional terminal cost (running state cost at T already accounted for)
         if self.terminal_state_cost:
@@ -202,9 +217,9 @@ def run_mppi(mppi, iter=10):
     state_q, _ = mppi.control_space.toBulletStateInput(state)
     xhist[0] = torch.tensor(state_q)
     gripperhist[0] = torch.tensor(get_gripper_corners(state_q[4:7], mppi.half_extents_gripper))
+    goal = mppi.state_goal[:2].clone().detach()
     for t in range(iter):
         print('----------iter----------', t)
-        # command_start = time.perf_counter()
         action = mppi.command(state)
         action[0] = mppi.dt # fixed time step
         state = mppi.control_space.nextState(state, action)
@@ -225,56 +240,51 @@ def run_mppi(mppi, iter=10):
 
         # Check if goal is reached
         curr = state[:2] # object position
-        goal = mppi.state_goal[:2].clone().detach()
         dist_to_goal = torch.norm(goal-curr, p=2)
         print('dist_to_goal',dist_to_goal)
         if dist_to_goal < mppi.goal_radius:
             print('REACHED!')
-            visualize_mppi(mppi, xhist, gripperhist, t)
+            reached_goal = True
+            visualize_mppi(mppi, xhist, gripperhist, t, reached_goal)
             break
 
-def visualize_mppi(mppi, xhist, gripperhist, t):
-    # print('xhist',xhist[t+1])
+        # Clean up the container
+        mppi._initialize_rollout_container()
+
+
+def visualize_mppi(mppi, xhist, gripperhist, t, reached_goal=False):
+    if reached_goal: t += 1
     starto = copy.deepcopy(mppi.state_start[:2])
     goalo = copy.deepcopy(mppi.state_goal[:2]) # opengl frame
     goalo[1] = 10-goalo[1]
     goalo = goalo.tolist() # bullet frame
-    # startg = mppi.state_start[4:6]
     goal_rad = mppi.goal_radius
     
-    # Visualize the basic set up
+    # Visualize the basic setup
     fig, ax = plt.subplots()
+
+    if not reached_goal:
+        ax.plot(mppi.rollout_state[:,:,0].T, mppi.rollout_state[:,:,1].T, 'k', alpha=0.3, zorder=3, linewidth=1) # rollout obj states
+        ax.plot(mppi.rollout_state[0,:,0], mppi.rollout_state[0,:,1], 'k', alpha=0.02, label="rollouts")
+
     ax.plot([starto[0]], [10-starto[1]], 'ro', markersize=5, markerfacecolor='none', label="init obj")
-    # ax.plot([startg[0]], [10-startg[1]], 'go', markersize=5, markerfacecolor='none', label="StartG")
-    ax.plot([xhist[t+1, 0]], [xhist[t+1, 1]], 'ko', markersize=3, markerfacecolor='none', label="curr obj", zorder=5)
-    # ax.plot([xhist[t+1, 4]], [xhist[t+1, 5]], 'go', markersize=8, label="Curr. StateG", zorder=5)
+    ax.plot([xhist[t, 0]], [xhist[t, 1]], 'ko', markersize=3, markerfacecolor='none', label="curr obj", zorder=5)
     c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=1, fill=False, label="goal", zorder=7)
     ax.add_patch(c1)
-    ax.plot(mppi.rollout_state[:,:,0].T, mppi.rollout_state[:,:,1].T, 'k', alpha=0.5, zorder=3) # rollout obj states
-    ax.plot(mppi.rollout_state[0,:,0], mppi.rollout_state[0,:,1], 'k', alpha=0.02, label="rollouts")
 
-    # # # Show obstacles
+    for i in range(t+1):
+        draw_gripper(gripperhist[i], ax, alpha=float((i+1)/(t+1))) # gripper past poses
+    ax.plot(xhist[:t+1,0], xhist[:t+1,1], 'ro-', markersize=3) # obj past trajectory
+
+    # # # Show obstacles TODO: add obstacles.
     # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):
     # #   obs = plt.Circle(obs_pos, obs_r, color='k', fill=True, zorder=6)
     # #   ax.add_patch(obs)
 
-    # # Get rollout states from subset of maps for visualization? (e.g., 50)
-    # rollout_states_vis = mppi.get_state_rollout()
-    
-    ax.plot(xhist[:t+2,0], xhist[:t+2,1], 'ro-', markersize=3)
-    # ax.plot(xhist[:t+2,4], xhist[:t+2,5], 'go', markersize=3, label="Past StateG")
-    for i in range(t+2):
-        draw_gripper(gripperhist[i], ax, alpha=float((i+1)/(t+2)))
-    # # ax.plot(rollout_states_vis[:,-1,0].T, rollout_states_vis[:,-1,1].T, 'r.', zorder=4)
-    # ax.plot(rollout_states_vis[:,:,0].T, rollout_states_vis[:,:,1].T, 'k', alpha=0.5, zorder=3)
-    # ax.plot(rollout_states_vis[0,:,0], rollout_states_vis[0,:,1], 'k', alpha=0.5, label="Rollouts")
-    # ax.set_xlim(vis_xlim)
-    # ax.set_ylim(vis_ylim)
-
-    ax.set_xlim([0.,10.0])
-    ax.set_ylim([0.,10.0])
-    ax.legend(loc="upper right")
+    ax.set_xlim([-1.,11.0])
+    ax.set_ylim([-1.,11.0])
+    ax.legend(loc="upper left")
     ax.set_aspect("equal")
     plt.tight_layout()
     # plt.show()
-    fig.savefig('box_plot-{}.png'.format(t), dpi=300)
+    fig.savefig('mppi-plot-{}.png'.format(t), dpi=300)
