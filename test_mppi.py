@@ -7,6 +7,7 @@ import logging
 import math
 from pomp.mppi.mppi import *
 import random
+import csv
 
 # gym_log.set_level(gym_log.INFO)
 # logger = logging.getLogger(__name__)
@@ -15,9 +16,9 @@ import random
 #                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
-    N_EPISODE = 1
+    N_EPISODE = 500
     N_ITER = 50 # max no. of iterations
-    N_SAMPLE = 1000  # K
+    N_SAMPLE = 500 # 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
     nx = 10
     nu = 4
@@ -48,18 +49,43 @@ if __name__ == "__main__":
         return cost
 
     mppi_gym = MPPI(nx, nu, K=N_SAMPLE, T=N_HORIZON, running_cost=running_cost, lambda_=lambda_,
-                    noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init, dt=dt)
-    
+                    noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init, dt=dt, device=d)
+
+    # Save data to a CSV file with headers
+    filename = "states_from_mppi.csv"
+    headers = ['n_episode', 'n_iteration', 'n_sample', 'n_horizon', 'xo', 'yo', 'vxo', 'vyo', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(headers)
+        
     # Randomize start and goal
+    x_range = 10
+    y_range = 10
     for e in range(N_EPISODE):
-        x_range = 10
-        y_range = 10
+        data = []
         params = [(x_range-2)*random.random() + 1, # xo_init
                   (y_range-2)*random.random() + 1, # yo_init
                   (x_range-2)*random.random() + 1, # xo_goal
                   (y_range-2)*random.random() + 1, # yo_goal
                 ]
-        print('startNgoal', params)
         mppi_gym._reset_start_goal(params)
 
-        run_mppi(mppi_gym, iter=N_ITER)
+        rollouts_hist, cutdown_hist, cutdown_iter = run_mppi(mppi_gym, iter=N_ITER, episode=e)
+        # rollouts_hist = torch.tensor((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx))
+        # cutdown_hist = torch.tensor((iter, mppi.num_vis_samples))
+
+        # Process data to save
+        for i in range(cutdown_iter):
+            for s in range(mppi_gym.num_vis_samples):
+                cutoff = int(cutdown_hist[i, s].item()) # cutoff in the horizon
+                # print('cutoff',cutoff)
+                selected_data = rollouts_hist[i, s, 1:cutoff, :]
+                
+                for h in range(cutoff-1):
+                    selected_data_list = selected_data[h, :].tolist()
+                    data.append([e, i, s, h,] + selected_data_list)
+        
+        # Save data to a CSV file
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(data)

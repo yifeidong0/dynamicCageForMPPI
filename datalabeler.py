@@ -18,18 +18,21 @@ import os
 # sol: EST, the current RRT version does not expand nodes adequetly, which might be better with a bit hyperparameter tuning.
 # Overall, the dataset is not of high quality for now.
 
-vis = 0
+vis = 1
 maxTime = 12
+# filename = 'data/planar-gripper-dynamic-cage-dataset/data_points_O.csv'
+filename = 'states_from_mppi.csv'
 
 # Read from the CSV file
 rows = []
 ids = []
-with open('data/planar-gripper-dynamic-cage-dataset/data_points_O.csv', 'r') as file:
+with open(filename, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
-    for row in csv_reader:
-        rows.append([float(d) for d in row[1:]])
-        ids.append(float(row[0]))
+    for id, row in enumerate(csv_reader):
+        # rows.append([float(d) for d in row[1:]])
+        rows.append([float(d) for d in row[4:]])
+        ids.append(int(id))
 
 planner = 'ao-rrt'
 prname = 'CageEnergyLabeler'
