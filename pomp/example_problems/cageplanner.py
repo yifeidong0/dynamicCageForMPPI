@@ -9,7 +9,7 @@ from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 import math
 import joblib
-from tensorflow.keras.models import load_model
+# from tensorflow.keras.models import load_model
 
 # TODO: 1. Discontinuity of movement in Pybullet replay
 # 2. Cage-based robustness penalty term in the objective function
@@ -189,8 +189,8 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         self.masso = cage.params[0]
         self.massg = cage.params[1]
         self.momentg = cage.params[2]
-        self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
-        self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
+        # self.model = load_model('data/planar-gripper-dynamic-cage-dataset/model_varyingGoal_cutoffLabels.h5')
+        self.scaler = joblib.load('data/planar-gripper-dynamic-cage-dataset/scaler_minmax.pkl')
         
     def incremental(self,x,u):
         xnext = self.space.nextState(x,u)

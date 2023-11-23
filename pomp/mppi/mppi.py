@@ -9,7 +9,8 @@ import copy
 import math 
 import matplotlib.pyplot as plt
 import joblib
-from tensorflow.keras.models import load_model
+import torch.nn as nn
+# from tensorflow.keras.models import load_model
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,41 @@ def draw_gripper(corners, ax, alpha=0.5):
         next_i = (i + 1) % len(points)  # To loop back to the first point
         ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'g-', alpha=alpha)  # 'b-' for blue lines
 
+def predict(model, scaler, input_data):
+    # Preprocess the input data
+    input_data_scaled = scaler.transform(input_data)
+
+    # Convert to PyTorch tensor
+    input_tensor = torch.tensor(input_data_scaled, dtype=torch.float32)
+
+    # Perform prediction
+    with torch.no_grad():
+        predictions = model(input_tensor)
+    
+    return predictions.numpy()
+
+
+# Define the same model class used for training the cage stability network
+class NeuralNetwork(nn.Module):
+    def __init__(self):
+        super(NeuralNetwork, self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(10, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1)
+        )
+
+    def forward(self, x):
+        return self.linear_relu_stack(x)
+
 
 class MPPI():
     """ MMPI according to algorithm 2 in Williams et al., 2017
@@ -64,7 +100,7 @@ class MPPI():
         self.K = K  # N_SAMPLES
         self.T = T  # HORIZON
         self.dt = dt
-        self.num_vis_samples = 2 # nu. of rollouts
+        self.num_vis_samples = 8 # nu. of rollouts
 
         # dimensions of state and control
         self.nx = nx
@@ -91,8 +127,11 @@ class MPPI():
         self.rollout_state_x = None
         self.rollout_state_q = None
         self.rollout_cutdown_id = None
-        self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
-        self.scaler = joblib.load('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_scaler.pkl')
+        # self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
+        self.scaler = joblib.load('data/planar-gripper-dynamic-cage-dataset/scaler_standard.pkl')
+        self.model = NeuralNetwork()
+        self.model.load_state_dict(torch.load('data/planar-gripper-dynamic-cage-dataset/model_varyingGoal_cutoffLabels.pth'))
+        self.model.eval()
 
         self.cage = CagePlanner()
         self.control_space = self.cage.controlSpace()
@@ -123,7 +162,7 @@ class MPPI():
         # cache action cost
         self.action_cost = self.lambda_ * self.noise @ self.noise_sigma_inv
 
-    def _compute_total_cost(self, k, weight=1.0):
+    def _compute_total_cost(self, k, weight=.5):
         vis_rollouts = False
         if k < self.num_vis_samples: vis_rollouts = True
         state = self.state.clone()
@@ -153,14 +192,14 @@ class MPPI():
             # Cage cost TODO: the inference can be done in parallel once every K*T times
             # x_tran = self.scaler.transform([state])
             # cage_metric = self.model.predict(x_tran, verbose=0)
-            # c_cage = 1/(1+max(cage_metric[0,0],1e-4))
-            c_cage = 0.0
             state = torch.tensor(state)
+            c_cage = predict(self.model, self.scaler, state.reshape(-1,self.nx))[0,0] # 'numpy.ndarray'
+            c_cage = 1 / (.2 + max(c_cage,1e-3))
+
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
             decayed_weight = (t+1) / ((1+self.T)*self.T/2)
-            c_goal = weight*decayed_weight*c_dis_to_goal
-            self.cost_total[k] += (c_goal + c_cage)
-            # print('c_goal', c_goal)
+            c_goal = decayed_weight*c_dis_to_goal
+            self.cost_total[k] += (weight*c_goal + c_cage)
 
             # Add action perturbation cost
             # c_action = perturbed_action_t @ self.action_cost[k, t]
@@ -170,7 +209,7 @@ class MPPI():
             if vis_rollouts: 
                 state_q, _ = self.control_space.toBulletStateInput(state)
                 self.rollout_state_q[k,t+1,:] = torch.tensor(state_q) # save rollouts for visualization
-                self.rollout_state_x[k,t+1,:] = torch.tensor(state) # save rollouts for dataset generation
+                self.rollout_state_x[k,t+1,:] = state.clone().detach() # save rollouts for dataset generation
 
             # Break the for loop if current state is in goal
             if math.sqrt(c_dis_to_goal) < self.goal_radius:
@@ -226,7 +265,7 @@ def run_mppi(mppi, iter=10, episode=0):
     mppi._initialize_rollout_container()
     state_q, _ = mppi.control_space.toBulletStateInput(state)
     xhist[0] = torch.tensor(state_q)
-    gripperhist[0] = torch.tensor(get_gripper_corners(state_q[4:7], mppi.half_extents_gripper))
+    gripperhist[0] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
     goal = mppi.state_goal[:2].clone().detach()
 
     for t in range(iter):
@@ -244,10 +283,10 @@ def run_mppi(mppi, iter=10, episode=0):
         print('state q',state_q)
         print('action q',action_q)
         xhist[t+1] = torch.tensor(state_q)
-        gripperhist[t+1] = torch.tensor(get_gripper_corners(state_q[4:7], mppi.half_extents_gripper))
+        gripperhist[t+1] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
         uhist[t] = torch.tensor(action_q)
-        # if t % 1 == 0:
-        #     visualize_mppi(mppi, xhist, gripperhist, t)
+        if t % 1 == 0:
+            visualize_mppi(mppi, xhist, gripperhist, t)
 
         # Check if goal is reached
         curr = state[:2] # object position

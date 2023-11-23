@@ -16,7 +16,7 @@ import csv
 #                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
-    N_EPISODE = 500
+    N_EPISODE = 1
     N_ITER = 50 # max no. of iterations
     N_SAMPLE = 500 # 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
@@ -61,13 +61,17 @@ if __name__ == "__main__":
     # Randomize start and goal
     x_range = 10
     y_range = 10
+    randomize = False
     for e in range(N_EPISODE):
         data = []
-        params = [(x_range-2)*random.random() + 1, # xo_init
-                  (y_range-2)*random.random() + 1, # yo_init
-                  (x_range-2)*random.random() + 1, # xo_goal
-                  (y_range-2)*random.random() + 1, # yo_goal
-                ]
+        if randomize:
+            params = [(x_range-2)*random.random() + 1, # xo_init
+                    (y_range-2)*random.random() + 1, # yo_init
+                    (x_range-2)*random.random() + 1, # xo_goal
+                    (y_range-2)*random.random() + 1, # yo_goal
+                    ]
+        else:
+            params = [2,2,7,7]
         mppi_gym._reset_start_goal(params)
 
         rollouts_hist, cutdown_hist, cutdown_iter = run_mppi(mppi_gym, iter=N_ITER, episode=e)
