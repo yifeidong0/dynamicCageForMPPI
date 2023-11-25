@@ -99,7 +99,7 @@ class CagePlanner:
         self.mass_object = 1
         self.mass_gripper = 10
         self.moment_gripper = 1 # moment of inertia
-        self.half_extents_gripper = [.5, .1] # movement on x-z plane
+        self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.radius_object = 0.01
         self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
                        self.half_extents_gripper, self.radius_object]
@@ -190,7 +190,7 @@ class CagePlannerObjectiveFunction(ObjectiveFunction):
         self.massg = cage.params[1]
         self.momentg = cage.params[2]
         # self.model = load_model('data/planar-gripper-dynamic-cage-dataset/model_varyingGoal_cutoffLabels.h5')
-        self.scaler = joblib.load('data/planar-gripper-dynamic-cage-dataset/scaler_minmax.pkl')
+        # self.scaler = joblib.load('data/planar-gripper-dynamic-cage-dataset/scaler_minmax.pkl')
         
     def incremental(self,x,u):
         xnext = self.space.nextState(x,u)

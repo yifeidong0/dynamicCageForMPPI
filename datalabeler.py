@@ -19,8 +19,9 @@ import os
 # Overall, the dataset is not of high quality for now.
 
 vis = 1
-maxTime = 12
+maxTime = 10
 # filename = 'data/planar-gripper-dynamic-cage-dataset/data_points_O.csv'
+# filename = 'data/dataset-loaded-from-mppi-planner/filtered_states_from_mppi.csv'
 filename = 'states_from_mppi.csv'
 
 # Read from the CSV file
@@ -30,13 +31,12 @@ with open(filename, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        # rows.append([float(d) for d in row[1:]])
         rows.append([float(d) for d in row[4:]])
         ids.append(int(id))
 
 planner = 'ao-rrt'
 prname = 'CageEnergyLabeler'
-params = {'maxTime':maxTime,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05}
+params = {'maxTime':maxTime,'edgeCheckTolerance':.04}
 if 'maxTime' in params:
     del params['maxTime']
 

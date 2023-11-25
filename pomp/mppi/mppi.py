@@ -100,7 +100,9 @@ class MPPI():
         self.K = K  # N_SAMPLES
         self.T = T  # HORIZON
         self.dt = dt
-        self.num_vis_samples = 8 # nu. of rollouts
+        self.num_vis_samples = 1 # nu. of rollouts
+        self.theta_max = math.pi/2
+        self.theta_min = -math.pi/2
 
         # dimensions of state and control
         self.nx = nx
@@ -134,13 +136,29 @@ class MPPI():
         self.model.eval()
 
         self.cage = CagePlanner()
+        self.g = self.cage.gravity
+        self.time_range = self.cage.time_range
         self.control_space = self.cage.controlSpace()
         self.state_start = torch.tensor(self.cage.start_state)
         self.state_goal = torch.tensor(self.cage.goal_state)
         self.obj_goal_pos = self.state_goal[:2].clone().detach()
         self.goal_radius = self.cage.goal_radius
-        self.u_boundary = self.cage.u_boundary
-        self.c_space_boundary = self.cage.c_space_boundary
+        self.u_boundary = [[0.0, self.time_range],
+                           [-2, 2],
+                           [-self.g-3.0, -self.g+3.0],
+                           [-math.pi/4, math.pi/4]]
+        # self.c_space_boundary = self.cage.c_space_boundary
+        self.c_space_boundary = [[0.0, 10.0],
+                                [0.0, 10.0],
+                                [-10.0, 10.0],
+                                [-10.0, 10.0],
+                                [-20.0, 20.0],
+                                [-20.0, 20.0],
+                                [-math.pi/2, math.pi/2],
+                                [-15.0, 15.0],
+                                [-15.0, 15.0],
+                                [-math.pi/2, math.pi/2],
+                                ]
         self.radius_object = self.cage.radius_object
         self.half_extents_gripper = self.cage.half_extents_gripper
 
@@ -175,7 +193,7 @@ class MPPI():
 
             # Clamping each element in u to its respective boundary
             for i in range(len(perturbed_action_t)): 
-                perturbed_action_t[i] = torch.clamp(perturbed_action_t[i], min=self.u_boundary[0][i], max=self.u_boundary[1][i])
+                perturbed_action_t[i] = torch.clamp(perturbed_action_t[i], min=self.u_boundary[i][0], max=self.u_boundary[i][1])
             
             perturbed_action_t[0] = self.dt # fixed time step
 
@@ -183,30 +201,39 @@ class MPPI():
             state = self.control_space.nextState(state, perturbed_action_t)
             
             # State space boundary
-            # is_valid_state = is_within_boundaries(state, self.c_space_boundary)
-            # if not is_valid_state:
-            #     # print('is_valid_state NO')
-            #     self.cost_total[k] += 1e8
-            #     break
+            is_valid_state = is_within_boundaries(state, self.c_space_boundary)
+            if not is_valid_state:
+                # print('is_valid_state NO')
+                self.cost_total[k] += 1e3
+                if vis_rollouts and t+1 <= self.T: 
+                    state_q, _ = self.control_space.toBulletStateInput(state)
+                    stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+1)+1, -1)
+                    self.rollout_state_q[k,t+1:,:] = stacked_state_q # save rollouts for visualization
+                    self.rollout_cutdown_id[k] = t+1
+                break
 
             # Cage cost TODO: the inference can be done in parallel once every K*T times
             # x_tran = self.scaler.transform([state])
             # cage_metric = self.model.predict(x_tran, verbose=0)
             state = torch.tensor(state)
-            c_cage = predict(self.model, self.scaler, state.reshape(-1,self.nx))[0,0] # 'numpy.ndarray'
-            c_cage = 1 / (.2 + max(c_cage,1e-3))
+            # stability_cage = predict(self.model, self.scaler, state.reshape(-1,self.nx))[0,0] # 'numpy.ndarray'
+            # c_cage = 1 / (.2 + max(stability_cage,1e-3))
+            c_cage = 0.0
 
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
             decayed_weight = (t+1) / ((1+self.T)*self.T/2)
             c_goal = decayed_weight*c_dis_to_goal
-            self.cost_total[k] += (weight*c_goal + c_cage)
+            self.cost_total[k] += (weight*c_cage + c_goal)
 
             # Add action perturbation cost
             # c_action = perturbed_action_t @ self.action_cost[k, t]
             # self.cost_total[k] += c_action
             # print('c_action', c_action)
 
-            if vis_rollouts: 
+            if vis_rollouts:
+                # print('stability_cage', stability_cage)
+                # print('c_cage', c_cage)
+                # print('c_goal', c_goal)
                 state_q, _ = self.control_space.toBulletStateInput(state)
                 self.rollout_state_q[k,t+1,:] = torch.tensor(state_q) # save rollouts for visualization
                 self.rollout_state_x[k,t+1,:] = state.clone().detach() # save rollouts for dataset generation
@@ -216,7 +243,7 @@ class MPPI():
                 if vis_rollouts and t+2 <= self.T: 
                     stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+2)+1, -1)
                     self.rollout_state_q[k,t+2:,:] = stacked_state_q # save rollouts for visualization
-                    self.rollout_cutdown_id[k] = t
+                    self.rollout_cutdown_id[k] = t+2
                 break
 
         # this is the additional terminal cost (running state cost at T already accounted for)
@@ -273,27 +300,35 @@ def run_mppi(mppi, iter=10, episode=0):
         action = mppi.command(state)
         action[0] = mppi.dt # fixed time step
         state = mppi.control_space.nextState(state, action)
+
+        # Keep theta within [-pi/2,pi/2]
+        if state[6] > mppi.theta_max:
+            state[6] = (state[6] - mppi.theta_max) % math.pi + mppi.theta_min
+        elif state[6] < mppi.theta_min:
+            state[6] = mppi.theta_max - (mppi.theta_min - state[6]) % math.pi
         state = torch.tensor(state)
+
+        # stability_cage = predict(mppi.model, mppi.scaler, state.reshape(-1, mppi.nx))[0,0] # 'numpy.ndarray'
         # print('state x',state)
         # print('action x',action)
         # cost = 0. # TODO: print cost
 
         # Log and visualize
         state_q, action_q = mppi.control_space.toBulletStateInput(state, action)
-        print('state q',state_q)
-        print('action q',action_q)
+        # print('state q',state_q)
+        # print('action q',action_q)
         xhist[t+1] = torch.tensor(state_q)
         gripperhist[t+1] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
         uhist[t] = torch.tensor(action_q)
-        if t % 1 == 0:
-            visualize_mppi(mppi, xhist, gripperhist, t)
+        if t % 3 == 0:
+            visualize_mppi(mppi, xhist, gripperhist, t, epi=episode)
 
         # Check if goal is reached
         curr = state[:2] # object position
         dist_to_goal = torch.norm(goal-curr, p=2)
         print('dist_to_goal',dist_to_goal)
-        if dist_to_goal < mppi.goal_radius:
-            print('REACHED!')
+        if dist_to_goal < mppi.goal_radius or not is_within_boundaries(state, mppi.c_space_boundary):
+            print('REACHED or DISPATCHED!')
             reached_goal = True
             cutdown_iter = t
             visualize_mppi(mppi, xhist, gripperhist, t, reached_goal, epi=episode)
@@ -342,5 +377,5 @@ def visualize_mppi(mppi, xhist, gripperhist, t, reached_goal=False, epi=0):
     ax.set_aspect("equal")
     plt.tight_layout()
     # plt.show()
-    fig.savefig('mppi-plot-{}-{}.png'.format(t, epi), dpi=300)
+    fig.savefig('mppi-plot-{}-{}.png'.format(epi, t), dpi=100)
     plt.close()

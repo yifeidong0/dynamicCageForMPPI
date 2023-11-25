@@ -77,21 +77,24 @@ class AxisNotAlignedBox:
         glVertex2f(*p4)
         glEnd()
 
-    def contains(self, point):
-        """point: list[2]"""
+    def contains(self, point, tolerance=0.03):
+        """
+            point: list[2], the point-mass object.
+            tolerance: a margin that the object can violate the collision constraint with the gripper.
+        """
         # Translate the point to the box's coordinate system
         translated_x = point[0] - self.center_x
         translated_y = point[1] - self.center_y
 
         # Rotate the point in the opposite direction of the box
-        cos_theta = math.cos(-self.theta)
-        sin_theta = math.sin(-self.theta)
+        cos_theta = math.cos(self.theta)
+        sin_theta = math.sin(self.theta)
 
         rotated_x = translated_x * cos_theta - translated_y * sin_theta
         rotated_y = translated_x * sin_theta + translated_y * cos_theta
 
         # Check if the rotated point is within the axis-aligned box
-        return (abs(rotated_x) <= self.half_length) and (abs(rotated_y) <= self.half_height)
+        return (abs(rotated_x) <= self.half_length-tolerance) and (abs(rotated_y) <= self.half_height-tolerance)
 
 class Geometric2DCSpace(BoxConfigurationSpace):
     def __init__(self):

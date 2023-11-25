@@ -20,6 +20,7 @@ class EpsilonEdgeChecker(EdgeChecker):
     def feasible(self,interpolator,control_space=False):
         l = interpolator.length()
         k = int(math.ceil(l / self.resolution))
+        # print('edge checker', k, self.resolution)
         if not self.space.feasible(interpolator.start(), control_space) or not self.space.feasible(interpolator.end(), control_space):
             return False
         for i in range(k):
