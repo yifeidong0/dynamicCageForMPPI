@@ -16,7 +16,7 @@ import csv
 #                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
-    N_EPISODE = 1000
+    N_EPISODE = 1
     N_ITER = 30 # max no. of iterations
     N_SAMPLE = 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # Randomize start and goal
     x_range = 10
     y_range = 10
-    randomize = 1
+    randomize = 0
     for e in range(N_EPISODE):
         data = []
         if randomize:
