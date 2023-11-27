@@ -111,11 +111,6 @@ class MPPI():
         self.nu = nu
         self.lambda_ = lambda_
 
-        # # handle 1D edge case
-        # if self.nu == 1:
-        #     noise_mu = noise_mu.view(-1)
-        #     noise_sigma = noise_sigma.view(-1, 1)
-
         self.noise_mu = noise_mu.to(self.d)
         self.noise_sigma = noise_sigma.to(self.d)
         self.noise_sigma_inv = torch.inverse(self.noise_sigma)
@@ -132,9 +127,9 @@ class MPPI():
         self.rollout_state_q = None
         self.rollout_cutdown_id = None
         # self.model = load_model('/home/yif/Documents/KTH/research/dynamicCaging/cage_metric_model.h5')
-        self.scaler = joblib.load('data/3kdataset-from-mppi/scaler_minmax.pkl')
+        self.scaler = joblib.load('data/9kdataset-from-mppi/scaler_minmax.pkl')
         self.model = NeuralNetwork()
-        self.model.load_state_dict(torch.load('data/3kdataset-from-mppi/model_varyingGoal_cutoffLabels.pth'))
+        self.model.load_state_dict(torch.load('data/9kdataset-from-mppi/model_9k_1000epoch.pth'))
         self.model.eval()
 
         self.cage = CagePlanner()
@@ -220,8 +215,6 @@ class MPPI():
             stability_cage = predict(self.model, self.scaler, state.reshape(-1,self.nx))[0,0] # 'numpy.ndarray'
             c_cage = increased_weight / (.1 + max(stability_cage, 1e-3))
             # c_cage = 0.0
-            # print('t, stability, c_cage', t, stability_cage, c_cage)
-            # print('')
 
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
             c_goal = increased_weight * c_dis_to_goal
@@ -230,7 +223,6 @@ class MPPI():
             # Add action perturbation cost
             # c_action = perturbed_action_t @ self.action_cost[k, t]
             # self.cost_total[k] += c_action
-            # print('c_action', c_action)
 
             if vis_rollouts:
                 # print('c_cage', c_cage)
