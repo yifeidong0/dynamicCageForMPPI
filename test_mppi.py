@@ -18,7 +18,7 @@ import csv
 if __name__ == "__main__":
     N_EPISODE = 1
     N_ITER = 30 # max no. of iterations
-    N_SAMPLE = 1000  # K
+    N_SAMPLE = 100  # K
     N_HORIZON = 15  # T, MPPI horizon
     nx = 10
     nu = 4
