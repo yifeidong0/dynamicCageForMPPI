@@ -18,11 +18,12 @@ import csv
 if __name__ == "__main__":
     N_EPISODE = 1
     N_ITER = 30 # max no. of iterations
-    N_SAMPLE = 100  # K
+    N_SAMPLE = 300 # 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
     nx = 10
     nu = 4
     dt = 0.15
+    num_vis_samples = 1
     lambda_ = 1.
     gravity = 9.81
     d = "cuda"
@@ -48,8 +49,17 @@ if __name__ == "__main__":
         # cost = angle_normalize(theta) ** 2 + 0.1 * theta_dt ** 2 + 0.001 * action ** 2
         return cost
 
-    mppi_gym = MPPI(nx, nu, K=N_SAMPLE, T=N_HORIZON, running_cost=running_cost, lambda_=lambda_,
-                    noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init, dt=dt, device=d)
+    def terminal_state_cost(state, state_goal, mppi, weight=3.):
+        '''state and state_goal: torch.tensor()'''
+        cost_goal = weight * (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
+        stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
+        cost_cage = 2.*weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
+        # print('TERM cost_goal',cost_goal)
+        # print('TERM cost_cage',cost_cage)
+        return cost_goal + cost_cage
+    
+    mppi_gym = MPPI(nx, nu, K=N_SAMPLE, T=N_HORIZON, running_cost=running_cost, terminal_state_cost=terminal_state_cost, lambda_=lambda_,
+                    num_vis_samples=num_vis_samples, noise_mu=noise_mu, noise_sigma=noise_sigma, u_init=u_init, dt=dt, device=d)
 
     # Save data to a CSV file with headers
     filename = "states_from_mppi.csv"

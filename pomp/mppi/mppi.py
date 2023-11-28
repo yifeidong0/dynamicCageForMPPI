@@ -10,6 +10,7 @@ import math
 import matplotlib.pyplot as plt
 import joblib
 import torch.nn as nn
+import time 
 # from tensorflow.keras.models import load_model
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,6 @@ def predict(model, input_data, scale_, min_):
     """
     # Preprocess the input data
     # input_data_scaled = scaler.transform(input_data)
-    print("!!!input_data", input_data.shape, input_data[0])
     input_data_scaled = input_data * scale_ + min_
     
     # # Convert to PyTorch tensor
@@ -69,7 +69,6 @@ def predict(model, input_data, scale_, min_):
     with torch.no_grad():
         predictions = model(input_data_scaled)
     
-    print("!!!predictions", predictions.shape, predictions[0])
     return predictions
 
 
@@ -104,12 +103,13 @@ class MPPI():
                  noise_mu=torch.tensor(0., dtype=torch.double),
                  noise_sigma=torch.tensor(1., dtype=torch.double),
                  u_init=torch.tensor(1., dtype=torch.double),
+                 num_vis_samples=5,
                  dt=0.5):
         self.d = device
         self.K = K  # N_SAMPLES
         self.T = T  # HORIZON
         self.dt = dt
-        self.num_vis_samples = 1 # nu. of rollouts
+        self.num_vis_samples = num_vis_samples # nu. of rollouts
         self.theta_max = math.pi/2
         self.theta_min = -math.pi/2
 
@@ -139,9 +139,9 @@ class MPPI():
         self.g = self.cage.gravity
         self.time_range = self.cage.time_range
         self.control_space = self.cage.controlSpace()
-        self.state_start = torch.tensor(self.cage.start_state)
-        self.state_goal = torch.tensor(self.cage.goal_state)
-        self.obj_goal_pos = self.state_goal[:2].clone().detach()
+        self.state_start = torch.tensor(self.cage.start_state, device=self.d)
+        self.state_goal = torch.tensor(self.cage.goal_state, device=self.d)
+        self.obj_goal_pos = self.state_goal[:2].clone().detach().to(self.d)
         self.goal_radius = self.cage.goal_radius
         self.u_boundary = [[0.0, self.time_range],
                            [-2, 2],
@@ -166,19 +166,18 @@ class MPPI():
         scaler = joblib.load('data/9kdataset-from-mppi/scaler_minmax.pkl')
 
         # Convert the scaler parameters to PyTorch tensors
-        print('!!scaler', scaler.scale_, scaler.min_)
-        self.scaler_scale = torch.tensor(scaler.scale_, dtype=torch.float32).cuda()
-        self.scaler_min = torch.tensor(scaler.min_, dtype=torch.float32).cuda()
+        self.scaler_scale = torch.tensor(scaler.scale_, dtype=torch.float32, device=self.d)
+        self.scaler_min = torch.tensor(scaler.min_, dtype=torch.float32, device=self.d)
 
         self.model = NeuralNetwork()
         self.model.load_state_dict(torch.load('data/9kdataset-from-mppi/model_9k_1000epoch.pth'))
-        self.model.cuda()
+        self.model.to(self.d)
         self.model.eval()
 
     def _reset_start_goal(self, params):
         xo_init, yo_init, xo_goal, yo_goal = params
-        self.state_start = torch.tensor([xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0])
-        self.state_goal = torch.tensor([xo_goal,yo_goal,0,0,0,0,0,0,0,0])
+        self.state_start = torch.tensor([xo_init,yo_init,0,0,xo_init,yo_init+self.radius_object+self.half_extents_gripper[1],0,0,0,0], device=self.d)
+        self.state_goal = torch.tensor([xo_goal,yo_goal,0,0,0,0,0,0,0,0], device=self.d)
         self.obj_goal_pos = self.state_goal[:2].clone().detach()
 
     def _initialize_rollout_container(self):
@@ -212,8 +211,7 @@ class MPPI():
             perturbed_action_t[0] = self.dt # fixed time step
 
             # Rollout
-            state = self.control_space.nextState(state, perturbed_action_t)
-            
+            state = self.control_space.nextState(state, perturbed_action_t) # TODO: dynamics take most of the runtime
             # State space boundary
             is_valid_state = is_within_boundaries(state, self.c_space_boundary)
             if not is_valid_state:
@@ -224,23 +222,22 @@ class MPPI():
                     stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+1)+1, -1)
                     self.rollout_state_q[k,t+1:,:] = stacked_state_q # save rollouts for visualization
                 self.rollout_cutdown_id[k] = t+1
+                state = torch.tensor(state, device=self.d)
                 break
 
             # Cage cost TODO: the inference can be done in parallel once every K*T times
             increased_weight = (t+1) / ((1+self.T)*self.T/2)
-            state = torch.tensor(state)
-            # stability_cage = predict(self.model, self.scaler, state.reshape(-1,self.nx))[0,0] # 'numpy.ndarray'
-            # c_cage = increased_weight / (.1 + max(stability_cage, 1e-3))
+            state = torch.tensor(state, device=self.d)
 
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
             c_goal = increased_weight * c_dis_to_goal
-            self.cost_total[k] += (c_goal)
+            self.cost_total[k] += c_goal
 
             # Add action perturbation cost
             # c_action = perturbed_action_t @ self.action_cost[k, t]
             # self.cost_total[k] += c_action
 
-            self.rollout_state_x[k,t+1,:] = state.clone().detach() # save rollouts for dataset generation
+            self.rollout_state_x[k,t+1,:] = state.clone().detach().to(self.d) # save rollouts for dataset generation
             if vis_rollouts:
                 # print('t', t)
                 # print('stability_cage', stability_cage)
@@ -259,19 +256,20 @@ class MPPI():
 
         # this is the additional terminal cost (running state cost at T already accounted for)
         if self.terminal_state_cost:
-            self.cost_total[k] += self.terminal_state_cost(state)
+            self.cost_total[k] += self.terminal_state_cost(state, self.state_goal, self)
 
-    def _add_cage_cost(self, cage_weight=torch.tensor(1.0, dtype=torch.float32).cuda()):
+    def _add_cage_cost(self, cage_weight=1.):
         # Inference in batches
         # Create a mask to select the columns based on rollout_cutdown_id
         mask = torch.arange(self.rollout_state_x.shape[1], device=self.d).expand(self.rollout_state_x.shape[0], -1) < self.rollout_cutdown_id.view(-1, 1)
 
         # Apply the mask to state and reshape the result
-        stacked_states = self.rollout_state_x[mask].reshape(-1, self.rollout_state_x.shape[-1]) # (-1,self.nx), gpu
+        stacked_states = self.rollout_state_x[mask].reshape(-1, self.rollout_state_x.shape[-1]) # torch.Size([-1,self.nx]), gpu
 
         # Make a prediction
-        stability_cage = predict(self.model, stacked_states, self.scaler_scale, self.scaler_min) # torch.tensor, gpu
-        cost_cage = cage_weight / (.1 + max(stability_cage, 1e-3))
+        stability_cage = predict(self.model, stacked_states, self.scaler_scale, self.scaler_min)
+        print('stability_cage', stability_cage[:int(self.rollout_cutdown_id[0].item())])
+        cost_cage = cage_weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
 
         # Calculate cumulative sum of rollout_cutdown_id
         cumulative_rollout = torch.cumsum(self.rollout_cutdown_id, dim=0)
@@ -283,12 +281,10 @@ class MPPI():
         range_tensor = torch.arange(cumulative_rollout[-1], device=self.d)
 
         # Broadcast and create a mask for grouping
-        group_mask = (range_tensor >= start_indices[:, None]) & (range_tensor < cumulative_rollout[:, None])
+        group_mask = (range_tensor >= start_indices[:, None]) & (range_tensor < cumulative_rollout[:, None]) # torch.Size([nsample,ndata])
 
         # Sum the elements of cost_cage for each group
-        cost_cage_total = torch.sum(cost_cage[None, :] * group_mask, dim=1) # (self.K,)
-        print('cost_cage',cost_cage[:10])
-        print('cost_cage_total',cost_cage_total[:10])
+        cost_cage_total = torch.sum(cost_cage.reshape(1,-1) * group_mask, dim=1) # (self.K,)
         self.cost_total = self.cost_total + cost_cage_total # (self.K,)
 
     def _ensure_non_zero(self, cost, beta, factor):
@@ -303,7 +299,7 @@ class MPPI():
         self._start_action_consideration()
         # TODO dynamics not easily parallelizable - refer to this https://openreview.net/pdf?id=fvfZKL1hCx for robot simulation
         for k in range(self.K):
-            self._compute_total_cost(k) # rollout dynamics and cost
+            self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
         # Add penalization against unstable configurations
         self._add_cage_cost()        
@@ -337,8 +333,7 @@ def run_mppi(mppi, iter=10, episode=0):
     state_q, _ = mppi.control_space.toBulletStateInput(state)
     xhist[0] = torch.tensor(state_q)
     gripperhist[0] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
-    goal = mppi.state_goal[:2].clone().detach()
-
+    goal = mppi.state_goal[:2].clone().detach().to(mppi.d)
     for t in range(iter):
         print('----------iter----------', t)
         action = mppi.command(state)
@@ -350,19 +345,17 @@ def run_mppi(mppi, iter=10, episode=0):
             state[6] = (state[6] - mppi.theta_max) % math.pi + mppi.theta_min
         elif state[6] < mppi.theta_min:
             state[6] = mppi.theta_max - (mppi.theta_min - state[6]) % math.pi
-        state = torch.tensor(state)
+        state = torch.tensor(state, device=mppi.d)
 
-        stability_cage = predict(mppi.model, mppi.scaler, state.reshape(-1, mppi.nx))[0,0] # 'numpy.ndarray'
+        stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
         print('ITER stability_cage', stability_cage)
         # cost = 0. # TODO: print cost
 
         # Log and visualize
         state_q, action_q = mppi.control_space.toBulletStateInput(state, action)
-        # print('state q',state_q)
-        # print('action q',action_q)
-        xhist[t+1] = torch.tensor(state_q)
+        xhist[t+1] = torch.tensor(state_q, device=mppi.d)
         gripperhist[t+1] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
-        uhist[t] = torch.tensor(action_q)
+        uhist[t] = torch.tensor(action_q, device=mppi.d)
         if t % 1 == 0:
             visualize_mppi(mppi, xhist, gripperhist, t, epi=episode)
 
@@ -380,7 +373,7 @@ def run_mppi(mppi, iter=10, episode=0):
 
         # Save rollouts and clean up the container
         rollouts_hist[t,:,:,:] = mppi.rollout_state_x[:mppi.num_vis_samples,:,:]
-        cutdown_hist[t,:] = mppi.rollout_cutdown_id
+        cutdown_hist[t,:] = mppi.rollout_cutdown_id[:mppi.num_vis_samples]
         mppi._initialize_rollout_container()
 
     return rollouts_hist, cutdown_hist, cutdown_iter
@@ -401,7 +394,7 @@ def visualize_mppi(mppi, xhist, gripperhist, t, reached_goal=False, epi=0):
         ax.plot(mppi.rollout_state_q[:,:,0].T.cpu(), mppi.rollout_state_q[:,:,1].T.cpu(), 'k', alpha=0.3, zorder=3, linewidth=1) # rollout obj states
         ax.plot(mppi.rollout_state_q[0,:,0].cpu(), mppi.rollout_state_q[0,:,1].cpu(), 'k', alpha=0.02, label="rollouts")
 
-    ax.plot([starto[0]], [10-starto[1]], 'ro', markersize=5, markerfacecolor='none', label="init obj")
+    ax.plot([starto[0].cpu()], [10-starto[1].cpu()], 'ro', markersize=5, markerfacecolor='none', label="init obj")
     ax.plot([xhist[t, 0].cpu()], [xhist[t, 1].cpu()], 'ko', markersize=3, markerfacecolor='none', label="curr obj", zorder=5)
     c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=1, fill=False, label="goal", zorder=7)
     ax.add_patch(c1)
