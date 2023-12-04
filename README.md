@@ -1,9 +1,13 @@
-# pyOptimalMotionPlanning
-Optimal Motion Planning package in Python
+# Dynamic Cage for MPPI
+MPPI manipulation planning with a cage-based instability cost.
 
-v0.2
+Usage:
 
-Kris Hauser
+Run test_mppi.py first to generate sample features in a dataset by rolling out MPPI given random starts and goals. 
+
+Then run cagelabeler.py to label each sample by running AO-RRT. Set vis to 0, your desired runtime (sec).
+
+<!-- Kris Hauser
 
 - v0.1: released 7/27/2015
 - v0.2: released 12/24/2019.  Added Python 3 support, some experimental numerical optimization libraries.
@@ -64,6 +68,6 @@ Once data has been saved to disk, you can run:
 to generate a csv file summarizing all of the results for a single
 problem.  If you have matplotlib, you can then view the results using
 
-   "python viewsummary [file]"
+   "python viewsummary [file]" -->
 
 
