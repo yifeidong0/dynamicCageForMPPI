@@ -44,6 +44,7 @@ all_problems = {'Kink':geometric.kinkTest(),
                 'Dubins':dubins.dubinsCarTest(),
                 'Dubins2':dubins.dubinsTest2(),
                 'Flappy':flappy.flappyTest(),
+                'BallBalance':ballbalance.ballBalanceTest(),
                 'Cage':cage.cageTest(),
                 'CageMovingObstacle':cagemovingobstacle.cageMOTest(),
                 'CagePlanner':cageplanner.cagePlannerTest(),
@@ -62,7 +63,8 @@ customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
                     # 'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.01,'selectionRadius':.05,'witnessRadius':.05},
                     'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
                     'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
-                    'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2}
+                    'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2},
+                    'BallBalance':{'maxTime':20,'edgeCheckTolerance':.1},
                     }
 
 def parseParameters(problem,planner):
