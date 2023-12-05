@@ -1,4 +1,4 @@
-# Dynamic Cage for MPPI
+# Dynamic Cage as Stability Measure
 MPPI manipulation planning with a cage-based instability cost.
 
 Requirements:

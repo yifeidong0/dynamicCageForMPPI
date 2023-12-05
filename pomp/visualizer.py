@@ -76,6 +76,8 @@ class PlanVisualizationProgram(GLProgram):
     def keyboardfunc(self,key,x,y):
         key = key.decode("utf-8") 
         print("Key",key,"pressed at",x,y)
+        # print('self.height',self.height) # 640
+        # print('self.width',self.width) # 640
         if key==' ':
             print("Planning 1...")
             self.planner.planMore(1)
@@ -128,7 +130,8 @@ class PlanVisualizationProgram(GLProgram):
     def display(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0,1,1,0,-1,1)
+        # glOrtho(0,1,1,0,-1,1)
+        glOrtho(0,1,0,1,-1,1) # origin: bottom left
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glEnable(GL_POINT_SMOOTH)
