@@ -359,7 +359,8 @@ class RRT(TreePlanner):
                 xrand = self.goalSampler.sample()
             else:
                 xrand = self.configurationSampler.sample()
-            if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
+            # if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
+            if not self.cspace.feasible(xrand): # MultiConfigurationSpace.feasible
                 return None
         else:
             xrand = self.nextSampleList.pop(0)
@@ -378,14 +379,17 @@ class RRT(TreePlanner):
             self.stats.count('controlSelectionFailure').add(1)
             return None
         edge = self.controlSpace.interpolator(nnear.x,u)
-        if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
-            if self.dynamicDomain:
-                if hasattr(nnear,'ddRadius'):
-                    nnear.ddRadius *= (1.0-self.dynamicDomainGrowthParameter)
-                else:
-                    nnear.ddRadius = self.dynamicDomainInitialRadius
-            return None
-        #feasible edge, add it
+
+        # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.
+        # if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
+        #     if self.dynamicDomain:
+        #         if hasattr(nnear,'ddRadius'):
+        #             nnear.ddRadius *= (1.0-self.dynamicDomainGrowthParameter)
+        #         else:
+        #             nnear.ddRadius = self.dynamicDomainInitialRadius
+        #     return None
+
+        # feasible edge, add it
         if self.dynamicDomain:
             if hasattr(nnear,'ddRadius'):
                 nnear.ddRadius *= (1.0+self.dynamicDomainGrowthParameter)
@@ -417,7 +421,7 @@ class RRT(TreePlanner):
             newchildren = []
             delchildren = []
             for c in n.children:
-                if self.prune(c) or not self.cspace.feasible(c.x, self.controlSpace.baseSpace):
+                if self.prune(c) or not self.cspace.feasible(c.x):
                     delchildren.append(c)
                 else:
                     newchildren.append(c)

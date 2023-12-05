@@ -1,54 +1,42 @@
-import torch
-import math
-import matplotlib.pyplot as plt
+import pybullet as p
+import pybullet_data
+import time
 
-shape = (2,3,4)
-rollout_cutdown_id = torch.tensor([2,3])
-cage_weight=torch.tensor(1.0, dtype=torch.float32)
-rollout_cutdown_id += torch.tensor(2)
-print(1 / (.1+torch.max(rollout_cutdown_id, torch.tensor(4.5))))
-# print(cage_weight / (.1 + max(rollout_cutdown_id, 1e-3)))
+# Initialize the PyBullet physics simulation
+p.connect(p.GUI)
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-# state = torch.arange(shape[0]*shape[1]*shape[2]).view(shape)
-# mask = torch.arange(shape[1]).expand(shape[0], -1) < rollout_cutdown_id.view(-1, 1)
-# result_tensor = state[mask].reshape(-1, shape[-1])
-# print('result_tensor',result_tensor)
-# torch.arange(result_tensor.shape[0])
+# Set the gravity
+p.setGravity(0, 0, -9.81)  # Earth's gravity (9.81 m/s^2 in the downward direction)
 
-# # Create a list to store the summed predictions
-# summed_predictions = []
-# stability_cage = torch.arange(result_tensor.shape[0])
-# print('result_tensor',stability_cage)
+# Create a box
+box_start_pos = [0, 0, 0.5]  # Initial position of the box (x, y, z)
+box_half_extents = [0.5, 0.5, 0.5]  # Half-extents of the box (x, y, z)
+objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=box_half_extents)
+box_id = p.createMultiBody( 1, 
+                            objectId, 
+                            -1, 
+                            box_start_pos)
+# box_id = p.createBox(
+#     halfExtents=box_half_extents,
+#     basePosition=box_start_pos,
+#     baseMass=1.0,
+#     collisionShapeType=p.GEOM_BOX
+# )
 
-# # # Split stability_cage into groups based on state.shape[0]
-# # start_idx = 0
-# # for k in range(state.shape[0]):
-# #     group_size = rollout_cutdown_id[k]  # The size of the group for the current state[k]
-# #     end_idx = start_idx + group_size
-# #     group_predictions = stability_cage[start_idx:end_idx]  # Extract predictions for the group
-# #     summed_predictions.append(torch.sum(group_predictions))  # Sum the predictions
-# #     start_idx = end_idx  # Move the start index for the next group
+# Set the initial velocity of the box (upward)
+initial_velocity = [-1, 0, 0.0]  # 2.0 m/s upward velocity
+p.resetBaseVelocity(box_id, linearVelocity=initial_velocity)
 
-# # # Convert the list of summed predictions to a tensor
-# # cost_total = torch.stack(summed_predictions)
-# # print('cost_total',cost_total)
+# Simulation loop
+for _ in range(1000):
+    p.applyExternalForce(box_id, -1, 
+                        [0, 0, 9.81], # gravity compensated 
+                        [0, 0, 0], 
+                        p.LINK_FRAME)
 
-# # Calculate cumulative sum of rollout_cutdown_id
-# cumulative_rollout = torch.cumsum(rollout_cutdown_id, dim=0)
-# print('cumulative_rollout', cumulative_rollout)
+    p.stepSimulation()
+    time.sleep(10/240)
 
-# # Generate start indices of each group
-# start_indices = cumulative_rollout - rollout_cutdown_id
-# print('start_indices', start_indices)
-
-# # Create a range tensor for comparison
-# range_tensor = torch.arange(cumulative_rollout[-1])
-# print('range_tensor', range_tensor)
-
-# # Broadcast and create a mask for grouping
-# group_mask = (range_tensor >= start_indices[:, None]) & (range_tensor < cumulative_rollout[:, None])
-# print('group_mask', group_mask)
-
-# # Sum the elements of stability_cage for each group
-# cost_total = torch.sum(stability_cage[None, :] * group_mask, dim=1)
-# print('cost_total', cost_total)
+# Close the PyBullet simulation
+p.disconnect()

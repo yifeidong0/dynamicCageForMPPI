@@ -212,121 +212,121 @@ class PlanVisualizationProgram(GLProgram):
             glDisable(GL_BLEND)
 
     def draw_path_animation(self):
-        if hasattr(self.problem.controlSpace, "is_moving_obstacle"):
-            if self.path is not None:
-                if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
-                    self.display_new_path = True
-                    self.prev_path_x = self.path[0]
+        # if hasattr(self.problem.controlSpace, "is_moving_obstacle"):
+        #     if self.path is not None:
+        #         if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
+        #             self.display_new_path = True
+        #             self.prev_path_x = self.path[0]
             
-            if self.display_new_path:
-                self.problem.visualizer.drawRobotGL(self.problem.start)
-                self.problem.visualizer.drawGoalGL(self.problem.goal)
+        #     if self.display_new_path:
+        #         self.problem.visualizer.drawRobotGL(self.problem.start)
+        #         self.problem.visualizer.drawGoalGL(self.problem.goal)
 
-                if self.path and len(self.path[0]) > 1:
-                    for k in range(len(self.path[0]) - 1):
-                        if k >= len(self.path[0])-1:
-                            break
-                        x1, u = self.path[0][k], self.path[1][k]
+        #         if self.path and len(self.path[0]) > 1:
+        #             for k in range(len(self.path[0]) - 1):
+        #                 if k >= len(self.path[0])-1:
+        #                     break
+        #                 x1, u = self.path[0][k], self.path[1][k]
+        #                 x2 = self.path[0][k+1]
+
+        #                 # Clear the previous obstacle by drawing a background color (e.g., white)
+        #                 glColor3f(1, 1, 1)
+        #                 self.problem.visualizer.drawObstaclesGL(x1[4:6])
+
+        #                 # Draw the new obstacle at q2
+        #                 glColor3f(0.2,0.2,0.2)
+        #                 self.problem.visualizer.drawObstaclesGL(x2[4:6])
+
+        #                 # Draw the graph again
+        #                 self.draw_graph()
+
+        #                 for m in range(k+1):
+        #                     x1, u = self.path[0][m], self.path[1][m]
+        #                     x2 = self.path[0][k+1]
+        #                     # Interpolate and draw all previous line segments
+        #                     glColor3f(0, 0.75, 0)
+        #                     glLineWidth(7.0)
+        #                     interpolator = self.problem.space.interpolator(x1, u)
+        #                     self.problem.visualizer.drawInterpolatorGL(interpolator)
+        #                     # Draw the node x2
+        #                     glLineWidth(1)
+        #                     self.problem.visualizer.drawRobotGL(x2)
+
+        #                 # Process events to update the display
+        #                 glutSwapBuffers()
+        #                 glutMainLoopEvent()
+
+        #                 # Pause and save screen
+        #                 if self.display_new_path:
+        #                     time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+        #                 if self.save_movie:
+        #                     self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+        #                     self.movie_frame += 1
+
+        #     else: # draw static path without animation if no path update
+        #         self.draw_path_static()
+
+        #     self.display_new_path = False
+
+        # if hasattr(self.problem.controlSpace, "is_cage_planner") or hasattr(self.problem.controlSpace, "is_energy_labeler"):
+        if self.path is not None:
+            if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
+                self.display_new_path = True
+                self.prev_path_x = self.path[0]
+        
+        if self.display_new_path:
+            self.problem.visualizer.drawRobotGL(self.problem.start)
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
+
+            if self.path and len(self.path[0]) > 1:
+                for k in range(len(self.path[0]) - 1):
+                    if k >= len(self.path[0])-1:
+                        break
+                    x1, u = self.path[0][k], self.path[1][k]
+                    x2 = self.path[0][k+1]
+
+                    # Clear the previous obstacle by drawing a background color (e.g., white)
+                    glColor3f(1, 1, 1)
+                    self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
+
+                    # Draw the new obstacle at x2
+                    glColor3f(0.2,0.2,0.2)
+                    self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
+
+                    # Draw the graph again
+                    self.draw_graph()
+
+                    for m in range(k+1):
+                        x1, u = self.path[0][m], self.path[1][m]
                         x2 = self.path[0][k+1]
+                        # Interpolate and draw all previous line segments
+                        glColor3f(0, 0.75, 0)
+                        glLineWidth(7.0)
+                        interpolator = self.problem.space.interpolator(x1, u)
+                        self.problem.visualizer.drawInterpolatorGL(interpolator)
+                        # Draw the node x2
+                        glLineWidth(1)
+                        self.problem.visualizer.drawRobotGL(x2)
 
-                        # Clear the previous obstacle by drawing a background color (e.g., white)
-                        glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawObstaclesGL(x1[4:6])
+                    # Process events to update the display
+                    glutSwapBuffers()
+                    glutMainLoopEvent()
 
-                        # Draw the new obstacle at q2
-                        glColor3f(0.2,0.2,0.2)
-                        self.problem.visualizer.drawObstaclesGL(x2[4:6])
+                    # Pause and save screen
+                    if self.display_new_path:
+                        time.sleep(0.03*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+                    if self.save_movie:
+                        self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                        self.movie_frame += 1
+                    time.sleep(0.5)
 
-                        # Draw the graph again
-                        self.draw_graph()
-
-                        for m in range(k+1):
-                            x1, u = self.path[0][m], self.path[1][m]
-                            x2 = self.path[0][k+1]
-                            # Interpolate and draw all previous line segments
-                            glColor3f(0, 0.75, 0)
-                            glLineWidth(7.0)
-                            interpolator = self.problem.space.interpolator(x1, u)
-                            self.problem.visualizer.drawInterpolatorGL(interpolator)
-                            # Draw the node x2
-                            glLineWidth(1)
-                            self.problem.visualizer.drawRobotGL(x2)
-
-                        # Process events to update the display
-                        glutSwapBuffers()
-                        glutMainLoopEvent()
-
-                        # Pause and save screen
-                        if self.display_new_path:
-                            time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
-                        if self.save_movie:
-                            self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
-                            self.movie_frame += 1
-
-            else: # draw static path without animation if no path update
-                self.draw_path_static()
-
-            self.display_new_path = False
-
-        if hasattr(self.problem.controlSpace, "is_cage_planner") or hasattr(self.problem.controlSpace, "is_energy_labeler"):
-            if self.path is not None:
-                if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
-                    self.display_new_path = True
-                    self.prev_path_x = self.path[0]
-            
-            if self.display_new_path:
-                self.problem.visualizer.drawRobotGL(self.problem.start)
-                self.problem.visualizer.drawGoalGL(self.problem.goal)
-
-                if self.path and len(self.path[0]) > 1:
-                    for k in range(len(self.path[0]) - 1):
-                        if k >= len(self.path[0])-1:
-                            break
-                        x1, u = self.path[0][k], self.path[1][k]
-                        x2 = self.path[0][k+1]
-
-                        # Clear the previous obstacle by drawing a background color (e.g., white)
-                        glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
-
-                        # Draw the new obstacle at x2
-                        glColor3f(0.2,0.2,0.2)
-                        self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
-
-                        # Draw the graph again
-                        self.draw_graph()
-
-                        for m in range(k+1):
-                            x1, u = self.path[0][m], self.path[1][m]
-                            x2 = self.path[0][k+1]
-                            # Interpolate and draw all previous line segments
-                            glColor3f(0, 0.75, 0)
-                            glLineWidth(7.0)
-                            interpolator = self.problem.space.interpolator(x1, u)
-                            self.problem.visualizer.drawInterpolatorGL(interpolator)
-                            # Draw the node x2
-                            glLineWidth(1)
-                            self.problem.visualizer.drawRobotGL(x2)
-
-                        # Process events to update the display
-                        glutSwapBuffers()
-                        glutMainLoopEvent()
-
-                        # Pause and save screen
-                        if self.display_new_path:
-                            time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
-                        if self.save_movie:
-                            self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
-                            self.movie_frame += 1
-                        time.sleep(0.5)
-
-            else: # draw static path without animation if no path update
-                self.draw_path_static()
-
-            self.display_new_path = False
-
-        else: # cases other than cageMO
+        else: # draw static path without animation if no path update
             self.draw_path_static()
+
+        self.display_new_path = False
+
+        # else: # cases other than cageMO
+        #     self.draw_path_static()
 
     def draw_path_static(self):
         if self.path:

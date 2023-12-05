@@ -47,10 +47,12 @@ all_problems = {'Kink':geometric.kinkTest(),
                 'BallBalance':ballbalance.ballBalanceTest(),
                 'Cage':cage.cageTest(),
                 'CageMovingObstacle':cagemovingobstacle.cageMOTest(),
+                'CageEnergyLabeler':cageenergylabeler.cageELTest(),
                 'CagePlanner':cageplanner.cagePlannerTest(),
                 'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
                 'Pendulum':pendulum.pendulumTest(),
-                'LQR':lqr.lqrTest()}
+                'LQR':lqr.lqrTest()
+                }
 
 defaultParameters = {'maxTime':30}
 customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
@@ -60,7 +62,7 @@ customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
                     'Cage':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
                     'CageMovingObstacle':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
                     'CagePlanner':{'maxTime':120,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05},
-                    # 'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.01,'selectionRadius':.05,'witnessRadius':.05},
+                    'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
                     'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
                     'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
                     'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2},
