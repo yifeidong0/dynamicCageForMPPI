@@ -378,7 +378,9 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
+        print("!!!interpolator")
         edge = self.controlSpace.interpolator(nnear.x,u)
+        print("!!!interpolator")
 
         # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.
         # if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):

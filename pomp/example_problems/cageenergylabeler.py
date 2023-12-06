@@ -26,31 +26,38 @@ class CageELControlSpace(ControlSpace):
     def nextState(self, x, u):
         return self.eval(x, u, 1.0)
     
-    def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi):
+    def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
         # x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
-        # print('u', u)
+        print('==x', x)
+        print('==u', u)
+        print('==amount', amount)
         t, ax, ay = u # control space
         tc = t * amount
         mu = [tc, ax, ay]
+        print('==mu', mu)
         # net_acceler_x = thrust_x
         # net_acceler_y = self.cage.gravity + thrust_y
 
         # print('mu', mu)
         # print('amount', amount)
-        self.dynamics_sim.reset_states(x+self.cage.gripper_vel)
-        x_new = self.dynamics_sim.run_forward_sim_labeler(mu)[:7]
+        xaug = x + self.cage.gripper_vel
+        print('==xaug', xaug)
+        self.dynamics_sim.reset_states(xaug)
+        x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, print_via_points)
         # print('xnew', x_new)
 
         # Make theta fall in [-pi/2, pi/2]
-        # thetar_i = thetar_i + self.cage.gripper_vel_theta*tc
-        thetar_i = x_new[-1]
-        if thetar_i > theta_max:
-            thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
-        elif thetar_i < theta_min:
-            thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
-        x_new[-1] = thetar_i
+        # thetar_i = x_new[-1]
+        # if thetar_i > theta_max:
+        #     thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
+        # elif thetar_i < theta_min:
+        #     thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
+        # x_new[-1] = thetar_i
 
-        return x_new
+        if print_via_points:
+            self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
+
+        return x_new[:7]
 
         # return [x_i+vx_i*tc+0.5*net_acceler_x*(tc**2), 
         #         y_i+vy_i*tc+0.5*net_acceler_y*(tc**2), 
@@ -62,6 +69,7 @@ class CageELControlSpace(ControlSpace):
         #         ]
     
     def interpolator(self,x,u):
+        print("cagelabeler interpolator")
         return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
 
 class CageEL:
@@ -89,7 +97,7 @@ class CageEL:
         self.start_state = data[:7]
         self.goal_state = [5, data[1]-1.5, 0, 0, 0, 0, 0] # varying goal region
         self.goal_radius = .2
-        self.time_range = .5
+        self.time_range = 1
 
         self.obstacles = [
              (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
@@ -154,6 +162,7 @@ class CageELObjectiveFunction(ObjectiveFunction):
         self.timestep = timestep
 
     def incremental(self,x,u):
+        print("CageELObjectiveFunction incremental")
         m = self.cage.mass_object
         g = abs(self.cage.gravity)
 
