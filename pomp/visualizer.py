@@ -199,6 +199,7 @@ class PlanVisualizationProgram(GLProgram):
             for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
                 # if hasattr(self.problem.controlSpace, "is_cage_planner"):
                 self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
+                self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True) # run twice to avoid bullet forward dyn. issues
                 xo_via_points = self.problem.controlSpace.xo_via_points
                 self.problem.visualizer.beginDraw()
                 glBegin(GL_LINE_STRIP)
@@ -230,13 +231,13 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Clear the previous obstacle by drawing a background color (e.g., white)
                     glColor3f(1, 1, 1)
-                    self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
-                    # self.problem.visualizer.drawGripperGL(x1[2:], self.problem.controlSpace.half_extents_gripper)
+                    # self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
+                    self.problem.visualizer.drawGripperGL(x1[2:], self.problem.controlSpace.half_extents_gripper) # ballbalance
 
                     # Draw the new obstacle at x2
                     glColor3f(0.2,0.2,0.2)
-                    self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
-                    # self.problem.visualizer.drawGripperGL(x2[2:], self.problem.controlSpace.half_extents_gripper)
+                    # self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
+                    self.problem.visualizer.drawGripperGL(x2[2:], self.problem.controlSpace.half_extents_gripper)
 
                     # Draw the graph again
                     self.draw_graph()

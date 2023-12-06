@@ -104,12 +104,12 @@ class PiecewiseLinearInterpolator(Interpolator):
 class LambdaInterpolator(Interpolator):
     """A helper that takes a function feval(u) that
     interpolates between 0 and 1 and returns an interpolator object."""
-    def __init__(self,feval,space=None,lengthDivisions=0):
-        print("LambdaInterpolator",)
+    def __init__(self,feval,space=None,lengthDivisions=0, xnext=None):
         self.feval = feval
         self.space = space
         self.lengthDivisions = lengthDivisions
-        Interpolator.__init__(self,feval(0),feval(1)) # forward dyn. twice
+        b = xnext if xnext is not None else feval(1.0) # feval(1.0) goes to a wrong answer!
+        Interpolator.__init__(self,feval(0),b) # forward dyn. twice
     def length(self):
         if self.lengthDivisions == 0:
             if self.space == None:
@@ -124,7 +124,6 @@ class LambdaInterpolator(Interpolator):
                 p = n
             return L
     def eval(self,u):
-        print("LambdaInterpolator eval", u)
         return self.feval(u)
     def split(self,u):
         return (LambdaInterpolator(lambda s:self.feval(u*s),self.space), \
@@ -134,7 +133,6 @@ class LambdaInterpolator(Interpolator):
 class MultiInterpolator(Interpolator):
     """Cartesian product of multiple interpolators"""
     def __init__(self,*args,**kwargs):
-        print('MultiInterpolator')
         self.components = args
         if 'weights' in kwargs:
             self.componentWeights = kwargs['weights']

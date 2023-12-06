@@ -79,23 +79,33 @@ class forwardSimulation():
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
 
-    def run_forward_sim_labeler(self, inputs, print_via_points=False):
+    def run_forward_sim_labeler(self, inputs, print_via_points=True):
         # print('run_forward_sim')
         t, ax, az = inputs
-        print('input t', t, ax, az)
+        # print('!!!input t', t, ax, az)
 
         # Step the simulation
         via_points = []
         num_via_points = 10
+        force_on_object = [self.mass_object*ax, 0, self.mass_object*(az-0.0)]
+        # print('!!!force_on_object', force_on_object)
+        # print('!!!self.pos_object', self.pos_object)
+        # print('!!!self.vel_object', self.vel_object)
+        # print('!!!self.pos_gripper', self.pos_gripper)
+        # print('!!!self.quat_gripper', self.quat_gripper)
+        # print('!!!self.vel_gripper', self.vel_gripper)
+        # print('!!!self.vel_ang_gripper', self.vel_ang_gripper)
         for i in range(int(t*240)):
             # Apply external force on object
             p.applyExternalForce(self.objectUid, -1, 
                                 # [self.mass_object*ax, self.mass_object*(az-0.0), 0], # gravity compensated 
-                                [self.mass_object*ax, 0, self.mass_object*(az-0.0)], # gravity compensated 
+                                force_on_object, # gravity compensated 
                                 self.pos_object, 
                                 p.WORLD_FRAME)
             p.stepSimulation()
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
+            # if i % 30 == 0:
+            #     print("self.pos_object", self.pos_object)
 
             # Print object via-points along the trajectory for visualization
             interval = int(int(t*240)/num_via_points)
@@ -118,9 +128,10 @@ class forwardSimulation():
                       self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
                       ]
-        print('via_points', via_points)
-        print('self.pos_object', self.pos_object)
-        
+        # print('!!!via_points', via_points)
+        # print('!!!self.pos_object', self.pos_object)
+        # print("")
+
         return new_states, via_points
 
     def run_forward_sim_ball_balance(self, tc, print_via_points=False):

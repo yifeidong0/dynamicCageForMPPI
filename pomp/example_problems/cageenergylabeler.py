@@ -28,22 +28,19 @@ class CageELControlSpace(ControlSpace):
     
     def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
         # x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
-        print('==x', x)
-        print('==u', u)
-        print('==amount', amount)
+        # print('==x', x)
+        # print('==u', u)
         t, ax, ay = u # control space
         tc = t * amount
         mu = [tc, ax, ay]
-        print('==mu', mu)
         # net_acceler_x = thrust_x
         # net_acceler_y = self.cage.gravity + thrust_y
 
         # print('mu', mu)
         # print('amount', amount)
         xaug = x + self.cage.gripper_vel
-        print('==xaug', xaug)
         self.dynamics_sim.reset_states(xaug)
-        x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, print_via_points)
+        x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, 1)
         # print('xnew', x_new)
 
         # Make theta fall in [-pi/2, pi/2]
@@ -68,9 +65,9 @@ class CageELControlSpace(ControlSpace):
         #         thetar_i
         #         ]
     
-    def interpolator(self,x,u):
+    def interpolator(self, x, u, xnext=None):
         print("cagelabeler interpolator")
-        return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
+        return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class CageEL:
     def __init__(self, data):
@@ -160,6 +157,7 @@ class CageELObjectiveFunction(ObjectiveFunction):
         self.cage = cage
         self.space = cage.controlSpace()
         self.timestep = timestep
+        self.xnext = None
 
     def incremental(self,x,u):
         print("CageELObjectiveFunction incremental")
@@ -168,6 +166,8 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
+        xnext = self.space.nextState(x,u)  # run twice to avoid bullet forward dyn. issues TODO: same input and settings, wrong bullet rollout. Happens every other time. WHY?
+        self.xnext = xnext
         E = m*g*x[1] + 0.5*m*(x[2]**2+x[3]**2)
         Enext = m*g*xnext[1] + 0.5*m*(xnext[2]**2+xnext[3]**2)
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
@@ -177,7 +177,7 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
 def cageELTest():
     data = [1.02, 5.11, 0.00, 0,
-            1.01, 4.70, -0.00, 0.00, 1, -0.50]
+            1.01, 4.70, -0.00, 0.00, 0, -0.0]
     p = CageEL(data)
 
     # if p.checkStartFeasibility():

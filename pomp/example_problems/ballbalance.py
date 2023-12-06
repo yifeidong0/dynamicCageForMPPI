@@ -52,8 +52,8 @@ class BallBalanceControlSpace(ControlSpace):
         #         thetar
         #         ]
     
-    def interpolator(self,x,u):
-        return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
+    def interpolator(self, x, u, xnext=None):
+        return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class BallBalance:
     def __init__(self, data):
@@ -148,6 +148,9 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
         y_range = self.cage.y_range
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
+        xnext = self.space.nextState(x,u)  # run twice to avoid bullet forward dyn. issues TODO: same input and settings, wrong bullet rollout. Happens every other time. WHY?
+        self.xnext = xnext
+
         # E = m*g*(y_range-x[1]) + 0.5*(uprev[1]**2+uprev[2]**2)
         # E = m*g*(y_range-x[1]) + 0.5*(u[1]**2+u[2]**2)
         # Enext = m*g*(y_range-xnext[1]) + 0.5*(u[1]**2+u[2]**2) # TODO

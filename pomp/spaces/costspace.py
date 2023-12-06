@@ -37,8 +37,8 @@ class CostControlSpace(ControlSpace):
         cnext = x[-1]+self.objective.incremental(x[:-1],u)
         return xbasenext+[cnext]
     def interpolator(self,x,u):
-        print('CostControlSpace interpolator')
-        cnext = x[-1]+self.objective.incremental(x[:-1],u) # eval once
-        print('CostControlSpace interpolator')
-        return MultiInterpolator(self.baseSpace.interpolator(x[:-1],u),LinearInterpolator([x[-1]],[cnext]))
+        cnext = x[-1] + self.objective.incremental(x[:-1],u) # eval once
+        xnext = self.objective.xnext
+        # xnext = None
+        return MultiInterpolator(self.baseSpace.interpolator(x[:-1], u, xnext),LinearInterpolator([x[-1]],[cnext]))
 
