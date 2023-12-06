@@ -127,7 +127,7 @@ class CageEL:
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
                                        BoxConfigurationSpace([-2.5*self.x_range],[2.5*self.x_range]),
-                                       BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.x_range]),
+                                       BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.y_range]),
                                        BoxConfigurationSpace([-math.pi],[math.pi])
                                        ) # this c-space has to cover the state constraint in MPPI, better with some more margins
         return res
@@ -167,8 +167,8 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
 
 def cageELTest():
-    data = [1.02, 5.11, 0.00, 2,
-            1.01, 4.70, -0.00, 0.00, 2, -0.00]
+    data = [1.02, 5.11, 0.00, 0,
+            1.01, 4.70, -0.00, 0.00, 1, -0.50]
     p = CageEL(data)
 
     # if p.checkStartFeasibility():
