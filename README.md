@@ -7,6 +7,27 @@ Requirements:
 - PyOpenGL
 - Matplotlib (optional)
 
+Branches:
+
+1. 
+main: initial trials. 
+[cage.py]: static obstacle with escaping double-integrator point-mass object.
+[cagemovingobstacle.py]: moving obstacle with constant velocity, and escaping double-integrator point-mass object.
+[cageplanner.py]: goal-conditioned motion planner with AO-RRT that controls a plate-like robot to transport a point-mass object to goal region.
+[dataloader.py]: load data for model training via cageplanner.
+[datalabeler.py]: label samples loaded from above via [cageenerylabeler.py].
+[test_mppi.py]: goal-conditioned MPPI with instability cage-penalty via [mppi.py]. The same task as above. It also loads samples for [datalabeler.py] via MPPI, which is better.
+
+2. 
+bullet-collision: 
+[cageenerylabeler.py]: double-integrator point mass system with moving robot gripper that is embedded with Bullet forward dynamics simulation. Edge collision checking is thus not needed anymore.
+[ballbalance.py]: same task but single-integrator system without any acceleration limits.
+
+3.
+single-integrator:
+[ballbalance.py]: single-integrator point-mass system with moving robot gripper and acceleration limits.
+
+
 Usage:
 
 1.

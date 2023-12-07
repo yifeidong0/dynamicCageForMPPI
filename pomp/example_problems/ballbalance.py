@@ -12,7 +12,7 @@ import math
 class BallBalanceControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forwardSimulation(cage.params, gui=1)
+        self.dynamics_sim = forwardSimulation(cage.params, gui=0)
         self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]
@@ -136,7 +136,7 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
         self.space = cage.controlSpace()
         self.timestep = timestep
 
-    def incremental(self,x,u): # uprev
+    def incremental(self, x, u, uparent=None): # Node.uparent
         m = self.cage.mass_object
         g = self.cage.gravity
         y_range = self.cage.y_range

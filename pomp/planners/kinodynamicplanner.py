@@ -63,7 +63,7 @@ class RandomControlSelector(ControlSelector):
         self.metric = metric
         self.numSamples = numSamples
 
-    def select(self,x,xdesired):
+    def select(self, x, xdesired):
         ubest = None
         #do we want to eliminate extensions that do not improve the metric
         #from the starting configuration?  experiments suggest no 5/6/2015
@@ -368,7 +368,7 @@ class RRT(TreePlanner):
         if nnear is None:
             return None
         nnear.numExpansionsAttempted += 1
-        u = self.controlSelector.select(nnear.x,xrand)
+        u = self.controlSelector.select(nnear.x, xrand) # select a u with best cost from rrtNumControlSampleIters u's
         if u is None:
             #do we want to adjust the dynamic domain?
             if self.dynamicDomain:
@@ -378,7 +378,9 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
-        edge = self.controlSpace.interpolator(nnear.x,u)
+        is_double_integration = True # TODO
+        uparent = nnear.uparent if not is_double_integration else None
+        edge = self.controlSpace.interpolator(nnear.x, u, uparent) # eval 3 times in CostControlSpace.interpolator
 
         # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.
         # if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
@@ -393,7 +395,7 @@ class RRT(TreePlanner):
         if self.dynamicDomain:
             if hasattr(nnear,'ddRadius'):
                 nnear.ddRadius *= (1.0+self.dynamicDomainGrowthParameter)
-        nnew = self.addEdge(nnear,u,edge)
+        nnew = self.addEdge(nnear,u,edge) # create a new node nnew that connects with nnear by action u
         if self.prune(nnew):
             nnew.destroy()
             self.nodes.pop()

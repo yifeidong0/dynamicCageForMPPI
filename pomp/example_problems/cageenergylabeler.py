@@ -146,7 +146,7 @@ class CageELObjectiveFunction(ObjectiveFunction):
         self.timestep = timestep
         self.xnext = None
 
-    def incremental(self,x,u):
+    def incremental(self, x, u, uparent=None):
         m = self.cage.mass_object
         g = abs(self.cage.gravity)
 
@@ -162,8 +162,8 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
 
 def cageELTest():
-    data = [1.02, 5.11, 0.00, 0,
-            1.01, 4.70, -0.00, 0.00, 0, 7.0]
+    data = [1.02, 5.11, 0.00, 2,
+            1.01, 4.70, -0.00, 0.00, 2, 0.0]
     p = CageEL(data)
 
     # if p.checkStartFeasibility():

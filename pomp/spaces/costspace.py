@@ -36,9 +36,8 @@ class CostControlSpace(ControlSpace):
         xbasenext = self.baseSpace.nextState(x[:-1],u)
         cnext = x[-1]+self.objective.incremental(x[:-1],u)
         return xbasenext+[cnext]
-    def interpolator(self,x,u):
-        cnext = x[-1] + self.objective.incremental(x[:-1],u) # eval once
-        xnext = self.objective.xnext
-        # xnext = None
-        return MultiInterpolator(self.baseSpace.interpolator(x[:-1], u, xnext),LinearInterpolator([x[-1]],[cnext]))
+    def interpolator(self, x, u, uparent=None):
+        cnext = x[-1] + self.objective.incremental(x[:-1], u, uparent) # eval once
+        xnext = self.objective.xnext # pass xnext directly to lambdainterperlator instead of eval again
+        return MultiInterpolator(self.baseSpace.interpolator(x[:-1], u, xnext),LinearInterpolator([x[-1]],[cnext])) # feval(0) and skipped feval(1)
 

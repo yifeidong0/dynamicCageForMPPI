@@ -21,7 +21,7 @@ class ObjectiveFunction:
     """
     def __str__(self):
         return self.__class__.__name__
-    def incremental(self,x,u=None):
+    def incremental(self, x, u=None, uparent=None):
         return 0.0
     def terminal(self,x):
         return 0.0
