@@ -21,13 +21,13 @@ class forwardSimulation():
     def set_params(self, params):
         # Kinodynamics
         self.mass_object = params[0]
-        self.pos_object = [0,0,0]
+        self.pos_object = [1000,0,0]
         self.quat_object = p.getQuaternionFromEuler([math.pi/2,0,0])
         self.vel_object = [.1,0,0]
         
         self.mass_gripper = params[1]
         self.moment_gripper = params[2] # moment of inertia
-        self.pos_gripper = [0,0,2]
+        self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]

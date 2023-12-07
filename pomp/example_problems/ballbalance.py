@@ -45,12 +45,6 @@ class BallBalanceControlSpace(ControlSpace):
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
         
         return x_new
-        # return [x + vx*tc, 
-        #         y + vy*tc, 
-        #         xr + self.cage.gripper_vel_x*tc,
-        #         yr + self.cage.gripper_vel_y*tc,
-        #         thetar
-        #         ]
     
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)

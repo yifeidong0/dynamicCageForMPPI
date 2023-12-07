@@ -52,15 +52,6 @@ class CageELControlSpace(ControlSpace):
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
 
         return x_new[:7]
-
-        # return [x_i+vx_i*tc+0.5*net_acceler_x*(tc**2), 
-        #         y_i+vy_i*tc+0.5*net_acceler_y*(tc**2), 
-        #         vx_i+net_acceler_x*tc,
-        #         vy_i+net_acceler_y*tc,
-        #         xr_i+self.cage.gripper_vel_x*tc,
-        #         yr_i+self.cage.gripper_vel_y*tc,
-        #         thetar_i
-        #         ]
     
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
