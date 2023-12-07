@@ -26,6 +26,7 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
     planner = problem.planner(plannerType,**plannerParams)
     folder = os.path.join("data",problemName)
     mkdir_p(folder)
+    data_id = 0
     if 'data_id' in plannerParams: # TODO
         data_id = plannerParams['data_id']
     test.testPlanner(planner,

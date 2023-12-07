@@ -146,15 +146,14 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
         m = self.cage.mass_object
         g = self.cage.gravity
         y_range = self.cage.y_range
-        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        xnext = self.space.nextState(x,u)  # run twice to avoid bullet forward dyn. issues TODO: same input and settings, wrong bullet rollout. Happens every other time. WHY?
         self.xnext = xnext
 
         # E = m*g*(y_range-x[1]) + 0.5*(uprev[1]**2+uprev[2]**2)
         # E = m*g*(y_range-x[1]) + 0.5*(u[1]**2+u[2]**2)
         # Enext = m*g*(y_range-xnext[1]) + 0.5*(u[1]**2+u[2]**2) # TODO
 
+        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         # c = max((Enext-E), 0.001)
         # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
         # c = max((Enext-E), 0.001) + u[0]
@@ -167,14 +166,14 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
 
 
 def ballBalanceTest():
-    data = [1.02, 5.11, 0.00, 0,
-            1.01, 4.70, -0.00, 0.00, 1, -0.50]
+    data = [1.02, 5.11, 0.00, 1,
+            1.01, 4.70, -0.00, 0.00, 1, 0]
     p = BallBalance(data)
-    if p.checkStartFeasibility():
-        print('In collision!')
-        return False
+    # if p.checkStartFeasibility():
+    #     print('In collision!')
+    #     return False
     objective = BallBalanceObjectiveFunction(p)
-    return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),
+    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean = True)

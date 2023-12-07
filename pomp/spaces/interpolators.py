@@ -109,6 +109,7 @@ class LambdaInterpolator(Interpolator):
         self.space = space
         self.lengthDivisions = lengthDivisions
         b = xnext if xnext is not None else feval(1.0) # feval(1.0) goes to a wrong answer!
+        # b = feval(1.0)
         Interpolator.__init__(self,feval(0),b) # forward dyn. twice
     def length(self):
         if self.lengthDivisions == 0:

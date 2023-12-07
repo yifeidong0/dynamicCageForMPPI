@@ -28,8 +28,6 @@ class CageELControlSpace(ControlSpace):
     
     def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
         # x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
-        # print('==x', x)
-        # print('==u', u)
         t, ax, ay = u # control space
         tc = t * amount
         mu = [tc, ax, ay]
@@ -41,7 +39,6 @@ class CageELControlSpace(ControlSpace):
         xaug = x + self.cage.gripper_vel
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, 1)
-        # print('xnew', x_new)
 
         # Make theta fall in [-pi/2, pi/2]
         # thetar_i = x_new[-1]
@@ -66,7 +63,6 @@ class CageELControlSpace(ControlSpace):
         #         ]
     
     def interpolator(self, x, u, xnext=None):
-        print("cagelabeler interpolator")
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class CageEL:
@@ -160,31 +156,31 @@ class CageELObjectiveFunction(ObjectiveFunction):
         self.xnext = None
 
     def incremental(self,x,u):
-        print("CageELObjectiveFunction incremental")
         m = self.cage.mass_object
         g = abs(self.cage.gravity)
 
-        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        xnext = self.space.nextState(x,u)  # run twice to avoid bullet forward dyn. issues TODO: same input and settings, wrong bullet rollout. Happens every other time. WHY?
         self.xnext = xnext
         E = m*g*x[1] + 0.5*m*(x[2]**2+x[3]**2)
         Enext = m*g*xnext[1] + 0.5*m*(xnext[2]**2+xnext[3]**2)
+        
+        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
         c = max((Enext-E), 1e-3)
         return c
 
 
 def cageELTest():
-    data = [1.02, 5.11, 0.00, 0,
-            1.01, 4.70, -0.00, 0.00, 0, -0.0]
+    data = [1.02, 5.11, 0.00, 2,
+            1.01, 4.70, -0.00, 0.00, 2, -0.0]
     p = CageEL(data)
 
     # if p.checkStartFeasibility():
     #     print('In collision!')
     #     return False
     objective = CageELObjectiveFunction(p)
-    return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),
+    # return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(), # double bullet running...
+    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean = True)

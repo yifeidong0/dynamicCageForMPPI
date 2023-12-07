@@ -199,7 +199,6 @@ class PlanVisualizationProgram(GLProgram):
             for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
                 # if hasattr(self.problem.controlSpace, "is_cage_planner"):
                 self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
-                self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True) # run twice to avoid bullet forward dyn. issues
                 xo_via_points = self.problem.controlSpace.xo_via_points
                 self.problem.visualizer.beginDraw()
                 glBegin(GL_LINE_STRIP)
@@ -241,8 +240,8 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Draw the graph again
                     self.draw_graph()
-                    print("x",self.path[0])
-                    print("u",self.path[1])
+                    # print("x",self.path[0])
+                    # print("u",self.path[1])
 
                     for m in range(k+1):
                         x1, u = self.path[0][m], self.path[1][m]
