@@ -53,8 +53,8 @@ class BallBalance:
     def __init__(self, data):
         self.x_range = 10
         self.y_range = 10
-        self.max_velocity = 3
-        self.max_acceleration = .5
+        self.max_velocity = 5
+        self.max_acceleration = 1
         self.mass_object = 1 # import params from cageplanner
         self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.half_gripper_l = self.half_extents_gripper[0]
@@ -74,6 +74,7 @@ class BallBalance:
         self.gripper_vel_theta = data[9]
 
         self.start_state = data[:2] + data[4:7]
+        self.start_vo = data[2:4]
         self.goal_state = [5, data[1]-1.5, 0, 0, 0] # varying goal region
         self.goal_radius = .2
         self.time_range = .5

@@ -140,16 +140,16 @@ class PlanVisualizationProgram(GLProgram):
         glDisable(GL_LIGHTING)
         
         # Draw initial gripper pose
-        if hasattr(self.problem.controlSpace, "is_cage_planner"):
-            gripperPose = self.problem.controlSpace.obstacle_pose
-            halfExtent = self.problem.controlSpace.half_extents_gripper
-            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
-            gripperPose = self.problem.controlSpace.obstacles[:3]
-            halfExtent = self.problem.controlSpace.obstacles[3:]
-            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        else: # cageMO and cage 
-            self.problem.visualizer.drawObstaclesGL()
+        # if hasattr(self.problem.controlSpace, "is_cage_planner"):
+        #     gripperPose = self.problem.controlSpace.obstacle_pose
+        #     halfExtent = self.problem.controlSpace.half_extents_gripper
+        #     self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+        # elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
+        gripperPose = self.problem.controlSpace.obstacles[:3]
+        halfExtent = self.problem.controlSpace.obstacles[3:]
+        self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+        # else: # cageMO and cage 
+        #     self.problem.visualizer.drawObstaclesGL()
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:

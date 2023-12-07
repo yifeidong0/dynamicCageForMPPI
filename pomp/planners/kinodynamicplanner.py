@@ -64,16 +64,25 @@ class RandomControlSelector(ControlSelector):
         self.numSamples = numSamples
         self.max_acceleration = max_acceleration
 
-    def select(self, x, xdesired, uparent): # TODO acceleration limits
+    def select(self, x, xdesired, uparent=None): # TODO acceleration limits
         ubest = None
-        #do we want to eliminate extensions that do not improve the metric
-        #from the starting configuration?  experiments suggest no 5/6/2015
-        #dbest = self.metric(x,xdesired)
-        dbest = infty
         U = self.controlSpace.controlSet(x)
+        if uparent is not None:
+            t = uparent[0]
+            vparent = uparent[1:]
+            vbmin = [v-self.max_acceleration*t for v in vparent] 
+            vbmax = [v+self.max_acceleration*t for v in vparent]
+            #do we want to eliminate extensions that do not improve the metric
+            #from the starting configuration?  experiments suggest no 5/6/2015
+            #dbest = self.metric(x,xdesired)
+            U = BoxSet([0.0,] + [max(U.components[1].bmin[i], vbmin[i]) for i in range(len(vbmin))], 
+                       [U.components[0].tmax,] + [min(U.components[1].bmax[i], vbmax[i]) for i in range(len(vbmax))])
         if self.numSamples == 1:
+            # u = U.sample()
             u = U.sample()
             return u if U.contains(u) else None
+        
+        dbest = infty
         for iters in range(self.numSamples):
             u = U.sample()
             if U.contains(u):
@@ -291,6 +300,8 @@ class RRT(TreePlanner):
         self.configurationSampler = Sampler(self.cspace)
         numControlSamples = popdefault(params,'numControlSamples',rrtNumControlSampleIters)
         self.max_acceleration = self.controlSpace.baseSpace.cage.max_acceleration
+        self.start_vo = self.controlSpace.baseSpace.cage.start_vo
+        self.time_range = self.controlSpace.baseSpace.cage.time_range
         self.controlSelector = RandomControlSelector(controlSpace, self.metric, numControlSamples, self.max_acceleration)
         self.successBiasing = False
         self.dynamicDomain = popdefault(params,'dynamicDomain',False)
@@ -361,7 +372,6 @@ class RRT(TreePlanner):
                 xrand = self.goalSampler.sample()
             else:
                 xrand = self.configurationSampler.sample()
-            # if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
             if not self.cspace.feasible(xrand): # MultiConfigurationSpace.feasible
                 return None
         else:
@@ -371,7 +381,8 @@ class RRT(TreePlanner):
             return None
         nnear.numExpansionsAttempted += 1
         # is_double_integration = False # TODO
-        uparent = nnear.uparent # list[3]
+        uparent = nnear.uparent # list[nu+1], timeBaised
+        if uparent is None: uparent = [self.time_range,] + self.start_vo
         u = self.controlSelector.select(nnear.x, xrand, uparent) # select a u with best cost from rrtNumControlSampleIters u's
         if u is None:
             #do we want to adjust the dynamic domain?
@@ -382,7 +393,6 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
-        print('uparent',uparent)
         edge = self.controlSpace.interpolator(nnear.x, u, uparent) # eval 3 times in CostControlSpace.interpolator
 
         # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.
