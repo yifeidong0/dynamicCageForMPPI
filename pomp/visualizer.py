@@ -230,13 +230,13 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Clear the previous obstacle by drawing a background color (e.g., white)
                     glColor3f(1, 1, 1)
-                    # self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
-                    self.problem.visualizer.drawGripperGL(x1[2:], self.problem.controlSpace.half_extents_gripper) # ballbalance
+                    self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
+                    # self.problem.visualizer.drawGripperGL(x1[2:], self.problem.controlSpace.half_extents_gripper) # ballbalance
 
                     # Draw the new obstacle at x2
                     glColor3f(0.2,0.2,0.2)
-                    # self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
-                    self.problem.visualizer.drawGripperGL(x2[2:], self.problem.controlSpace.half_extents_gripper)
+                    self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
+                    # self.problem.visualizer.drawGripperGL(x2[2:], self.problem.controlSpace.half_extents_gripper)
 
                     # Draw the graph again
                     self.draw_graph()

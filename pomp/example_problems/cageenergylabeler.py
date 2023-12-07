@@ -27,7 +27,7 @@ class CageELControlSpace(ControlSpace):
         return self.eval(x, u, 1.0)
     
     def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
-        # x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
+        x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
         t, ax, ay = u # control space
         tc = t * amount
         mu = [tc, ax, ay]
@@ -41,12 +41,12 @@ class CageELControlSpace(ControlSpace):
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, 1)
 
         # Make theta fall in [-pi/2, pi/2]
-        # thetar_i = x_new[-1]
-        # if thetar_i > theta_max:
-        #     thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
-        # elif thetar_i < theta_min:
-        #     thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
-        # x_new[-1] = thetar_i
+        thetar_i = x_new[6]
+        if thetar_i > theta_max:
+            thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
+        elif thetar_i < theta_min:
+            thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
+        x_new[6] = thetar_i
 
         if print_via_points:
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
@@ -162,8 +162,8 @@ class CageELObjectiveFunction(ObjectiveFunction):
 
 
 def cageELTest():
-    data = [1.02, 5.11, 0.00, 2,
-            1.01, 4.70, -0.00, 0.00, 2, -0.0]
+    data = [1.02, 5.11, 0.00, 0,
+            1.01, 4.70, -0.00, 0.00, 0, 7.0]
     p = CageEL(data)
 
     # if p.checkStartFeasibility():

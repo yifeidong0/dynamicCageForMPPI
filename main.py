@@ -45,10 +45,10 @@ all_problems = {'Kink':geometric.kinkTest(),
                 'Dubins':dubins.dubinsCarTest(),
                 'Dubins2':dubins.dubinsTest2(),
                 'Flappy':flappy.flappyTest(),
-                'BallBalance':ballbalance.ballBalanceTest(),
-                # 'Cage':cage.cageTest(),
+                # 'BallBalance':ballbalance.ballBalanceTest(),
+                # 'Cage':cage.cageTest(), # BUG: others have to be uncommented if bullet gui=1!
                 # 'CageMovingObstacle':cagemovingobstacle.cageMOTest(), # comment unused tests to avoid multiple invokes of bullet
-                # 'CageEnergyLabeler':cageenergylabeler.cageELTest(),
+                'CageEnergyLabeler':cageenergylabeler.cageELTest(),
                 # 'CagePlanner':cageplanner.cagePlannerTest(),
                 'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
                 'Pendulum':pendulum.pendulumTest(),

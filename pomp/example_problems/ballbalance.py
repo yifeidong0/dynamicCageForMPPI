@@ -12,7 +12,7 @@ import math
 class BallBalanceControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forwardSimulation(cage.params, gui=0)
+        self.dynamics_sim = forwardSimulation(cage.params, gui=1)
         self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]

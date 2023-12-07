@@ -80,21 +80,12 @@ class forwardSimulation():
 
 
     def run_forward_sim_labeler(self, inputs, print_via_points=True):
-        # print('run_forward_sim')
         t, ax, az = inputs
-        # print('!!!input t', t, ax, az)
 
         # Step the simulation
         via_points = []
         num_via_points = 10
         force_on_object = [self.mass_object*ax, 0, self.mass_object*(az-0.0)]
-        # print('!!!force_on_object', force_on_object)
-        # print('!!!self.pos_object', self.pos_object)
-        # print('!!!self.vel_object', self.vel_object)
-        # print('!!!self.pos_gripper', self.pos_gripper)
-        # print('!!!self.quat_gripper', self.quat_gripper)
-        # print('!!!self.vel_gripper', self.vel_gripper)
-        # print('!!!self.vel_ang_gripper', self.vel_ang_gripper)
         for i in range(int(t*240)):
             # Apply external force on object
             p.applyExternalForce(self.objectUid, -1, 
@@ -104,14 +95,11 @@ class forwardSimulation():
                                 p.WORLD_FRAME)
             p.stepSimulation()
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
-            # if i % 30 == 0:
-            #     print("self.pos_object", self.pos_object)
 
             # Print object via-points along the trajectory for visualization
             interval = int(int(t*240)/num_via_points)
             interval = 3 if interval==0 else interval
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
-                # pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
                 via_points.append([self.pos_object[0], self.pos_object[2]])
 
             if self.gui:
@@ -128,9 +116,6 @@ class forwardSimulation():
                       self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
                       ]
-        # print('!!!via_points', via_points)
-        # print('!!!self.pos_object', self.pos_object)
-        # print("")
 
         return new_states, via_points
 
