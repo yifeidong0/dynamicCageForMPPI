@@ -13,7 +13,7 @@ class BallBalanceControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
         self.dynamics_sim = forwardSimulation(cage.params, gui=0)
-        self.is_energy_labeler = True
+        # self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]
 
@@ -54,7 +54,7 @@ class BallBalance:
         self.x_range = 10
         self.y_range = 10
         self.max_velocity = 3
-        self.max_acceleration = 2
+        self.max_acceleration = .5
         self.mass_object = 1 # import params from cageplanner
         self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.half_gripper_l = self.half_extents_gripper[0]
@@ -160,8 +160,8 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
 
 
 def ballBalanceTest():
-    data = [1.02, 5.11, 0.00, 1,
-            1.01, 4.70, -0.00, 0.00, 1, 0]
+    data = [1.02, 5.11, 0.0, 1,
+            1.01, 4.70, 0.0, 0.0, 1, 0]
     p = BallBalance(data)
     # if p.checkStartFeasibility():
     #     print('In collision!')

@@ -58,12 +58,13 @@ class RandomControlSelector(ControlSelector):
     """A ControlSelector that randomly samples numSamples controls
     and finds the one that is closest to the destination, according
     to a given metric."""
-    def __init__(self,controlSpace,metric,numSamples):
+    def __init__(self, controlSpace, metric, numSamples, max_acceleration=1):
         self.controlSpace = controlSpace
         self.metric = metric
         self.numSamples = numSamples
+        self.max_acceleration = max_acceleration
 
-    def select(self, x, xdesired):
+    def select(self, x, xdesired, uparent): # TODO acceleration limits
         ubest = None
         #do we want to eliminate extensions that do not improve the metric
         #from the starting configuration?  experiments suggest no 5/6/2015
@@ -288,8 +289,9 @@ class RRT(TreePlanner):
         self.pChooseGoal = popdefault(params,'pChooseGoal',0.1)
         self.goalNodes = []
         self.configurationSampler = Sampler(self.cspace)
-        numControlSamples = popdefault(params,'numControlSamples',rrtNumControlSampleIters)   
-        self.controlSelector = RandomControlSelector(controlSpace,self.metric,numControlSamples)
+        numControlSamples = popdefault(params,'numControlSamples',rrtNumControlSampleIters)
+        self.max_acceleration = self.controlSpace.baseSpace.cage.max_acceleration
+        self.controlSelector = RandomControlSelector(controlSpace, self.metric, numControlSamples, self.max_acceleration)
         self.successBiasing = False
         self.dynamicDomain = popdefault(params,'dynamicDomain',False)
         if self.dynamicDomain:
@@ -368,7 +370,9 @@ class RRT(TreePlanner):
         if nnear is None:
             return None
         nnear.numExpansionsAttempted += 1
-        u = self.controlSelector.select(nnear.x, xrand) # select a u with best cost from rrtNumControlSampleIters u's
+        # is_double_integration = False # TODO
+        uparent = nnear.uparent # list[3]
+        u = self.controlSelector.select(nnear.x, xrand, uparent) # select a u with best cost from rrtNumControlSampleIters u's
         if u is None:
             #do we want to adjust the dynamic domain?
             if self.dynamicDomain:
@@ -378,8 +382,7 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
-        is_double_integration = True # TODO
-        uparent = nnear.uparent if not is_double_integration else None
+        print('uparent',uparent)
         edge = self.controlSpace.interpolator(nnear.x, u, uparent) # eval 3 times in CostControlSpace.interpolator
 
         # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.

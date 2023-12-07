@@ -6,7 +6,6 @@ from .controlspace import *
 from .interpolators import *
 from .objective import ObjectiveFunction
 
-
 class CostControlSpace(ControlSpace):
     """Adapts a ControlSpace to a state+cost space.  Appends accumulated
     cost to the state variable."""
