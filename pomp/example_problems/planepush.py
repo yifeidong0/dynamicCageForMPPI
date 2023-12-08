@@ -9,8 +9,8 @@ from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 import math
 
-class CageELControlSpace(ControlSpace):
-    def __init__(self,cage):
+class PlanePushControlSpace(ControlSpace):
+    def __init__(self, cage):
         self.cage = cage
         self.dynamics_sim = cage.dynamics_sim
         self.dynamics_sim.set_params(cage.params)
@@ -59,7 +59,7 @@ class CageELControlSpace(ControlSpace):
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class CageEL:
+class PlanePush:
     def __init__(self, data, dynamics_sim):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
@@ -103,7 +103,7 @@ class CageEL:
 
     def controlSpace(self):
         # System dynamics
-        return CageELControlSpace(self)
+        return PlanePushControlSpace(self)
 
     def workspace(self, offset=2):
         # For visualization
@@ -140,7 +140,7 @@ class CageEL:
                        2.5*self.x_range, 2.5*self.y_range, math.pi])
 
 
-class CageELObjectiveFunction(ObjectiveFunction):
+class PlanePushObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -165,16 +165,15 @@ class CageELObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def cageELTest(dynamics_sim):
+def planePushTest(dynamics_sim):
     data = [1.02, 5.11, 0.00, 2,
             1.01, 4.70, -0.00, 0.00, 2, 0.0]
-    p = CageEL(data, dynamics_sim)
+    p = PlanePush(data, dynamics_sim)
 
     # if p.checkStartFeasibility():
     #     print('In collision!')
     #     return False
-    objective = CageELObjectiveFunction(p)
-    # return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(), # double bullet running...
+    objective = PlanePushObjectiveFunction(p)
     return PlanningProblem(objective.space,p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),

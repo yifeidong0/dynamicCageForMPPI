@@ -27,7 +27,7 @@ estHierarchyLevels = 2
 #OK value for no cache
 #estNumExtensionSamples = 10
 #small cache
-estNumExtensionSamples = 50
+estNumExtensionSamples = 5 # 50
 #large cache
 #estNumExtensionSamples = 1000
 #Tests seem to indicate that cached extensions aren't very useful

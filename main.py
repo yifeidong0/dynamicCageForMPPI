@@ -5,6 +5,7 @@ from pomp.planners import allplanners
 from pomp.planners import test
 from pomp.example_problems import *
 from pomp.spaces.objectives import *
+from pomp.bullet.forwardsimulator import *
 import time
 import copy
 import sys
@@ -40,34 +41,41 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'Kink':geometric.kinkTest(),
-                'Bugtrap':geometric.bugtrapTest(),
-                'Dubins':dubins.dubinsCarTest(),
-                'Dubins2':dubins.dubinsTest2(),
-                'Flappy':flappy.flappyTest(),
-                # 'BallBalance':ballbalance.ballBalanceTest(),
+dynamics_sim = forwardSimulation(gui=0)
+
+all_problems = {
+                # 'Kink':geometric.kinkTest(),
+                # 'Bugtrap':geometric.bugtrapTest(),
+                # 'Dubins':dubins.dubinsCarTest(),
+                # 'Dubins2':dubins.dubinsTest2(),
+                # 'Flappy':flappy.flappyTest(),
+                # 'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
+                # 'Pendulum':pendulum.pendulumTest(),
+                # 'LQR':lqr.lqrTest()
+
                 # 'Cage':cage.cageTest(), # BUG: others have to be uncommented if bullet gui=1!
                 # 'CageMovingObstacle':cagemovingobstacle.cageMOTest(), # comment unused tests to avoid multiple invokes of bullet
-                'CageEnergyLabeler':cageenergylabeler.cageELTest(),
                 # 'CagePlanner':cageplanner.cagePlannerTest(),
-                'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
-                'Pendulum':pendulum.pendulumTest(),
-                'LQR':lqr.lqrTest()
+                # 'BallBalance':ballbalance.ballBalanceTest(dynamics_sim),
+                'CageEnergyLabeler':cageenergylabeler.cageELTest(dynamics_sim),
+                'PlanePush':planepush.planePushTest(dynamics_sim),
                 }
 
 defaultParameters = {'maxTime':30}
-customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
-                    'Bugtrap':{'maxTime':40,'nextStateSamplingRange':0.15},
-                    'Pendulum':{'maxTime':120,'edgeCheckTolerance':0.1,'selectionRadius':.3,'witnessRadius':0.16},
-                    'Flappy':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
-                    'Cage':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
-                    'CageMovingObstacle':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
-                    'CagePlanner':{'maxTime':120,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05},
+customParameters = {
+                    # 'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
+                    # 'Bugtrap':{'maxTime':40,'nextStateSamplingRange':0.15},
+                    # 'Pendulum':{'maxTime':120,'edgeCheckTolerance':0.1,'selectionRadius':.3,'witnessRadius':0.16},
+                    # 'Flappy':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
+                    # 'Cage':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
+                    # 'CageMovingObstacle':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
+                    # 'CagePlanner':{'maxTime':120,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05},
+                    # 'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
+                    # 'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
+                    # 'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2},
+                    # 'BallBalance':{'maxTime':20,'edgeCheckTolerance':.1},
                     'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
-                    'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
-                    'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
-                    'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2},
-                    'BallBalance':{'maxTime':20,'edgeCheckTolerance':.1},
+                    'PlanePush':{'maxTime':20,'edgeCheckTolerance':.1},
                     }
 
 def parseParameters(problem,planner):

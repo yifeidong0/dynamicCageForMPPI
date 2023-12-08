@@ -12,7 +12,10 @@ import math
 class BallBalanceControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
-        self.dynamics_sim = forwardSimulation(cage.params, gui=0)
+        self.dynamics_sim = cage.dynamics_sim
+        self.dynamics_sim.set_params(cage.params)
+        self.dynamics_sim.create_shapes()
+        # self.dynamics_sim = forwardSimulation(cage.params, gui=0)
         self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]
@@ -50,7 +53,8 @@ class BallBalanceControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class BallBalance:
-    def __init__(self, data):
+    def __init__(self, data, dynamics_sim):
+        self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
         self.max_velocity = 3
@@ -79,7 +83,7 @@ class BallBalance:
         self.time_range = .5
 
         self.obstacles = [
-             (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
+             (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,orientation,length,width
              ]
         self.gravity = 9.81
 
@@ -159,10 +163,10 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def ballBalanceTest():
+def ballBalanceTest(dynamics_sim):
     data = [1.02, 5.11, 0.00, 1,
             1.01, 4.70, -0.00, 0.00, 1, 0]
-    p = BallBalance(data)
+    p = BallBalance(data, dynamics_sim)
     # if p.checkStartFeasibility():
     #     print('In collision!')
     #     return False
