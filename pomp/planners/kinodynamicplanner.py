@@ -568,6 +568,7 @@ class EST(TreePlanner):
                     edge = extensions[i][2]
                     de = self.density(edge.end())
                     weights[i] = 1.0/(1.0+de**2)
+        # multiple nodes and samples per node in one expand but only one that goes towards sparse area is selected.
         for n in range(numNodeSamples - len(weights)):
             #self.stats.count('numExtensionSamples').add(1)
             nnear = self.pickNode()
@@ -589,8 +590,8 @@ class EST(TreePlanner):
                         continue
                     if estPrecheckExtensions:
                         #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                        # if not self.edgeChecker.feasible(edge):
+                        #     continue
                         de = self.density(edge.end())
                         extensions.append((nnear,u,edge))
                         # pick with probability inversely proportional to density
@@ -633,12 +634,12 @@ class EST(TreePlanner):
                 extensions[i] = extensions[-1]
                 weights.pop(-1)
                 extensions.pop(-1)
-        if not estPrecheckExtensions:
-            #cached extensions are pre-checked for feasibility
-            #self.stats.count('numEdgeChecks').add(1)
-            if not self.edgeChecker.feasible(edge):
-	        #TODO: penalize this node
-                return None
+        # if not estPrecheckExtensions:
+        #     #cached extensions are pre-checked for feasibility
+        #     #self.stats.count('numEdgeChecks').add(1)
+        #     if not self.edgeChecker.feasible(edge):
+	    #     #TODO: penalize this node
+        #         return None
 
         #feasible edge, add it
         nnew = self.addEdge(n,u,edge)
@@ -656,10 +657,10 @@ class EST(TreePlanner):
                     edge = self.controlSpace.interpolator(nnew.x,u)
                     if not self.cspace.feasible(edge.end()):
                         continue
-                    if estPrecheckExtensions:
-                        #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                    # if estPrecheckExtensions:
+                    #     #self.stats.count('numEdgeChecks').add(1)
+                    #     if not self.edgeChecker.feasible(edge):
+                    #         continue
                     de = self.density(edge.end())
                     extensions.append((nnew,u,edge))
                     # pick with probability inversely proportional to density
