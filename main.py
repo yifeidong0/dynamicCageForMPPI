@@ -1,4 +1,3 @@
-
 from __future__ import print_function,division
 from six import iteritems
 
@@ -37,17 +36,10 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
                      os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
                      data_id=data_id)
 
-
 all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','rrt*','anytime-rrt','stable-sparse-rrt']
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
-
-dynamics_sim = forwardSimulation(gui=0)
-
-all_problems = {
-                'BallBalance':ballbalance.ballBalanceTest(dynamics_sim),
-                'Push3D':push3d.push3DTest(dynamics_sim),
-                }
+all_problems = {'BallBalance', 'Push3D'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
@@ -70,7 +62,7 @@ def parseParameters(problem,planner):
         for arg in args:
             kv = arg.split("=")
             if len(kv) != 2:
-                raise ValueError("Unable to parse argument "+arg)
+                raise ValueError("Unable to parse argument " + arg)
             try:
                 params[kv[0]] = int(kv[1])
             except ValueError:
@@ -81,53 +73,34 @@ def parseParameters(problem,planner):
         planner = name
     return planner,params
 
-def runTests(problems = None,planners = None):
-    global all_planners,all_problems
-    if planners == None or planners == 'all' or planners[0] == 'all':
-        planners = all_planners
-
-    if problems == None or problems == 'all' or problems[0] == 'all':
-        problems = all_problems.keys()
-
-    for prname in problems:
-        pr = all_problems[prname] # PlanningProblem
-        for p in planners:
-            p,params = parseParameters(prname,p)
-            maxTime = params['maxTime']
-            del params['maxTime']
-            if pr.differentiallyConstrained() and p in allplanners.kinematicPlanners:
-                #p does not support differentially constrained problems
-                continue
-            testPlannerDefault(pr,prname,maxTime,p,**params)
-            print("Finished test on problem",prname,"with planner",p)
-            print("Parameters:")
-            for (k,v) in iteritems(params):
-                print(" ",k,":",v)
-    return
-
-def runViz(problem,planner):
-    #runVisualizer(rrtChallengeTest(),type=planner,nextStateSamplingRange=0.15,edgeCheckTolerance = 0.005)
-    planner,params = parseParameters(problem,planner)
-    if 'maxTime' in params:
-        del params['maxTime']
-    
-    print("Planning on problem",problem,"with planner",planner)
+def runTests(problem_name, planner_name, problem):
+    planner_name, params = parseParameters(problem_name, planner_name)
+    maxTime = params['maxTime']
+    del params['maxTime']
+    if problem.differentiallyConstrained() and planner_name in allplanners.kinematicPlanners:
+        return
+        #p does not support differentially constrained problems
+    testPlannerDefault(problem, problem_name, maxTime, planner_name, **params)
+    print("Finished test on problem", problem_name, "with planner", planner_name)
     print("Parameters:")
     for (k,v) in iteritems(params):
         print(" ",k,":",v)
-    runVisualizer(all_problems[problem],type=planner,**params)
+    return
+
+def runViz(problem_name, planner_name, problem):
+    #runVisualizer(rrtChallengeTest(),type=planner,nextStateSamplingRange=0.15,edgeCheckTolerance = 0.005)
+    planner, params = parseParameters(problem_name, planner_name)
+    if 'maxTime' in params:
+        del params['maxTime']
+    
+    print("Planning on problem",problem_name,"with planner",planner)
+    print("Parameters:")
+    for (k,v) in iteritems(params):
+        print(" ",k,":",v)
+    # runVisualizer(all_problems[problem],type=planner,**params)
+    runVisualizer(problem, type=planner, **params)
     
 if __name__=="__main__":
-    #HACK: uncomment one of these to test manually
-    #runViz('Kink','rrt*')
-    #test KD-tree in noneuclidean spaces
-    #runViz('Pendulum','ao-rrt(numControlSamples=10,nearestNeighborMethod=bruteforce)')
-    #runViz('Pendulum','ao-rrt')
-    #runViz('Dubins','stable-sparse-rrt(selectionRadius=0.25,witnessRadius=0.2)')
-    #runViz('DoubleIntegrator','stable-sparse-rrt(selectionRadius=0.3,witnessRadius=0.3)')
-    #runViz('Pendulum','stable-sparse-rrt(selectionRadius=0.3,witnessRadius=0.16)')
-    #runViz('Flappy','stable-sparse-rrt(selectionRadius=70,witnessRadius=35)')
-
     if len(sys.argv) < 3:
         print("Usage: main.py [-v] Problem Planner1 ... Plannerk")
         print()
@@ -143,10 +116,22 @@ if __name__=="__main__":
         exit(0)
     if sys.argv[1] == '-v':
         from pomp.visualizer import runVisualizer
-        #visualization mode
-        print("Testing visualization with problem",sys.argv[2],"and planner",sys.argv[3])
-        runViz(sys.argv[2],sys.argv[3])
+        # visualization mode
+        problem_name = sys.argv[2]
+        planner_name = sys.argv[3]
+        print("Testing visualization with problem", problem_name, "and planner", planner_name)
     else:
-        print()
-        print("Testing problems",sys.argv[1],"with planners",sys.argv[2:])
-        runTests(problems=[sys.argv[1]],planners=sys.argv[2:])
+        problem_name = sys.argv[1]
+        planner_name = sys.argv[2]
+        print("Testing problems", problem_name, "with planners", planner_name)
+
+    if problem_name == 'BallBalance':
+        dynamics_sim = forwardSimulationBallBalance(gui=0)
+        problem = ballbalance.ballBalanceTest(dynamics_sim)
+    if problem_name == 'Push3D':
+        dynamics_sim = forwardSimulationPush3D(gui=0)
+        problem = push3d.push3DTest(dynamics_sim)
+    if sys.argv[1] == '-v':
+        runViz(problem_name, planner_name, problem)
+    else:
+        runTests(problem_name, planner_name, problem)

@@ -1,4 +1,4 @@
-from ..bullet.forwardsimulator import forwardSimulation
+from ..bullet.forwardsimulator import *
 import random
 import pybullet as p
 import pybullet_data
@@ -6,7 +6,7 @@ import time
 import math
 import numpy as np
 
-class dataGeneratorSim(forwardSimulation):
+class dataGeneratorSim(forwardSimulationBallBalance):
     def __init__(self, params, gui=False):
         super().__init__(params, gui=gui)
 
