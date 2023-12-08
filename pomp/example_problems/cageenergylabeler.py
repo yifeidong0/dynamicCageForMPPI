@@ -15,7 +15,6 @@ class CageELControlSpace(ControlSpace):
         self.dynamics_sim = cage.dynamics_sim
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
-        # self.dynamics_sim = forwardSimulation(cage.params, gui=0)
         self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]
