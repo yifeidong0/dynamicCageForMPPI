@@ -54,7 +54,7 @@ class BallBalance:
         self.x_range = 10
         self.y_range = 10
         self.max_velocity = 5
-        self.max_acceleration = .1
+        self.max_acceleration = .7
         self.mass_object = 1 # import params from cageplanner
         self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.half_gripper_l = self.half_extents_gripper[0]

@@ -381,7 +381,7 @@ class RRT(TreePlanner):
             return None
         nnear.numExpansionsAttempted += 1
         # is_double_integration = False # TODO
-        uparent = nnear.uparent # list[nu+1], timeBaised
+        uparent = nnear.uparent # list[nu+1], timeBiased
         if uparent is None: uparent = [self.time_range,] + self.start_vo
         u = self.controlSelector.select(nnear.x, xrand, uparent) # select a u with best cost from rrtNumControlSampleIters u's
         if u is None:
@@ -507,6 +507,10 @@ class EST(TreePlanner):
         self.pruner = None
         self.radius = popdefault(params,'densityEstimationRadius',0.1)
         self.nearestNeighbors = NearestNeighbors(self.cspace.distance,popdefault(params,'nearestNeighborMethod','kdtree'))
+        self.max_acceleration = self.controlSpace.baseSpace.cage.max_acceleration
+        self.start_vo = self.controlSpace.baseSpace.cage.start_vo
+        self.time_range = self.controlSpace.baseSpace.cage.time_range
+
         if len(params) != 0:
             print("Warning, unused params",params)
 
@@ -558,6 +562,8 @@ class EST(TreePlanner):
         #Temp: test some probability of rejection?
         #extensions = [None]
         #weights = [1.0]
+
+        # a mechanism that stores and reuses previously sampled motion extensions
         cachedExtensions = estUseCachedExtensions
         if not cachedExtensions:
             weights = []
@@ -587,7 +593,17 @@ class EST(TreePlanner):
             if nnear is None:
                 return None
             #print("density",d0,"numsamples",numControlSamples)
+            uparent = nnear.uparent # list[nu+1], timeBiased
+            if uparent is None: uparent = [self.time_range,] + self.start_vo # no parent means connecting to root node 
             U = self.controlSpace.controlSet(nnear.x)
+            if uparent is not None:
+                t = uparent[0]
+                vparent = uparent[1:]
+                vbmin = [v-self.max_acceleration*t for v in vparent] 
+                vbmax = [v+self.max_acceleration*t for v in vparent]
+                U = BoxSet([0.0,] + [max(U.components[1].bmin[i], vbmin[i]) for i in range(len(vbmin))], 
+                        [U.components[0].tmax,] + [min(U.components[1].bmax[i], vbmax[i]) for i in range(len(vbmax))])
+
             #TEST: try sampling more extensions from sparse areas
             #d0 = self.density(nnear.x)
             #numControlSamples = int(1+10.0/(1.0+d0))
@@ -595,15 +611,15 @@ class EST(TreePlanner):
             for i in range(numControlSamplesPerNode):
                 u = U.sample()
                 if U.contains(u):
-                    edge = self.controlSpace.interpolator(nnear.x,u)
+                    edge = self.controlSpace.interpolator(nnear.x, u, uparent)
                     if self.pruneExtension(nnear,u):
                         continue
                     if not self.cspace.feasible(edge.end()):
                         continue
                     if estPrecheckExtensions:
                         #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                        # if not self.edgeChecker.feasible(edge):
+                        #     continue
                         de = self.density(edge.end())
                         extensions.append((nnear,u,edge))
                         # pick with probability inversely proportional to density
@@ -630,7 +646,7 @@ class EST(TreePlanner):
             #this gives some probability to rejecting extensions
             #in highly dense regions
             return None
-        n,u,edge = extensions[i]
+        n,u,edge = extensions[i] # only the least densed one is selected?
         
         if cachedExtensions:
             #delete from cache
@@ -646,12 +662,12 @@ class EST(TreePlanner):
                 extensions[i] = extensions[-1]
                 weights.pop(-1)
                 extensions.pop(-1)
-        if not estPrecheckExtensions:
-            #cached extensions are pre-checked for feasibility
-            #self.stats.count('numEdgeChecks').add(1)
-            if not self.edgeChecker.feasible(edge):
-	        #TODO: penalize this node
-                return None
+        # if not estPrecheckExtensions:
+        #     #cached extensions are pre-checked for feasibility
+        #     #self.stats.count('numEdgeChecks').add(1)
+        #     if not self.edgeChecker.feasible(edge):
+	    #     #TODO: penalize this node
+        #         return None
 
         #feasible edge, add it
         nnew = self.addEdge(n,u,edge)
@@ -660,19 +676,30 @@ class EST(TreePlanner):
             self.nodes.pop()
             return None
         self.onAddNode(nnew)
+
         #"let-it-roll" try adding an extension from the newly added node
         if cachedExtensions and estLetItRoll:
+            uparent = nnew.uparent # list[nu+1], timeBiased
+            if uparent is None: uparent = [self.time_range,] + self.start_vo # no parent means connecting to root node 
             U = self.controlSpace.controlSet(nnew.x)
+            if uparent is not None:
+                t = uparent[0]
+                vparent = uparent[1:]
+                vbmin = [v-self.max_acceleration*t for v in vparent] 
+                vbmax = [v+self.max_acceleration*t for v in vparent]
+                U = BoxSet([0.0,] + [max(U.components[1].bmin[i], vbmin[i]) for i in range(len(vbmin))], 
+                        [U.components[0].tmax,] + [min(U.components[1].bmax[i], vbmax[i]) for i in range(len(vbmax))])
+
             for i in range(estNumLetItRollSamples):
                 u = U.sample()
                 if U.contains(u):
-                    edge = self.controlSpace.interpolator(nnew.x,u)
+                    edge = self.controlSpace.interpolator(nnew.x, u, uparent)
                     if not self.cspace.feasible(edge.end()):
                         continue
-                    if estPrecheckExtensions:
-                        #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                    # if estPrecheckExtensions:
+                    #     #self.stats.count('numEdgeChecks').add(1)
+                    #     if not self.edgeChecker.feasible(edge):
+                    #         continue
                     de = self.density(edge.end())
                     extensions.append((nnew,u,edge))
                     # pick with probability inversely proportional to density
