@@ -9,7 +9,7 @@ from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 import math
 
-class BallBalanceControlSpace(ControlSpace):
+class push3dControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
         self.dynamics_sim = cage.dynamics_sim
@@ -52,7 +52,7 @@ class BallBalanceControlSpace(ControlSpace):
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class BallBalance:
+class Push3D:
     def __init__(self, data, dynamics_sim):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
@@ -99,7 +99,7 @@ class BallBalance:
 
     def controlSpace(self):
         # System dynamics
-        return BallBalanceControlSpace(self)
+        return push3dControlSpace(self)
 
     def workspace(self, offset=2):
         # For visualization
@@ -132,7 +132,7 @@ class BallBalance:
                        2.5*self.x_range, 2.5*self.y_range, math.pi/2])
 
 
-class BallBalanceObjectiveFunction(ObjectiveFunction):
+class Push3DObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -151,21 +151,25 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
         Enext = m*g*xnext[1] + 0.5*(u[1]**2+u[2]**2) # TODO
 
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
+        # c = max((Enext-E), 0.001)
+        # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
         c = max((Enext-E), 1e-3)
+        # print('c1',max((Enext-E), 1e-3))
+        # print('c2',(1e-1)*(abs(u[0]) + abs(u[1]) + abs(u[2])))
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
         # c = abs(u[0]) + abs(u[1]) + abs(u[2])
 
         return c
 
 
-def ballBalanceTest(dynamics_sim):
+def push3DTest(dynamics_sim):
     data = [1.02, 5.11, 0.0, 1,
             1.01, 4.70, 0.0, 0.0, 1, 0]
-    p = BallBalance(data, dynamics_sim)
+    p = Push3D(data, dynamics_sim)
     # if p.checkStartFeasibility():
     #     print('In collision!')
     #     return False
-    objective = BallBalanceObjectiveFunction(p)
+    objective = Push3DObjectiveFunction(p)
     return PlanningProblem(objective.space,p.startState(),p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),

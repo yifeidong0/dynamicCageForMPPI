@@ -4,7 +4,7 @@ import time
 import math
 
 class forwardSimulation():
-    def __init__(self, params, gui=False):
+    def __init__(self, gui=False):
         self.visualShapeId = -1
         self.gui = gui
         if self.gui:
@@ -15,8 +15,8 @@ class forwardSimulation():
         # p.setAdditionalSearchPath(pybullet_data.getDataPath())
         # p.setGravity(0, 0, self.g)
 
-        self.set_params(params)
-        self.create_shapes()
+        # self.set_params(params)
+        # self.create_shapes()
     
     def set_params(self, params):
         # Kinodynamics
