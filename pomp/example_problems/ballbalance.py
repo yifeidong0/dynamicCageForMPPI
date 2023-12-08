@@ -54,7 +54,7 @@ class BallBalance:
         self.x_range = 10
         self.y_range = 10
         self.max_velocity = 5
-        self.max_acceleration = 1
+        self.max_acceleration = .1
         self.mass_object = 1 # import params from cageplanner
         self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.half_gripper_l = self.half_extents_gripper[0]
@@ -77,7 +77,7 @@ class BallBalance:
         self.start_vo = data[2:4]
         self.goal_state = [5, data[1]-1.5, 0, 0, 0] # varying goal region
         self.goal_radius = .2
-        self.time_range = .5
+        self.time_range = .7
 
         self.obstacles = [
              (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
@@ -140,22 +140,20 @@ class BallBalanceObjectiveFunction(ObjectiveFunction):
     def incremental(self, x, u, uparent=None): # Node.uparent
         m = self.cage.mass_object
         g = self.cage.gravity
-        y_range = self.cage.y_range
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
 
-        # E = m*g*(y_range-x[1]) + 0.5*(uprev[1]**2+uprev[2]**2)
-        # E = m*g*(y_range-x[1]) + 0.5*(u[1]**2+u[2]**2)
-        # Enext = m*g*(y_range-xnext[1]) + 0.5*(u[1]**2+u[2]**2) # TODO
+        E = m*g*x[1] + 0.5*(uparent[1]**2+uparent[2]**2)
+        Enext = m*g*xnext[1] + 0.5*(u[1]**2+u[2]**2) # TODO
 
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         # c = max((Enext-E), 0.001)
         # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
-        # c = max((Enext-E), 0.001) + u[0]
+        c = max((Enext-E), 1e-3)
         # print('c1',max((Enext-E), 1e-3))
         # print('c2',(1e-1)*(abs(u[0]) + abs(u[1]) + abs(u[2])))
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        c = abs(u[0]) + abs(u[1]) + abs(u[2])
+        # c = abs(u[0]) + abs(u[1]) + abs(u[2])
 
         return c
 
