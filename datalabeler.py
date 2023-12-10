@@ -22,7 +22,7 @@ vis = 1
 maxTime = 12
 # filename = 'data/planar-gripper-dynamic-cage-dataset/data_points_O.csv'
 # filename = 'data/dataset-loaded-from-mppi-planner/filtered_states_from_mppi.csv'
-filename = 'data/dataset-loaded-from-mppi-planner/states_from_mppi_9k.csv'
+filename = 'data/9kdataset-from-mppi/states_from_mppi_9k.csv'
 
 # Read from the CSV file
 rows = []

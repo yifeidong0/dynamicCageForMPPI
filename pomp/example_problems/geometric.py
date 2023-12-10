@@ -158,7 +158,8 @@ class Geometric2DCSpace(BoxConfigurationSpace):
     def drawObstaclesGL(self, obstaclePos=None):
         self.beginDraw()
         if obstaclePos is None:
-            glColor3f(0.2,0.2,0.2)
+            # glColor3f(0.2,0.2,0.2)
+            glColor3f(0, 0.65, 0)
             for o in self.obstacles:
                 o.drawGL()
         else: # moving obstacles
@@ -175,6 +176,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
 
     def drawGripperGL(self, gripperPose, halfExtent):
         """For cagePlanner and cageEL"""
+        # glColor3f(0,0,0)
         self.beginDraw()
         gripper = AxisNotAlignedBox(gripperPose, halfExtent)
         gripper.drawGL()
@@ -189,15 +191,15 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         self.endDraw()
 
     def drawRobotGL(self,q):
-        glColor3f(0,0,1)
-        glPointSize(7.0)
+        glColor3f(1,0,0)
+        glPointSize(10.0)
         self.drawVerticesGL([q])
 
     def drawGoalGL(self,goal):
         self.beginDraw()
         if isinstance(goal,NeighborhoodSubset):
             q = goal.c
-            glColor3f(1,0,0)
+            glColor3f(.2,.4,.6)
             gldraw.circle(q,goal.r,filled=False)
             glPointSize(7.0)
             glBegin(GL_POINTS)
@@ -205,16 +207,16 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glEnd()
         elif isinstance(goal,SingletonSubset):
             q = goal.x
-            glColor3f(1,0,0)
+            glColor3f(.2,.4,.6)
             glPointSize(7.0)
             glBegin(GL_POINTS)
             glVertex2f(q[0],q[1])
             glEnd()
         else:
-            glColor3f(1,0,0)
+            glColor3f(.6,.2,.6)
             glPointSize(7.0)
             glBegin(GL_POINTS)
-            for i in range(50):
+            for i in range(300):
                 q = goal.sample()
                 glVertex2f(q[0],q[1])
             glEnd()

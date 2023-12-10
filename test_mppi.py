@@ -18,12 +18,12 @@ import csv
 if __name__ == "__main__":
     N_EPISODE = 1
     N_ITER = 30 # max no. of iterations
-    N_SAMPLE = 300 # 1000  # K
+    N_SAMPLE = 1000 # 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
     nx = 10
     nu = 4
     dt = 0.15
-    num_vis_samples = 1
+    num_vis_samples = 8
     lambda_ = 1.
     gravity = 9.81
     d = "cuda"

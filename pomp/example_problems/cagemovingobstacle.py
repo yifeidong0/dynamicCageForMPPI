@@ -43,7 +43,7 @@ class CageMO:
 
         # Gripper moving velocity (constant)
         self.gripper_vel_x = 0.0
-        self.gripper_vel_y = 3.0
+        self.gripper_vel_y = -6.0
 
         self.start_state = [450, 390, 0, self.gripper_vel_y, 0, 0]
         self.goal_state = [950, 900, 0, 0, 0, 0]
@@ -53,7 +53,7 @@ class CageMO:
         self.obstacles = [
             #  (375, 200, 50, 200), 
             #  (575, 200, 50, 200), 
-             (375, 400, 250, 50), 
+             (375, 395, 120, 70), 
              ]
         self.gravity = 9.81
 

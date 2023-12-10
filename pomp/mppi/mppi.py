@@ -8,6 +8,7 @@ from ..example_problems.cageplanner import CagePlannerControlSpace, CagePlanner
 import copy
 import math 
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import joblib
 import torch.nn as nn
 import time 
@@ -43,12 +44,17 @@ def get_gripper_corners(pose, half_extents_gripper):
     
     return torch.tensor([p1, p2, p3, p4]) # 4x2
 
-def draw_gripper(corners, ax, alpha=0.5):
+def draw_gripper(corners, ax, alpha=0.5, label=False):
     points = corners.numpy() # 4x2
     x, y = points[:, 0], points[:, 1]
+    # if label:
+    #     rect = patches.Rectangle((x[-1], y[-1]), 2*0.7, 2*0.4, edgecolor='green', facecolor='green', alpha=alpha, label='gripper', angle=)
+    # else:
     for i in range(len(points)):
         next_i = (i + 1) % len(points)  # To loop back to the first point
         ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'g-', alpha=alpha)  # 'b-' for blue lines
+    #     rect = patches.Rectangle((x[-1], y[-1]), 2*0.7, 2*0.4, edgecolor='green', facecolor='green', alpha=alpha)
+    # ax.add_patch(rect)
 
 def predict(model, input_data, scale_, min_):
     """
@@ -230,7 +236,8 @@ class MPPI():
             state = torch.tensor(state, device=self.d)
 
             c_dis_to_goal = self.running_cost(state, perturbed_action_t, self.state_goal).item()
-            c_goal = increased_weight * c_dis_to_goal
+            # c_goal = increased_weight * c_dis_to_goal
+            c_goal = c_dis_to_goal
             self.cost_total[k] += c_goal
 
             # Add action perturbation cost
@@ -302,7 +309,7 @@ class MPPI():
             self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
         # Add penalization against unstable configurations
-        self._add_cage_cost()        
+        self._add_cage_cost()
         
         beta = torch.min(self.cost_total) # min cost
         cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
@@ -381,7 +388,7 @@ def run_mppi(mppi, iter=10, episode=0):
 
 def visualize_mppi(mppi, xhist, gripperhist, t, reached_goal=False, epi=0):
     if reached_goal: t += 1
-    starto = copy.deepcopy(mppi.state_start[:2])
+    # starto = copy.deepcopy(mppi.state_start[:2])
     goalo = copy.deepcopy(mppi.state_goal[:2]) # opengl frame
     goalo[1] = 10-goalo[1]
     goalo = goalo.tolist() # bullet frame
@@ -391,17 +398,21 @@ def visualize_mppi(mppi, xhist, gripperhist, t, reached_goal=False, epi=0):
     fig, ax = plt.subplots()
 
     if not reached_goal:
-        ax.plot(mppi.rollout_state_q[:,:,0].T.cpu(), mppi.rollout_state_q[:,:,1].T.cpu(), 'k', alpha=0.3, zorder=3, linewidth=1) # rollout obj states
-        ax.plot(mppi.rollout_state_q[0,:,0].cpu(), mppi.rollout_state_q[0,:,1].cpu(), 'k', alpha=0.02, label="rollouts")
+        ax.plot(mppi.rollout_state_q[:,:,0].T.cpu(), mppi.rollout_state_q[:,:,1].T.cpu(), 'k', alpha=0.2, zorder=3, linewidth=1) # rollout obj states
+        ax.plot(mppi.rollout_state_q[0,:,0].cpu(), mppi.rollout_state_q[0,:,1].cpu(), 'k', alpha=0.2, label="rollout")
 
-    ax.plot([starto[0].cpu()], [10-starto[1].cpu()], 'ro', markersize=5, markerfacecolor='none', label="init obj")
-    ax.plot([xhist[t, 0].cpu()], [xhist[t, 1].cpu()], 'ko', markersize=3, markerfacecolor='none', label="curr obj", zorder=5)
-    c1 = plt.Circle(goalo, goal_rad, color='b', linewidth=1, fill=False, label="goal", zorder=7)
+    # ax.plot([starto[0].cpu()], [10-starto[1].cpu()], 'bo', markersize=5, markerfacecolor='none', label="object")
+    # ax.plot([xhist[t, 0].cpu()], [xhist[t, 1].cpu()], 'bo', markersize=5, markerfacecolor='none', label="curr obj", zorder=5)
+    c1 = plt.Circle(goalo, goal_rad, color='orange', linewidth=1, fill=False, label="goal", zorder=7)
     ax.add_patch(c1)
 
+    rect = patches.Rectangle((100, 100), 2*0.7, 2*0.4, edgecolor='green', linewidth=1, facecolor='none', label='gripper')
+    ax.add_patch(rect)
     for i in range(t+1):
-        draw_gripper(gripperhist[i].cpu(), ax, alpha=float((i+1)/(t+1))) # gripper past poses
-    ax.plot(xhist[:t+1,0].cpu(), xhist[:t+1,1].cpu(), 'ro-', markersize=3) # obj past trajectory
+        label = True if i == 0 else False
+        draw_gripper(gripperhist[i].cpu(), ax, alpha=float((i+1)/(t+1)), label=label) # gripper past poses
+    ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'b-', linewidth=1) # obj past trajectory
+    ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='r', s=14, label="object") # obj past positions
 
     # # # Show obstacles TODO: add obstacles.
     # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):

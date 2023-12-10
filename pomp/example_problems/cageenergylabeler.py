@@ -67,7 +67,7 @@ class CageEL:
         self.gripper_vel_theta = data[9]
 
         self.start_state = data[:7]
-        self.goal_state = [5, data[1]+1.5, 0, 0, 0, 0, 0] # varying goal region
+        self.goal_state = [5, 10, 0, 0, 0, 0, 0] # varying goal region
         self.goal_radius = .2
         self.time_range = .5
 
@@ -90,14 +90,14 @@ class CageEL:
         # System dynamics
         return CageELControlSpace(self)
 
-    def workspace(self, offset=5):
+    def workspace(self, offset=2):
         # For visualization
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [0-offset,0-offset]
         wspace.box.bmax = [self.x_range+offset, self.y_range+offset]
         return wspace
     
-    def configurationSpace(self, offset=5):
+    def configurationSpace(self, offset=2):
         wspace = Geometric2DCSpace()
         wspace.box.bmin = [-offset,-offset]
         wspace.box.bmax = [self.x_range+offset, self.y_range+offset]
@@ -116,7 +116,7 @@ class CageEL:
     def startState(self):
         return self.start_state
 
-    def goalSet(self, offset=5):
+    def goalSet(self, offset=2):
         return BoxSet([0.0-offset, self.goal_state[1],
                        -self.max_velocity, -self.max_velocity, 
                        -2.5*self.x_range, -2.5*self.y_range, -math.pi/2],

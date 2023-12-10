@@ -46,6 +46,7 @@ class PlanVisualizationProgram(GLProgram):
         self.movie_frame = 0
         self.prev_path_x = None
         self.display_new_path = False
+        self.just_animated = False
 
     def mousefunc(self,button,state,x,y):
         if state == 0:
@@ -59,8 +60,11 @@ class PlanVisualizationProgram(GLProgram):
             if self.painted:
                 try:
                     mkdir_p(self.plannerFilePrefix)
-                    self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
-                    self.movie_frame += 1
+                    if self.just_animated:
+                        self.just_animated = False
+                    else:
+                        self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                        self.movie_frame += 1
                 except Exception as e:
                     ex_type, ex, tb = sys.exc_info()
                     traceback.print_tb(tb)
@@ -140,10 +144,12 @@ class PlanVisualizationProgram(GLProgram):
         if hasattr(self.problem.controlSpace, "is_cage_planner"):
             gripperPose = self.problem.controlSpace.obstacle_pose
             halfExtent = self.problem.controlSpace.half_extents_gripper
+            glColor3f(0, 0.65, 0)
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
         elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
             gripperPose = self.problem.controlSpace.obstacles[:3]
             halfExtent = self.problem.controlSpace.obstacles[3:]
+            glColor3f(0, 0.65, 0)
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
         else: # cageMO and cage 
             self.problem.visualizer.drawObstaclesGL()
@@ -231,7 +237,8 @@ class PlanVisualizationProgram(GLProgram):
                         self.problem.visualizer.drawObstaclesGL(x1[4:6])
 
                         # Draw the new obstacle at q2
-                        glColor3f(0.2,0.2,0.2)
+                        # glColor3f(0.2,0.2,0.2)
+                        glColor3f(0, 0.65, 0)
                         self.problem.visualizer.drawObstaclesGL(x2[4:6])
 
                         # Draw the graph again
@@ -241,8 +248,8 @@ class PlanVisualizationProgram(GLProgram):
                             x1, u = self.path[0][m], self.path[1][m]
                             x2 = self.path[0][k+1]
                             # Interpolate and draw all previous line segments
-                            glColor3f(0, 0.75, 0)
-                            glLineWidth(7.0)
+                            glColor3f(0, 0, 1)
+                            glLineWidth(2.0)
                             interpolator = self.problem.space.interpolator(x1, u)
                             self.problem.visualizer.drawInterpolatorGL(interpolator)
                             # Draw the node x2
@@ -287,7 +294,7 @@ class PlanVisualizationProgram(GLProgram):
                         self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
 
                         # Draw the new obstacle at x2
-                        glColor3f(0.2,0.2,0.2)
+                        glColor3f(0, 0.65, 0)
                         self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
 
                         # Draw the graph again
@@ -297,8 +304,8 @@ class PlanVisualizationProgram(GLProgram):
                             x1, u = self.path[0][m], self.path[1][m]
                             x2 = self.path[0][k+1]
                             # Interpolate and draw all previous line segments
-                            glColor3f(0, 0.75, 0)
-                            glLineWidth(7.0)
+                            glColor3f(0, 0, 1)
+                            glLineWidth(2.0)
                             interpolator = self.problem.space.interpolator(x1, u)
                             self.problem.visualizer.drawInterpolatorGL(interpolator)
                             # Draw the node x2
@@ -311,11 +318,12 @@ class PlanVisualizationProgram(GLProgram):
 
                         # Pause and save screen
                         if self.display_new_path:
-                            time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+                            time.sleep(1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
                         if self.save_movie:
                             self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                             self.movie_frame += 1
-                        time.sleep(0.5)
+                        time.sleep(.3)
+                        self.just_animated = True
 
             else: # draw static path without animation if no path update
                 self.draw_path_static()
@@ -328,8 +336,8 @@ class PlanVisualizationProgram(GLProgram):
     def draw_path_static(self):
         if self.path:
             # Plot path edges
-            glColor3f(0,0.75,0)
-            glLineWidth(7.0)
+            glColor3f(0,0,1)
+            glLineWidth(2.0)
             for q,u in zip(self.path[0][:-1],self.path[1]):
                 interpolator = self.problem.space.interpolator(q,u)
                 self.problem.visualizer.drawInterpolatorGL(interpolator)
