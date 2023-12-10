@@ -21,6 +21,7 @@ main: initial trials.
 2. 
 bullet-collision: 
 [cageenerylabeler.py]: double-integrator point mass system with moving robot gripper that is embedded with Bullet forward dynamics simulation. Edge collision checking is thus not needed anymore.
+[planepush.py]: similar to the above task but on a horizontal plane.
 [ballbalance.py]: same task but single-integrator system without any acceleration limits.
 
 3.

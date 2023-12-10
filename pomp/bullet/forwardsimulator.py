@@ -133,7 +133,7 @@ class forwardSimulationPlanePush():
             p.connect(p.DIRECT) # p.GUI
         self.g = -9.81
         # p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        # p.setGravity(0, 0, self.g)
+        p.setGravity(0, 0, self.g)
 
         # self.set_params(params)
         # self.create_shapes()
@@ -141,26 +141,27 @@ class forwardSimulationPlanePush():
     def set_params(self, params):
         # Kinodynamics
         self.mass_object = params[0]
+        self.moment_object = params[1] # moment of inertia
         self.pos_object = [1000,0,0]
         self.quat_object = p.getQuaternionFromEuler([math.pi/2,0,0])
         self.vel_object = [.1,0,0]
         
-        self.mass_gripper = params[1]
-        self.moment_gripper = params[2] # moment of inertia
+        self.mass_gripper = params[2]
+        self.moment_gripper = params[3]
         self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
         # Geometrics
-        ydepth = 0.1
-        self.half_extents_gripper = [params[3][0], ydepth/2, params[3][1]] # movement on x-z plane
-        self.radius_object = params[4]
-        self.height_object = ydepth
+        # ydepth = 0.1
+        # self.half_extents_gripper = [params[3][0], ydepth/2, params[3][1]] # movement on x-z plane
+        # self.radius_object = params[4]
+        self.z_items = .1
 
     def create_shapes(self):
-        # Create an object
-        objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=self.radius_object, height=self.height_object)
+        # Create an object # TODO import complex shapes from files
+        objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, .6, self.z_items])
         self.objectUid = p.createMultiBody(self.mass_object, 
                                            objectId, 
                                            self.visualShapeId, 
@@ -169,8 +170,8 @@ class forwardSimulationPlanePush():
         p.changeDynamics(self.objectUid, -1, lateralFriction=0, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
-        # Create a bar-gripper
-        gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.half_extents_gripper)
+        # Create a robot
+        gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.5, .5, self.z_items])
         self.gripperUid = p.createMultiBody(self.mass_gripper, 
                                        gripperId, 
                                        self.visualShapeId, 
