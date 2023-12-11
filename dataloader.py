@@ -9,7 +9,7 @@ import numpy as np
 # 2. random C-space sampling (low quality)
 
 # 1. Data points generated from Bullet
-num_trajs = 500
+num_trajs = 1
 num_via_points = 10
 gui = 0
 filename = "data_points_O.csv"
