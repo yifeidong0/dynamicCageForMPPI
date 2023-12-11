@@ -153,7 +153,7 @@ class forwardSimulationPlanePush():
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.lateralFriction = 0.3
+        self.lateralFriction = 0.0
 
         # Geometrics
         self.z_bodies = .1
@@ -236,7 +236,7 @@ class forwardSimulationPlanePush():
 
         # Get the object and gripper states
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
-        self.eul_object = p.getEulerFromQuaternion(self.quat_object)
+        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
         self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
         self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)

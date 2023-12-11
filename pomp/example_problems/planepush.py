@@ -37,7 +37,7 @@ class PlanePushControlSpace(ControlSpace):
         return self.eval(x, u, 1.0)
     
     def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
-        x_i, y_i, theta_i, vx_i, vy_i, alpha_i, xr_i, yr_i, thetar_i = x # state space, 7D (3+3: cage, 3: robot gripper)
+        # x_i, y_i, theta_i, vx_i, vy_i, alpha_i, xr_i, yr_i, thetar_i = x # state space, 7D (3+3: cage, 3: robot gripper)
         t, ax, ay, omega = u # control space
         tc = t * amount
         mu = [tc, ax, ay, omega]
@@ -49,12 +49,6 @@ class PlanePushControlSpace(ControlSpace):
         # Make theta fall in [-pi, pi]
         x_new[2] = limit_angle_to_pi(x_new[2])
         x_new[8] = limit_angle_to_pi(x_new[8])
-        # thetar_i = x_new[8]
-        # if thetar_i > theta_max:
-        #     thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
-        # elif thetar_i < theta_min:
-        #     thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
-        # x_new[8] = thetar_i
 
         if print_via_points: # TODO
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
@@ -69,13 +63,11 @@ class PlanePush:
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
+        self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
-        self.max_angle_velocity = 1
+        self.max_ang_velocity = 2 # 1
         self.max_acceleration = 3
-        # self.half_extents_gripper = [.7, .4] # movement on x-z plane
-        # self.half_gripper_l = self.half_extents_gripper[0]
-        # self.half_gripper_w = self.half_extents_gripper[1]
-        # self.radius_object = 0.01
+        self.max_ang_acceleration = 1 # .5
         self.mass_object = .3
         self.mass_gripper = 10
         self.moment_object = .1 # moment of inertia
@@ -91,12 +83,9 @@ class PlanePush:
         self.start_state = data[:9]
         self.goal_state = [5, data[1]-1.5, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         self.goal_radius = .2 # MPPI goal radius
-        self.goal_half_extent = 1.0 # AO-xxx goal region
+        self.goal_half_extent = 1.5 # AO-xxx goal region
         self.time_range = 1
 
-        # self.obstacles = [
-        #      (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
-        #      ]
         self.obstacles = []
         self.gravity = -9.81
 
@@ -106,30 +95,30 @@ class PlanePush:
     #     return contains
 
     def controlSet(self):
-        return BoxSet([-self.max_acceleration, -self.max_acceleration, -self.max_acceleration], 
-                      [self.max_acceleration, self.max_acceleration, self.max_acceleration])
+        return BoxSet([-self.max_acceleration, -self.max_acceleration, -self.max_ang_acceleration], 
+                      [self.max_acceleration, self.max_acceleration, self.max_ang_acceleration])
 
     def controlSpace(self):
         # System dynamics
         return PlanePushControlSpace(self)
 
-    def workspace(self, offset=2):
+    def workspace(self):
         # For visualization
         wspace = Geometric2DCSpace()
-        wspace.box.bmin = [-offset,-offset]
-        wspace.box.bmax = [self.x_range+offset, self.y_range+offset]
+        wspace.box.bmin = [-self.offset,-self.offset]
+        wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         return wspace
     
-    def configurationSpace(self, offset=2):
+    def configurationSpace(self):
         wspace = Geometric2DCSpace()
-        wspace.box.bmin = [-offset,-offset]
-        wspace.box.bmax = [self.x_range+offset, self.y_range+offset]
+        wspace.box.bmin = [-self.offset,-self.offset]
+        wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         wspace.addObstacleParam(self.obstacles)
         res =  MultiConfigurationSpace(wspace,
                                        BoxConfigurationSpace([-math.pi],[math.pi]),
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([-self.max_angle_velocity],[self.max_angle_velocity]),
+                                       BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
                                        BoxConfigurationSpace([-2.5*self.x_range],[2.5*self.x_range]),
                                        BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.y_range]),
                                        BoxConfigurationSpace([-math.pi],[math.pi])
@@ -139,23 +128,23 @@ class PlanePush:
     def startState(self):
         return self.start_state
 
-    def goalSet(self, offset=2, margin=3.0):
+    def goalSet(self, margin=4.0):
         # Put goal region opposite to gripper movement direction
         gripper_vel = math.sqrt(self.gripper_vel_x**2 + self.gripper_vel_y**2) + 1e-4
         dis_x = margin * self.gripper_vel_x / gripper_vel if gripper_vel > 0.1 else 0.0
         dis_y = margin * self.gripper_vel_y / gripper_vel if gripper_vel > 0.1 else margin
         goal_pos_o_center = [self.start_state[0] - dis_x,
                              self.start_state[1] - dis_y]
-        goal_pos_o_bound = [[max(-offset, goal_pos_o_center[0]-self.goal_half_extent), 
-                             max(-offset, goal_pos_o_center[1]-self.goal_half_extent)], 
-                            [min(self.x_range+offset, goal_pos_o_center[0]+self.goal_half_extent), 
-                             min(self.y_range+offset, goal_pos_o_center[1]+self.goal_half_extent)]
+        goal_pos_o_bound = [[max(-self.offset, goal_pos_o_center[0]-self.goal_half_extent), 
+                             max(-self.offset, goal_pos_o_center[1]-self.goal_half_extent)], 
+                            [min(self.x_range+self.offset, goal_pos_o_center[0]+self.goal_half_extent), 
+                             min(self.y_range+self.offset, goal_pos_o_center[1]+self.goal_half_extent)]
                            ]
         return BoxSet([goal_pos_o_bound[0][0], goal_pos_o_bound[0][1], -math.pi,
-                       -self.max_velocity, -self.max_velocity, -self.max_angle_velocity,
+                       -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -2.5*self.x_range, -2.5*self.y_range, -math.pi],
                       [goal_pos_o_bound[1][0], goal_pos_o_bound[1][1], math.pi,
-                       self.max_velocity, self.max_velocity, self.max_angle_velocity,
+                       self.max_velocity, self.max_velocity, self.max_ang_velocity,
                        2.5*self.x_range, 2.5*self.y_range, math.pi])
 
 
@@ -214,7 +203,12 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         # c = max((Enext-E), 1e-5)
 
         # Work (applied force, torque and friction)
-        W = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[1]-x[1]) + I*u[3]*(xnext[2]-x[2])
+        delta_alpha = xnext[2]-x[2]
+        if delta_alpha < -math.pi:
+            delta_alpha = 2*math.pi + delta_alpha
+        if delta_alpha > math.pi:
+            delta_alpha = -2*math.pi + delta_alpha
+        W = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[1]-x[1]) + I*u[3]*delta_alpha
         c = max(W, 1e-5)
 
         return c
