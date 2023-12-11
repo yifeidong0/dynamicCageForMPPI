@@ -41,13 +41,7 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-# dynamics_sim = forwardSimulation(gui=0)
-
 all_problems = {'CageEnergyLabeler', 'PlanePush'}
-# all_problems = {
-#                 'CageEnergyLabeler':cageenergylabeler.cageELTest(dynamics_sim),
-#                 'PlanePush':planepush.planePushTest(dynamics_sim),
-#                 }
 
 defaultParameters = {'maxTime':30}
 customParameters = {
@@ -82,16 +76,6 @@ def parseParameters(problem,planner):
     return planner,params
 
 def runTests(problem_name, planner_name, problem):
-    # global all_planners,all_problems
-    # if planners == None or planners == 'all' or planners[0] == 'all':
-    #     planners = all_planners
-
-    # if problems == None or problems == 'all' or problems[0] == 'all':
-    #     problems = all_problems.keys()
-
-    # for prname in problems:
-        # pr = all_problems[prname] # PlanningProblem
-        # for p in planners:
     planner_name, params = parseParameters(problem_name, planner_name)
     maxTime = params['maxTime']
     del params['maxTime']
@@ -115,7 +99,6 @@ def runViz(problem_name, planner_name, problem):
     print("Parameters:")
     for (k,v) in iteritems(params):
         print(" ",k,":",v)
-    # runVisualizer(all_problems[problem],type=planner,**params)
     runVisualizer(problem, type=planner, **params)
     
 if __name__=="__main__":
@@ -142,7 +125,6 @@ if __name__=="__main__":
         problem_name = sys.argv[1]
         planner_name = sys.argv[2]
         print("Testing problems", problem_name, "with planners", planner_name)
-        # runTests(problems=[sys.argv[1]],planners=sys.argv[2:])
 
     if problem_name == 'CageEnergyLabeler':
         dynamics_sim = forwardSimulationEL(gui=0)

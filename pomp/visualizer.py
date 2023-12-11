@@ -140,16 +140,16 @@ class PlanVisualizationProgram(GLProgram):
         glDisable(GL_LIGHTING)
         
         # Draw initial gripper pose
-        if hasattr(self.problem.controlSpace, "is_cage_planner"):
-            gripperPose = self.problem.controlSpace.obstacle_pose
-            halfExtent = self.problem.controlSpace.half_extents_gripper
-            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
+        # if hasattr(self.problem.controlSpace, "is_cage_planner"):
+        #     gripperPose = self.problem.controlSpace.obstacle_pose
+        #     halfExtent = self.problem.controlSpace.half_extents_gripper
+        #     self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+        if hasattr(self.problem.controlSpace, "is_energy_labeler"):
             gripperPose = self.problem.controlSpace.obstacles[:3]
             halfExtent = self.problem.controlSpace.obstacles[3:]
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        else: # cageMO and cage 
-            self.problem.visualizer.drawObstaclesGL()
+        # else: # cageMO and cage 
+        #     self.problem.visualizer.drawObstaclesGL()
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:
@@ -228,15 +228,14 @@ class PlanVisualizationProgram(GLProgram):
                     x1, u = self.path[0][k], self.path[1][k]
                     x2 = self.path[0][k+1]
 
-                    # Clear the previous obstacle by drawing a background color (e.g., white)
-                    glColor3f(1, 1, 1)
-                    self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
-                    # self.problem.visualizer.drawGripperGL(x1[2:], self.problem.controlSpace.half_extents_gripper) # ballbalance
+                    if hasattr(self.problem.controlSpace, "is_energy_labeler"):
+                        # Clear the previous obstacle by drawing a background color (e.g., white)
+                        glColor3f(1, 1, 1)
+                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
 
-                    # Draw the new obstacle at x2
-                    glColor3f(0.2,0.2,0.2)
-                    self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
-                    # self.problem.visualizer.drawGripperGL(x2[2:], self.problem.controlSpace.half_extents_gripper)
+                        # Draw the new obstacle at x2
+                        glColor3f(0.2,0.2,0.2)
+                        self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
 
                     # Draw the graph again
                     self.draw_graph()
@@ -265,7 +264,7 @@ class PlanVisualizationProgram(GLProgram):
                     if self.save_movie:
                         self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                         self.movie_frame += 1
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
         else: # draw static path without animation if no path update
             self.draw_path_static()
