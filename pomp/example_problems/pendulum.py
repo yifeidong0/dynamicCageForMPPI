@@ -28,7 +28,7 @@ class PendulumVisualizer:
             glVertex2f(*self.toScreen(q))
         glEnd()
 
-    def drawRobotGL(self,q):
+    def drawObjectGL(self,q):
         glColor3f(0,0,1)
         glPointSize(7.0)
         glBegin(GL_POINTS)

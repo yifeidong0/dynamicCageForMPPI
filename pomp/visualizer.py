@@ -140,20 +140,14 @@ class PlanVisualizationProgram(GLProgram):
         glDisable(GL_LIGHTING)
         
         # Draw initial gripper pose
-        # if hasattr(self.problem.controlSpace, "is_cage_planner"):
-        #     gripperPose = self.problem.controlSpace.obstacle_pose
-        #     halfExtent = self.problem.controlSpace.half_extents_gripper
-        #     self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
         if hasattr(self.problem.controlSpace, "is_energy_labeler"):
             gripperPose = self.problem.controlSpace.obstacles[:3]
             halfExtent = self.problem.controlSpace.obstacles[3:]
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        # else: # cageMO and cage 
-        #     self.problem.visualizer.drawObstaclesGL()
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:
-                self.problem.visualizer.drawRobotGL(p)
+                self.problem.visualizer.drawObjectGL(p)
 
         self.draw_graph()
 
@@ -169,7 +163,7 @@ class PlanVisualizationProgram(GLProgram):
             for (w,(n,u,e)) in zip(*est.extensionCache):
                 glColor4f(1,0,1,(0.1+0.9*w/sumw))
                 self.problem.visualizer.drawInterpolatorGL(e)
-                #self.problem.visualizer.drawRobotGL(e.end())
+                #self.problem.visualizer.drawObjectGL(e.end())
             glDisable(GL_BLEND)
             glLineWidth(1.0)
 
@@ -178,7 +172,7 @@ class PlanVisualizationProgram(GLProgram):
         if est:
             for n in est.nodes:
                 if est.density(n.x) <= 1.0:
-                    self.problem.visualizer.drawRobotGL(n.x)
+                    self.problem.visualizer.drawObjectGL(n.x)
         """
 
         # Draw static/animated path found by the planner
@@ -218,7 +212,7 @@ class PlanVisualizationProgram(GLProgram):
                 self.prev_path_x = self.path[0]
         
         if self.display_new_path:
-            self.problem.visualizer.drawRobotGL(self.problem.start)
+            self.problem.visualizer.drawObjectGL(self.problem.start)
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 
             if self.path and len(self.path[0]) > 1:
@@ -231,7 +225,7 @@ class PlanVisualizationProgram(GLProgram):
                     if hasattr(self.problem.controlSpace, "is_energy_labeler"):
                         # Clear the previous obstacle by drawing a background color (e.g., white)
                         glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper) # cageEnergyLabeler
+                        self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
 
                         # Draw the new obstacle at x2
                         glColor3f(0.2,0.2,0.2)
@@ -245,14 +239,24 @@ class PlanVisualizationProgram(GLProgram):
                     for m in range(k+1):
                         x1, u = self.path[0][m], self.path[1][m]
                         x2 = self.path[0][k+1]
-                        # Interpolate and draw all previous line segments
+
+                        # Interpolate and draw all previous line segments along object trajectory
                         glColor3f(0, 0.75, 0)
                         glLineWidth(7.0)
                         interpolator = self.problem.space.interpolator(x1, u)
                         self.problem.visualizer.drawInterpolatorGL(interpolator)
-                        # Draw the node x2
+                        
+                        # Draw the node x2 along object trajectory
                         glLineWidth(1)
-                        self.problem.visualizer.drawRobotGL(x2)
+                        self.problem.visualizer.drawObjectGL(x2[:2])
+
+                        # Indicate robot gripper's center moving position
+                        if hasattr(self.problem.controlSpace, "is_water_swing"):
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2[6:8])
+                        if hasattr(self.problem.controlSpace, "is_plane_push"):
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2[6:8])
 
                     # Process events to update the display
                     glutSwapBuffers()
@@ -283,10 +287,10 @@ class PlanVisualizationProgram(GLProgram):
             # Plot path nodes
             glLineWidth(1)
             for q in self.path[0]:
-                self.problem.visualizer.drawRobotGL(q)
+                self.problem.visualizer.drawObjectGL(q)
             
         # Draw start and goal region
-        self.problem.visualizer.drawRobotGL(self.problem.start)
+        self.problem.visualizer.drawObjectGL(self.problem.start)
         self.problem.visualizer.drawGoalGL(self.problem.goal)
 
     def displayfunc(self):

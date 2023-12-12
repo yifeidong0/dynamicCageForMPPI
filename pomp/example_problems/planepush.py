@@ -17,6 +17,7 @@ class PlanePushControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.is_plane_push = True
 
     def configurationSpace(self):
         return self.cage.configurationSpace()

@@ -31,7 +31,7 @@ class DubinsVisualizer:
     def drawVerticesGL(self,qs):
         self.base.drawVerticesGL(qs)
 
-    def drawRobotGL(self,q):
+    def drawObjectGL(self,q):
         glColor3f(0,0,1)
         glPointSize(7.0)
         self.drawVerticesGL([q])

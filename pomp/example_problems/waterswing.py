@@ -17,6 +17,7 @@ class WaterSwingControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.is_water_swing = True
 
     def configurationSpace(self):
         return self.cage.configurationSpace()
@@ -176,8 +177,8 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
 
 
 def waterSwingTest(dynamics_sim,
-                   data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
-                           3.0, 4.3, 0.0, 0.0, 0.0, 0.0]):
+                   data = [3.0, 5.5, 0.0, 0.0, 1.0, 0.0,
+                           3.0, 4.3, 0.0, 0.0, 1.0, 0.0]):
     p = WaterSwing(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

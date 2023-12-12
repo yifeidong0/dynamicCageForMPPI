@@ -191,8 +191,13 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         glEnd()
         self.endDraw()
 
-    def drawRobotGL(self,q):
+    def drawObjectGL(self,q):
         glColor3f(0,0,1)
+        glPointSize(7.0)
+        self.drawVerticesGL([q])
+
+    def drawRobotGL(self,q):
+        glColor3f(.75,0,0)
         glPointSize(7.0)
         self.drawVerticesGL([q])
 
@@ -214,10 +219,10 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glVertex2f(q[0],q[1])
             glEnd()
         else:
-            glColor3f(1,0,0)
+            glColor3f(.8,0,.8)
             glPointSize(7.0)
             glBegin(GL_POINTS)
-            for i in range(50):
+            for i in range(500):
                 q = goal.sample()
                 glVertex2f(q[0],q[1])
             glEnd()
