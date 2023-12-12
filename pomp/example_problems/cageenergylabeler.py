@@ -174,9 +174,11 @@ def cageELTest(dynamics_sim):
     #     return False
     objective = CageELObjectiveFunction(p)
     # return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(), # double bullet running...
-    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
+    return PlanningProblem(objective.space,
+                           p.startState(),
+                           p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean = True)
+                           euclidean=True)
 
 

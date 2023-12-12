@@ -49,7 +49,7 @@ class WaterSwingControlSpace(ControlSpace):
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class PlanePush:
+class WaterSwing:
     def __init__(self, data, dynamics_sim):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
@@ -80,6 +80,17 @@ class PlanePush:
         self.obstacles = []
         self.gravity = -9.81
 
+        self.cspace_bound = [[0, self.x_range], 
+                             [0, self.y_range], 
+                             [-math.pi, math.pi], 
+                             [-self.max_velocity, self.max_velocity],
+                             [-self.max_velocity, self.max_velocity],
+                             [-self.max_ang_velocity, self.max_ang_velocity],
+                             [-self.x_range, 2*self.x_range], 
+                             [-self.y_range, 2*self.y_range], 
+                             [-math.pi, math.pi], 
+                             ]
+        
     # def checkStartFeasibility(self): # TODO; bullet collision checking
     #     gripper = AxisNotAlignedBox(self.obstacles[0][:3], self.obstacles[0][3:])
     #     contains = gripper.contains(self.start_state[:2])
@@ -120,17 +131,6 @@ class PlanePush:
         return self.start_state
 
     def goalSet(self):
-        # Put goal region opposite to gripper movement direction
-        # gripper_vel = math.sqrt(self.gripper_vel_x**2 + self.gripper_vel_y**2) + 1e-4
-        # dis_x = margin * self.gripper_vel_x / gripper_vel if gripper_vel > 0.1 else 0.0
-        # dis_y = margin * self.gripper_vel_y / gripper_vel if gripper_vel > 0.1 else margin
-        # goal_pos_o_center = [self.start_state[0] - dis_x,
-        #                      self.start_state[1] - dis_y]
-        # goal_pos_o_bound = [[max(-self.offset, goal_pos_o_center[0]-self.goal_half_extent), 
-        #                      max(-self.offset, goal_pos_o_center[1]-self.goal_half_extent)], 
-        #                     [min(self.x_range+self.offset, goal_pos_o_center[0]+self.goal_half_extent), 
-        #                      min(self.y_range+self.offset, goal_pos_o_center[1]+self.goal_half_extent)]
-        #                    ]
         return BoxSet([-self.offset, -self.offset, -math.pi,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -2.5*self.x_range, -2.5*self.y_range, -math.pi],
@@ -158,8 +158,8 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
         self.xnext = xnext
 
         # Energy
-        E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2
-        Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2
+        E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
+        Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
         c = max((Enext-E), 1e-5)
 
@@ -178,7 +178,7 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
 def waterSwingTest(dynamics_sim):
     data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
             3.0, 4.3, 0.0, 0.0, 0.0, 0.0]
-    p = PlanePush(data, dynamics_sim)
+    p = WaterSwing(data, dynamics_sim)
 
     # if p.checkStartFeasibility():
     #     print('In collision!')

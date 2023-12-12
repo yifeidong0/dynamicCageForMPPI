@@ -1,4 +1,4 @@
-from pomp.example_problems.cagedatasetgenerator import *
+from pomp.bullet.scriptedmovement import *
 from pomp.example_problems.cageplanner import *
 from pomp.example_problems.cageenergylabeler import *
 from pomp.planners import allplanners

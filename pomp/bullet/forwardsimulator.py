@@ -78,12 +78,13 @@ class forwardSimulationEL():
         p.resetBaseVelocity(self.objectUid, self.vel_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim_labeler(self, inputs, print_via_points=True):
+    def run_forward_sim_labeler(self, inputs, print_via_points=True, num_via_points=10):
         t, ax, az = inputs
-
+        interval = int(int(t*240)/num_via_points)
+        interval = 3 if interval==0 else interval
+        
         # Step the simulation
         via_points = []
-        num_via_points = 10
         force_on_object = [self.mass_object*ax, 0, self.mass_object*(az-0.0)]
         for i in range(int(t*240)):
             # Apply external force on object
@@ -96,8 +97,6 @@ class forwardSimulationEL():
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
 
             # Print object via-points along the trajectory for visualization
-            interval = int(int(t*240)/num_via_points)
-            interval = 3 if interval==0 else interval
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
                 via_points.append([self.pos_object[0], self.pos_object[2]])
 
@@ -205,12 +204,13 @@ class forwardSimulationPlanePush():
         p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim_labeler(self, inputs, print_via_points=True):
+    def run_forward_sim_labeler(self, inputs, print_via_points=True, num_via_points=10):
         t, ax, ay, omega = inputs
+        interval = int(int(t*240)/num_via_points)
+        interval = 3 if interval==0 else interval
 
         # Step the simulation
         via_points = []
-        num_via_points = 10
         force_on_object = [self.mass_object*ax, self.mass_object*ay, 0.0]
         torque_on_object = [0.0, 0.0, self.moment_object*omega]
         for i in range(int(t*240)):
@@ -226,8 +226,7 @@ class forwardSimulationPlanePush():
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
 
             # Print object via-points along the trajectory for visualization
-            interval = int(int(t*240)/num_via_points)
-            interval = 3 if interval==0 else interval
+
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
                 via_points.append([self.pos_object[0], self.pos_object[1]])
 
@@ -337,12 +336,13 @@ class forwardSimulationWaterSwing():
         p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim(self, inputs, print_via_points=True):
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
         t, ax, az, omega = inputs
+        interval = int(int(t*240)/num_via_points)
+        interval = 3 if interval==0 else interval
 
         # Step the simulation
         via_points = []
-        num_via_points = 10
         force_on_object = [self.mass_object*ax, 0.0, self.mass_object*az]
         torque_on_object = [0.0, self.moment_object*omega, 0.0]
         for i in range(int(t*240)):
@@ -358,8 +358,6 @@ class forwardSimulationWaterSwing():
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
 
             # Print object via-points along the trajectory for visualization
-            interval = int(int(t*240)/num_via_points)
-            interval = 3 if interval==0 else interval
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
                 via_points.append([self.pos_object[0], self.pos_object[2]])
 
