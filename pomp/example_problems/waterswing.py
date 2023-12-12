@@ -175,9 +175,9 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def waterSwingTest(dynamics_sim):
-    data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
-            3.0, 4.3, 0.0, 0.0, 0.0, 0.0]
+def waterSwingTest(dynamics_sim,
+                   data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
+                           3.0, 4.3, 0.0, 0.0, 0.0, 0.0]):
     p = WaterSwing(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

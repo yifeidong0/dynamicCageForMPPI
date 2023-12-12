@@ -205,9 +205,9 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def planePushTest(dynamics_sim):
-    data = [3.0, 5.5, 0.0, 0.0, 3.0, 0,
-            3.0, 4.3, 0.0, 0.0, 3.0, 0.0]
+def planePushTest(dynamics_sim, 
+                  data = [3.0, 5.5, 0.0, 0.0, 3.0, 0,
+                          3.0, 4.3, 0.0, 0.0, 3.0, 0.0]):
     p = PlanePush(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

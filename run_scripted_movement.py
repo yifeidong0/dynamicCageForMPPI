@@ -32,7 +32,7 @@ if problem_name == 'WaterSwing':
                  3.0, 4.3, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationWaterSwing(gui=0)
     cage = WaterSwing(fake_data, dynamics_sim)
-    x_init = [0*cage.x_range/2, cage.y_range/3, 0, 0, 0, 0,
+    x_init = [0.2*cage.x_range/2, cage.y_range/3, 0, 0, 0, 0,
               cage.x_range/2, cage.y_range/7, 0, 0, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimWaterSwing(cage, gui=gui)

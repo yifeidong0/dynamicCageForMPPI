@@ -44,9 +44,14 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
 
             # Apply external force
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
             p.applyExternalForce(self.gripperUid, -1, 
                                 [force_x, 0, force_z], 
                                 self.pos_gripper, 
+                                p.WORLD_FRAME)
+            p.applyExternalForce(self.objectUid, -1, # keep object static
+                                [0, 0, self.mass_object*(-self.g)], 
+                                self.pos_object, 
                                 p.WORLD_FRAME)
             # p.applyExternalTorque(self.gripperUid, -1, 
             #                      [0, self.moment_gripper*(-3), 0],

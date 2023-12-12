@@ -164,9 +164,9 @@ class CageELObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def cageELTest(dynamics_sim):
-    data = [1.02, 5.11, 0.00, 2,
-            1.01, 4.70, -0.00, 0.00, 2, 0.0]
+def cageELTest(dynamics_sim,
+               data = [1.02, 5.11, 0.00, 2, 1.01, 4.70, -0.00, 0.00, 2, 0.0]):
+    
     p = CageEL(data, dynamics_sim)
 
     # if p.checkStartFeasibility():
