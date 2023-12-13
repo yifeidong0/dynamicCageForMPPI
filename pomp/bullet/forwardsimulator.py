@@ -3,6 +3,16 @@ import pybullet_data
 import time
 import math
 
+def correct_euler(euler):
+    if euler[0] > -0.8 and euler[0] < 0.8:
+        y = euler[1]
+    elif (euler[0] > 3 or euler[0] < -3) and euler[1] > 0:
+        y = math.pi - euler[1]
+    elif (euler[0] > 3 or euler[0] < -3) and euler[1] < 0:
+        y = -math.pi - euler[1]
+
+    return [0, y, 0]
+
 class forwardSimulationEL():
     def __init__(self, gui=False):
         self.visualShapeId = -1
@@ -356,14 +366,15 @@ class forwardSimulationWaterSwing():
                                 torque_on_object,
                                 p.WORLD_FRAME)
             p.stepSimulation()
-            self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
+            self.pos_object, _ = p.getBasePositionAndOrientation(self.objectUid)
+            print('!!!!',self.pos_object, p.getEulerFromQuaternion(_))
 
             # Print object via-points along the trajectory for visualization
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
                 via_points.append([self.pos_object[0], self.pos_object[2]])
 
             if self.gui:
-                time.sleep(1/240)
+                time.sleep(10/240)
 
         # Get the object and gripper states
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
@@ -372,10 +383,12 @@ class forwardSimulationWaterSwing():
         self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
         self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
+        print(correct_euler(self.eul_object)[1])
+        print(correct_euler(self.eul_gripper)[1])
 
-        new_states = [self.pos_object[0], self.pos_object[2], self.eul_object[1],
+        new_states = [self.pos_object[0], self.pos_object[2], correct_euler(self.eul_object)[1],
                       self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],
-                      self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
+                      self.pos_gripper[0], self.pos_gripper[2], correct_euler(self.eul_gripper)[1], 
                       self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
                       ]
         return new_states, via_points
@@ -385,48 +398,3 @@ class forwardSimulationWaterSwing():
         p.disconnect()
 
 
-# # Test
-# mass_object = .1
-# mass_gripper = 10
-# moment_gripper = 1 # moment of inertia
-# half_extents_gripper = [.7, .4] # movement on x-z plane
-# radius_object = 0.01
-# params = [mass_object, mass_gripper, moment_gripper, half_extents_gripper, radius_object]
-# sim = forwardSimulation(params, gui=1)
-
-# # From high to low
-# data = [1.02, 5.11, 0.00, 0,
-#             1.01, 4.70, -0.00, 0.00, 1, -0.50]
-# gipper_vel = data[-3:]
-# time.sleep(2.5)
-
-# # energy labeler
-# states = [
-#     [1.02, 5.11, 0.0, 1, 1.01, 4.7, -0.0], 
-#     [1.02, 5.11, 0.0, 1, 1.01, 4.7, -0.0], 
-#           [0.7100127117984576, 5.387613813939294, -0.4604435562589945, -0.5801269016460175, 1.0099999973140912, 5.648274952381763, 2.2790271618888782e-05], 
-#           [0.0471691448743874, 4.42801122570194, -1.2927751208622842, -1.9570681321835652, 1.0099999973140912, 6.402441619048386, 0.00044360889042296335], 
-#           [-1.0554520549137338, 3.3182704622122805, -1.264165870195518, -0.6226900540635716, 1.0099999973140912, 7.264941619048337, 0.0004436088904229634]
-#           ]
-# inputs = [
-#     [0.9519515951370671, -0.28284521572525545, -1.8662179375099317], 
-#     [0.9519515951370671, -0.28284521572525545, -1.8662179375099317], 
-#           [0.7549019843490768, -1.10364406356239, -1.8257784272303628], 
-#           [0.8662928020120086, 0.0331701457006246, 1.5471050181101496]
-#           ]
-# sim.reset_states(states[0]+gipper_vel)
-# for i in range(len(inputs)):
-#     # sim.reset_states(states[i]+gipperc_vel)
-#     new_states = sim.run_forward_sim_labeler(inputs[i])
-#     print('new_states', new_states)
-
-# # # ball balance
-# # states = [[1.02, 5.11, 1.01, 4.7, -0.0], [4.304206592094783, 5.195005075715069, 1.0126748209851473, 4.754665910584282, -0.3832874049208745], [4.589857682473735, 1.4220963753814768, 1.0126748209851473, 5.1671659105842584, -0.58691567122751]]
-# # inputs = [[0.4341884048103374, 7.5790919267402685, -8.60582670121947], [0.41600639801144806, 0.6924874918276647, -9.146445334142033]]
-# # for i in range(len(inputs)):
-# #     state = states[i][:2]+inputs[i][1:]+states[i][2:]+gipper_vel
-# #     sim.reset_states(state)
-# #     new_states = sim.run_forward_sim_ball_balance(inputs[i][0])
-# #     print('new_states', new_states)
-
-# sim.finish_sim()

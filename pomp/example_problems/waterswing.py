@@ -58,12 +58,12 @@ class WaterSwing:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 5
-        self.max_acceleration = 3
-        self.max_ang_acceleration = 1
+        self.max_acceleration = 10
+        self.max_ang_acceleration = 3
         self.mass_object = .05
         self.mass_gripper = 10 # has to be the SAME as the 4face-bottle.urdf file!
-        self.moment_object = 1 # moment of inertia
-        self.moment_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
+        self.moment_object = 1e-3 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=0.3
+        self.moment_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file! Hollow - (I) = (1/2) * m * R^2 - R ~= 0.5
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper]
 
         # Gripper moving velocity (constant)
@@ -76,7 +76,7 @@ class WaterSwing:
         self.goal_state = [0, data[1]-2, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         self.goal_radius = .2 # MPPI goal radius
         self.goal_half_extent = 1.5 # AO-xxx goal region
-        self.time_range = 1
+        self.time_range = .2
 
         self.obstacles = []
         self.gravity = -9.81
@@ -159,19 +159,19 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
         self.xnext = xnext
 
         # Energy
-        E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
-        Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
-        # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        c = max((Enext-E), 1e-5)
+        # E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
+        # Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
+        # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
+        # c = max((Enext-E), 1e-5)
 
-        # # Work (applied force, torque and friction)
-        # delta_alpha = xnext[2]-x[2]
-        # if delta_alpha < -math.pi:
-        #     delta_alpha = 2*math.pi + delta_alpha
-        # if delta_alpha > math.pi:
-        #     delta_alpha = -2*math.pi + delta_alpha
-        # W = m*u[1]*(xnext[0]-x[0]) + m*(u[2]-g)*(xnext[1]-x[1]) + I*u[3]*delta_alpha
-        # c = max(W, 1e-5)
+        # Work (applied force, torque and friction)
+        delta_alpha = xnext[2] - x[2]
+        if delta_alpha < -math.pi:
+            delta_alpha = 2*math.pi + delta_alpha
+        if delta_alpha > math.pi:
+            delta_alpha = -2*math.pi + delta_alpha
+        W = m*u[1]*(xnext[0]-x[0]) + m*(u[2]-g)*(xnext[1]-x[1]) + I*u[3]*delta_alpha
+        c = max(W, 1e-5)
 
         return c
 
