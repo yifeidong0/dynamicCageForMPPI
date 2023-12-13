@@ -55,7 +55,7 @@ class WaterSwing:
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.offset = 2.0 # extend the landscape
+        self.offset = 10.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 5
         self.max_acceleration = 10
@@ -73,10 +73,10 @@ class WaterSwing:
         self.gripper_vel_theta = data[11]
 
         self.start_state = data[:9]
-        self.goal_state = [0, data[1]-2, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
+        self.goal_state = [0, data[1]-self.offset, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         self.goal_radius = .2 # MPPI goal radius
         self.goal_half_extent = 1.5 # AO-xxx goal region
-        self.time_range = .2
+        self.time_range = .1
 
         self.obstacles = []
         self.gravity = -9.81

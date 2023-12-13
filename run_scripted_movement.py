@@ -6,7 +6,7 @@ import time
 import csv
 
 problem_name = "WaterSwing"
-total_time = 2.2
+total_time = 3.5
 gui = 1
 num_via_points = 10
 num_trajs = 1

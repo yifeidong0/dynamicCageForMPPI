@@ -2,16 +2,7 @@ import pybullet as p
 import pybullet_data
 import time
 import math
-
-def correct_euler(euler):
-    if euler[0] > -0.8 and euler[0] < 0.8:
-        y = euler[1]
-    elif (euler[0] > 3 or euler[0] < -3) and euler[1] > 0:
-        y = math.pi - euler[1]
-    elif (euler[0] > 3 or euler[0] < -3) and euler[1] < 0:
-        y = -math.pi - euler[1]
-
-    return [0, y, 0]
+from ..structures.toolfunc import *
 
 class forwardSimulationEL():
     def __init__(self, gui=False):
@@ -367,7 +358,6 @@ class forwardSimulationWaterSwing():
                                 p.WORLD_FRAME)
             p.stepSimulation()
             self.pos_object, _ = p.getBasePositionAndOrientation(self.objectUid)
-            print('!!!!',self.pos_object, p.getEulerFromQuaternion(_))
 
             # Print object via-points along the trajectory for visualization
             if print_via_points and (i % interval == 0 or i == int(t*240)-1):
@@ -383,8 +373,6 @@ class forwardSimulationWaterSwing():
         self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
         self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
-        print(correct_euler(self.eul_object)[1])
-        print(correct_euler(self.eul_gripper)[1])
 
         new_states = [self.pos_object[0], self.pos_object[2], correct_euler(self.eul_object)[1],
                       self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],

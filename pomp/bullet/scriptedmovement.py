@@ -1,4 +1,5 @@
 from .forwardsimulator import *
+from ..structures.toolfunc import *
 import random
 import pybullet as p
 import pybullet_data
@@ -66,12 +67,11 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
                 self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
                 self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
 
-                new_states = [self.pos_object[0], self.pos_object[2], self.eul_object[1],
+                new_states = [self.pos_object[0], self.pos_object[2], correct_euler(self.eul_object)[1],
                             self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],
-                            self.pos_gripper[0], self.pos_gripper[2], self.eul_gripper[1], 
+                            self.pos_gripper[0], self.pos_gripper[2], correct_euler(self.eul_gripper)[1], 
                             self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
                             ]
-                print(self.pos_gripper,"self.pos_gripper")
                 via_points.append(new_states)
 
             if self.gui:
