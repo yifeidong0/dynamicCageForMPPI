@@ -49,13 +49,11 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
                                 [force_x, 0, force_z], 
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
-            p.applyExternalForce(self.objectUid, -1, # keep object static
-                                [0, 0, self.mass_object*(-self.g)], 
-                                self.pos_object, 
-                                p.WORLD_FRAME)
-            # p.applyExternalTorque(self.gripperUid, -1, 
-            #                      [0, self.moment_gripper*(-3), 0],
-            #                      p.WORLD_FRAME)
+            # p.applyExternalForce(self.objectUid, -1, # keep object static
+            #                     [0, 0, self.mass_object*(-self.g)], 
+            #                     self.pos_object, 
+            #                     p.WORLD_FRAME)
+
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization

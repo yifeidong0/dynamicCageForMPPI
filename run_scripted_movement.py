@@ -6,20 +6,13 @@ import time
 import csv
 
 problem_name = "WaterSwing"
-total_time = 1.0
+total_time = 2.2
 gui = 1
 num_via_points = 10
 num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 
 # cage_planner = CagePlanner()
-# params = cage_planner.params
-# y_range = cage_planner.y_range
-# x_range = cage_planner.x_range
-# half_extents_gripper = cage_planner.half_extents_gripper
-# radius_object = cage_planner.radius_object
-# g = cage_planner.gravity
-# cbd = cage_planner.c_space_boundary
 # ubd = cage_planner.u_boundary
 
 if problem_name == 'CageEnergyLabeler':
@@ -32,8 +25,8 @@ if problem_name == 'WaterSwing':
                  3.0, 4.3, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationWaterSwing(gui=0)
     cage = WaterSwing(fake_data, dynamics_sim)
-    x_init = [0.2*cage.x_range/2, cage.y_range/3, 0, 0, 0, 0,
-              cage.x_range/2, cage.y_range/7, 0, 0, 0, 0]
+    x_init = [cage.x_range/2, cage.y_range/3-0.3, 0, 0, 0, 0,
+              cage.x_range/2, cage.y_range/3, 0, 0, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimWaterSwing(cage, gui=gui)
     

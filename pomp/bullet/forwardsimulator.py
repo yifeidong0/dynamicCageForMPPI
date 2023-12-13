@@ -284,10 +284,10 @@ class forwardSimulationWaterSwing():
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.lateralFriction = 0.0
+        self.lateralFriction = 0.5
 
         # Geometrics
-        self.y_bodies = .1
+        self.y_bodies = .3
 
     def create_shapes(self):
         # Create a plane
@@ -296,7 +296,7 @@ class forwardSimulationWaterSwing():
         #                  rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object # TODO import complex shapes from files
-        objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, self.y_bodies, .6])
+        objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.3, self.y_bodies, .3])
         self.objectUid = p.createMultiBody(self.mass_object, 
                                            objectId, 
                                            self.visualShapeId, 
@@ -306,12 +306,13 @@ class forwardSimulationWaterSwing():
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
-        gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.5, self.y_bodies, .5])
-        self.gripperUid = p.createMultiBody(self.mass_gripper, 
-                                       gripperId, 
-                                       self.visualShapeId, 
-                                       self.pos_gripper,
-                                       self.quat_gripper)
+        # gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.5, self.y_bodies, .5])
+        # self.gripperUid = p.createMultiBody(self.mass_gripper, 
+        #                                gripperId, 
+        #                                self.visualShapeId, 
+        #                                self.pos_gripper,
+        #                                self.quat_gripper)
+        self.gripperUid = p.loadURDF("asset/4face-bottle.urdf", self.pos_gripper, self.quat_gripper)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
 

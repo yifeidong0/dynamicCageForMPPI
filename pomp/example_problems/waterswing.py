@@ -57,13 +57,13 @@ class WaterSwing:
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
-        self.max_ang_velocity = 1
+        self.max_ang_velocity = 5
         self.max_acceleration = 3
-        self.max_ang_acceleration = .5
-        self.mass_object = .3
-        self.mass_gripper = 10
-        self.moment_object = .1 # moment of inertia
-        self.moment_gripper = 1
+        self.max_ang_acceleration = 1
+        self.mass_object = .05
+        self.mass_gripper = 10 # has to be the SAME as the 4face-bottle.urdf file!
+        self.moment_object = 1 # moment of inertia
+        self.moment_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper]
 
         # Gripper moving velocity (constant)
@@ -73,7 +73,7 @@ class WaterSwing:
         self.gripper_vel_theta = data[11]
 
         self.start_state = data[:9]
-        self.goal_state = [0, data[1]-1.5, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
+        self.goal_state = [0, data[1]-2, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         self.goal_radius = .2 # MPPI goal radius
         self.goal_half_extent = 1.5 # AO-xxx goal region
         self.time_range = 1

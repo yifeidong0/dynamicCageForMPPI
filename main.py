@@ -30,10 +30,20 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
     data_id = 0
     if 'data_id' in plannerParams: # TODO
         data_id = plannerParams['data_id']
+
+    from datetime import datetime
+    # Get the current timestamp as a string
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = allplanners.filename[plannerType]
+
+    # Concatenate the timestamp with the filename and add the '.csv' extension
+    file_path = os.path.join(folder, f"{filename}_{timestamp}.csv")
+
     test.testPlanner(planner,
                      numTrials,
                      maxTime,
-                     os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
+                     #  os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
+                     file_path,
                      data_id=data_id)
 
 

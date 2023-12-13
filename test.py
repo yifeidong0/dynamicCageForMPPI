@@ -43,43 +43,53 @@
 
 
 
-import pybullet as p
-import time
-import pybullet_data
-physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
-p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
+# import pybullet as p
+# import time
+# import pybullet_data
+# physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
+# p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
 # p.setGravity(0,0,-10)
 # planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-1], baseOrientation=[0,0,0,1])
-startPos = [0,0,1]
-startOrientation = p.getQuaternionFromEuler([0,0,0])
-# boxId = p.loadURDF("r2d2.urdf",startPos, startOrientation)
-#set the center of mass frame (loadURDF sets base link frame)
-# startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos,
-# startOrientation)
-# for i in range (10000):
+# startPos = [0,0,1]
+# startOrientation = p.getQuaternionFromEuler([0,0,0])
+# boxId = p.loadURDF("asset/4face-bottle.urdf", startPos, startOrientation)
+# #set the center of mass frame (loadURDF sets base link frame)
+# # startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos,
+# # startOrientation)
+# # for i in range (10000):
+# #     p.stepSimulation()
+# #     time.sleep(1./240.)
+# objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, .6, .1])
+# objectUid = p.createMultiBody(1, 
+#                             objectId, 
+#                             -1, 
+#                             [0,0,4],)
+#                             # self.quat_object
+# force_on_object = [0,0,1]
+# torque_on_object = [0,0,1]
+# pos_object,quat_object = p.getBasePositionAndOrientation(objectUid)
+# for i in range(int(2400)):
+#     # Apply external force on object
+#     p.applyExternalForce(objectUid, -1, 
+#                         force_on_object, # gravity compensated 
+#                         pos_object,
+#                         p.WORLD_FRAME)
+#     # p.applyExternalTorque(objectUid, -1, 
+#     #                     torque_on_object,
+#     #                     p.WORLD_FRAME)
 #     p.stepSimulation()
-#     time.sleep(1./240.)
-objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, .6, .1])
-objectUid = p.createMultiBody(1, 
-                                    objectId, 
-                                    -1, )
-                                    # self.pos_object,
-                                    # self.quat_object)
-force_on_object = [0,0,1]
-torque_on_object = [0,0,1]
-pos_object,quat_object = p.getBasePositionAndOrientation(objectUid)
-for i in range(int(240)):
-    # Apply external force on object
-    p.applyExternalForce(objectUid, -1, 
-                        force_on_object, # gravity compensated 
-                        pos_object, 
-                        p.WORLD_FRAME)
-    # p.applyExternalTorque(objectUid, -1, 
-    #                     torque_on_object,
-    #                     p.WORLD_FRAME)
-    p.stepSimulation()
-    pos_object,quat_object = p.getBasePositionAndOrientation(objectUid)
-    eul_object = p.getEulerFromQuaternion(quat_object) # rad
-    print(pos_object)
-    # time.sleep(10./240.)
-p.disconnect()
+#     pos_object,quat_object = p.getBasePositionAndOrientation(objectUid)
+#     eul_object = p.getEulerFromQuaternion(quat_object) # rad
+#     print(pos_object)
+#     time.sleep(2./240.)
+# p.disconnect()
+
+
+import pybullet as p
+import pybullet_data as pd
+import os
+p.connect(p.DIRECT)
+name_in = os.path.join(pd.getDataPath(), "/home/yif/Documents/KTH/research/dynamicCaging/cad/bottle/5face-bottle.obj")
+name_out = "5face-bottle-vhacd.obj"
+name_log = "log.txt"
+p.vhacd(name_in, name_out, name_log)

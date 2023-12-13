@@ -12,8 +12,8 @@ import os
 
 plannername = 'ao-rrt'
 prname = 'WaterSwing' # 'CageEnergyLabeler', 'PlanePush'
-vis = 1
-maxTime = 5
+vis = 0
+maxTime = 60
 
 if prname == 'CageEnergyLabeler':
     dynamics_sim = forwardSimulationEL(gui=0)
@@ -23,38 +23,33 @@ if prname == 'PlanePush':
     filename = ''
 if prname == 'WaterSwing':
     dynamics_sim = forwardSimulationWaterSwing(gui=0)
-    filename = 'data/waterswing/scripted_movement_viapoints_WaterSwing.csv'
+    filenames = ['scripted_movement_viapoints_WaterSwing_t2.2.csv',
+                'scripted_movement_viapoints_WaterSwing_t3.5.csv']
 
-# Read from the CSV file
-rows = []
-ids = []
-with open(filename, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        rows.append([float(d) for d in row[1:]])
-        ids.append(int(id))
+for filename in filenames:
+    # Read from the CSV file
+    rows = []
+    ids = []
+    with open(filename, 'r') as file:
+        csv_reader = csv.reader(file)
+        header = next(csv_reader)
+        for id, row in enumerate(csv_reader):
+            rows.append([float(d) for d in row[1:]])
+            ids.append(int(id))
 
+    params = {'maxTime':maxTime}
+    if 'maxTime' in params:
+        del params['maxTime']
 
-params = {'maxTime':maxTime}
-if 'maxTime' in params:
-    del params['maxTime']
-
-# print("Parameters:")
-# for (k,v) in iteritems(params):
-#     print(" ",k,":",v)
-
-for i, data_i in enumerate(rows):
-    if prname == 'CageEnergyLabeler':
-        problem = cageELTest(dynamics_sim, data_i)
-    if prname == 'PlanePush':
-        problem = planePushTest(dynamics_sim, data_i)
-    if prname == 'WaterSwing':
-        problem = waterSwingTest(dynamics_sim, data_i)
-    if vis:
-        runVisualizer(problem, type=plannername, **params)
-    else:
-        print(ids[i])
-        testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
-
-    # Save escape energy labels to the original csv file
+    for i, data_i in enumerate(rows):
+        if prname == 'CageEnergyLabeler':
+            problem = cageELTest(dynamics_sim, data_i)
+        if prname == 'PlanePush':
+            problem = planePushTest(dynamics_sim, data_i)
+        if prname == 'WaterSwing':
+            problem = waterSwingTest(dynamics_sim, data_i)
+        if vis:
+            runVisualizer(problem, type=plannername, **params)
+        else:
+            print(ids[i])
+            testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
