@@ -84,6 +84,7 @@ class WaterSwingControlSpace(ControlSpace):
         tc = t * amount
         mu = [tc, ax, ay, omega]
 
+        # xaug = x + self.cage.gripper_vel
         vxg_init, vyg_init = self.cage.gripper_vel[:2]
         omegag = self.cage.gripper_vel_theta
         vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, self.cage.start_state[8], x[8])
