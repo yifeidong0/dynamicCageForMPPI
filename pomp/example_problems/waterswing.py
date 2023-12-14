@@ -10,6 +10,56 @@ from ..bullet.forwardsimulator import *
 from ..structures.toolfunc import *
 import math
 
+def rotate_vector(vector, angle):
+    """
+    Rotate a 2D vector by a given angle.
+
+    Parameters:
+    vector: A tuple or list representing the vector (vx, vy).
+    angle: The rotation angle in radians.
+    
+    Returns:
+    The rotated vector (vx_new, vy_new).
+    """
+    rotation_matrix = np.array([
+        [np.cos(angle), np.sin(angle)],
+        [-np.sin(angle),  np.cos(angle)]
+    ])
+
+    return np.dot(rotation_matrix, vector)
+
+def calculate_new_velocity(vx, vy, omega, theta1, theta2):
+    """
+    Calculate the new velocity of the object after time T.
+
+    Parameters:
+    vx, vy: Initial velocity components.
+    omega: Angular velocity.
+    T: Time duration.
+    
+    Returns:
+    New velocity components (vx_new, vy_new).
+    """
+    # Angular displacement
+    angular_displacement = theta2 - theta1
+
+    # Correct for wrapping
+    if angular_displacement > np.pi:
+        angular_displacement -= 2 * np.pi
+    elif angular_displacement < -np.pi:
+        angular_displacement += 2 * np.pi
+
+    # Time duration for the change in orientation
+    T = angular_displacement / omega if omega != 0 else 0
+
+    # Angular displacement
+    theta = omega * T
+
+    # Rotate the velocity vector
+    vx_new, vy_new = rotate_vector([vx, vy], theta)
+
+    return vx_new, vy_new
+
 class WaterSwingControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
@@ -34,7 +84,10 @@ class WaterSwingControlSpace(ControlSpace):
         tc = t * amount
         mu = [tc, ax, ay, omega]
 
-        xaug = x + self.cage.gripper_vel
+        vxg_init, vyg_init = self.cage.gripper_vel[:2]
+        omegag = self.cage.gripper_vel_theta
+        vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, self.cage.start_state[8], x[8])
+        xaug = x + [vxg, vyg, omegag]
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
@@ -55,7 +108,7 @@ class WaterSwing:
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.offset = 10.0 # extend the landscape
+        self.offset = 5.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 5
         self.max_acceleration = 10
@@ -178,7 +231,7 @@ class WaterSwingObjectiveFunction(ObjectiveFunction):
 
 def waterSwingTest(dynamics_sim,
                    data = [3.0, 5.5, 0.0, 0.0, 1.0, 0.0,
-                           3.0, 4.3, 0.0, 0.0, 1.0, 0.0]):
+                           3.0, 4.3, 0.0, 1.0, 1.0, -np.pi/2]):
     p = WaterSwing(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

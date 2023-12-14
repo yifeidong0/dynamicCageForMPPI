@@ -12,7 +12,7 @@ import os
 
 plannername = 'ao-rrt'
 prname = 'WaterSwing' # 'CageEnergyLabeler', 'PlanePush'
-vis = 0
+vis = 1
 maxTime = 30
 
 if prname == 'CageEnergyLabeler':
