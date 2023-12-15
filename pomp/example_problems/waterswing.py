@@ -89,6 +89,7 @@ class WaterSwingControlSpace(ControlSpace):
         omegag = self.cage.gripper_vel_theta
         vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, self.cage.start_state[8], x[8])
         xaug = x + [vxg, vyg, omegag]
+
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
@@ -109,10 +110,10 @@ class WaterSwing:
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.offset = 5.0 # extend the landscape
+        self.offset = 8.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 5
-        self.max_acceleration = 10
+        self.max_acceleration = 20
         self.max_ang_acceleration = 3
         self.mass_object = .05
         self.mass_gripper = 10 # has to be the SAME as the 4face-bottle.urdf file!
@@ -130,7 +131,7 @@ class WaterSwing:
         self.goal_state = [0, data[1]-self.offset, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         self.goal_radius = .2 # MPPI goal radius
         self.goal_half_extent = 1.5 # AO-xxx goal region
-        self.time_range = .1
+        self.time_range = .2
 
         self.obstacles = []
         self.gravity = -9.81

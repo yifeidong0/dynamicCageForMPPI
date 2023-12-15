@@ -15,16 +15,17 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
         self.set_params(cage.params)
         self.create_shapes()
 
-    def run_forward_sim(self, total_time=10, num_via_points=10):
+    def run_forward_sim(self, total_time=10, num_via_points=20):
         num_steps = int(total_time * 240)  # Number of time steps
-        radius = 1.0  # Radius of the circular path
+        radius = 3.0  # Radius of the circular path
+        velocity = 2 * np.pi * radius/ total_time  # Radians per second for a full circle
         angular_velocity = 2 * np.pi / total_time  # Radians per second for a full circle
         initial_angular_velocity = -2 * np.pi / total_time  # Initial velocity for a full circle
-        vel_gripper = [angular_velocity, 0, 0]
+        vel_gripper = [velocity, 0, 0]
         vel_angular_gripper = [0, initial_angular_velocity, 0]
         p.resetBaseVelocity(self.gripperUid, vel_gripper, vel_angular_gripper) # linear and angular vels both in world coordinates
 
-        dt = total_time / num_steps
+        dt = total_time / num_steps # 1/240
 
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -37,7 +38,7 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
             theta = angular_velocity * t * dt
             
             # Calculate centripetal acceleration
-            centripetal_acceleration = (angular_velocity ** 2) / radius
+            centripetal_acceleration = (velocity ** 2) / radius
 
             # Calculate force components along x and y axes (centripetal force)
             force_x = -centripetal_acceleration * self.mass_gripper * np.sin(theta)

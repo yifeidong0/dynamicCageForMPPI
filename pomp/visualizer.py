@@ -235,8 +235,8 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Draw the graph again
                     self.draw_graph()
-                    print("x",self.path[0])
-                    print("u",self.path[1])
+                    # print("x",self.path[0])
+                    # print("u",self.path[1])
 
                     for m in range(k+1):
                         x1, u = self.path[0][m], self.path[1][m]
@@ -266,11 +266,11 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Pause and save screen
                     if self.display_new_path:
-                        time.sleep(0.003*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+                        time.sleep(0.03*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
                     if self.save_movie:
                         self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                         self.movie_frame += 1
-                    # time.sleep(0.1)
+                    time.sleep(0.1)
 
         else: # draw static path without animation if no path update
             self.draw_path_static()

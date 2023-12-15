@@ -6,9 +6,9 @@ import time
 import csv
 
 problem_name = "WaterSwing"
-total_time = 3.5
+total_time = 2.5
 gui = 1
-num_via_points = 10
+num_via_points = 20
 num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 

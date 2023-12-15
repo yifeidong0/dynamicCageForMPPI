@@ -12,8 +12,8 @@ import os
 
 plannername = 'ao-rrt'
 prname = 'WaterSwing' # 'CageEnergyLabeler', 'PlanePush'
-vis = 1
-maxTime = 30
+vis = 0
+maxTime = 60
 
 if prname == 'CageEnergyLabeler':
     dynamics_sim = forwardSimulationEL(gui=0)
@@ -24,8 +24,10 @@ if prname == 'PlanePush':
 if prname == 'WaterSwing':
     dynamics_sim = forwardSimulationWaterSwing(gui=0)
     filenames = [
+                # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
+                'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
-                 'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
+                #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
                  ]
 
 for filename in filenames:
