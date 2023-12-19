@@ -259,6 +259,10 @@ class PlanVisualizationProgram(GLProgram):
                         if hasattr(self.problem.controlSpace, "is_plane_push"):
                             glLineWidth(1)
                             self.problem.visualizer.drawRobotGL(x2[6:8])
+                        if hasattr(self.problem.controlSpace, "is_box_pivot"):
+                            glLineWidth(1)
+                            height_spring = 3.7
+                            self.problem.visualizer.drawRobotGL([x2[7], height_spring])
 
                     # Process events to update the display
                     glutSwapBuffers()

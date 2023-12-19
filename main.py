@@ -52,13 +52,14 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing'}
+all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
                     'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
                     'PlanePush':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
+                    'BoxPivot':{'maxTime':20},
                     }
 
 def parseParameters(problem,planner):
@@ -147,6 +148,9 @@ if __name__=="__main__":
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)
         problem = waterswing.waterSwingTest(dynamics_sim)
+    if problem_name == 'BoxPivot':
+        dynamics_sim = forwardSimulationBoxPivot(gui=0)
+        problem = boxpivot.boxPivotTest(dynamics_sim)
 
     if sys.argv[1] == '-v':
         runViz(problem_name, planner_name, problem)

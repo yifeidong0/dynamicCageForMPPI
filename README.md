@@ -22,6 +22,8 @@ main: initial trials.
 bullet-collision: 
 [cageenerylabeler.py]: double-integrator point mass system with moving robot gripper that is embedded with Bullet forward dynamics simulation. Edge collision checking is thus not needed anymore.
 [planepush.py]: similar to the above task but on a horizontal plane.
+[waterswing.py]: Swinging a bottle of water rapidly such that the water does not split.
+[boxpivot.py]: Pivoting a box around one of its edges by pushing with a spring. State space - [rot_box_z, pos_box_x, rot_box_z, vel_box_x, pos_spring1_x, pos_spring2_x], constant - [vel_spring1_x, vel_spring2_x] input space - [torque_box_z, force_box_x]
 [ballbalance.py]: same task but single-integrator system without any acceleration limits.
 
 3.

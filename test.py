@@ -324,7 +324,7 @@ import numpy as np
 # Physics simulation setup
 p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-# p.setGravity(0, 0, -10)
+p.setGravity(0, 0, -10)
 planeId = p.loadURDF("plane.urdf")
 
 # Create two cubes
@@ -365,23 +365,30 @@ constraint1 = p.createConstraint(box1ID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0
 constraint2 = p.createConstraint(ballID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
 
 # Simulation loop
-time.sleep(2)
-for _ in range(10000):
-    p.applyExternalForce(box1ID, -1, 
-                        [1,0,0], 
-                        [0,0,0], 
-                        p.LINK_FRAME)
-
+time.sleep(1)
+for i in range(8000):
     box3Position, _ = p.getBasePositionAndOrientation(box3ID)
     p.applyExternalForce(box3ID, -1, # gravity
                         [0,0,-9.81*m], 
                         box3Position, 
                         p.WORLD_FRAME)
     
+    p.applyExternalForce(box1ID, -1, # push spring
+                        [1,0,0], 
+                        [0,0,0], 
+                        p.LINK_FRAME)
+    if i > 800:
+        # p.applyExternalForce(box3ID, -1, # push box3
+        #                     [1,0,0], 
+        #                     box3Position, 
+        #                     p.WORLD_FRAME)
+        p.applyExternalTorque(box3ID, -1, # rotate box3
+                            [0,-5,0], 
+                            p.WORLD_FRAME)
+    
     # Get positions of the boxes
     box1Position, _ = p.getBasePositionAndOrientation(box1ID)
     box2Position, _ = p.getBasePositionAndOrientation(ballID)
-    print(box1Position, box2Position)
     
     # Update the maxForce for the spring constraint
     maxForce = k * np.abs(np.linalg.norm(np.array(box1Position) - np.array(box2Position)) - rest_length)

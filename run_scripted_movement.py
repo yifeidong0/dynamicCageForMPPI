@@ -1,11 +1,12 @@
 from pomp.example_problems.cageenergylabeler import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.waterswing import *
+from pomp.example_problems.boxpivot import *
 from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "WaterSwing"
+problem_name = "BoxPivot"
 total_time = 2.5
 gui = 1
 num_via_points = 20
@@ -29,7 +30,18 @@ if problem_name == 'WaterSwing':
               cage.x_range/2, cage.y_range/3, 0, 0, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimWaterSwing(cage, gui=gui)
-    
+if problem_name == 'BoxPivot':
+    total_time = 2.
+    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
+    fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0.0,
+                 3.0, 4.3, 0.0, 0.0, ]
+    dynamics_sim = forwardSimulationBoxPivot(gui=0)
+    cage = BoxPivot(fake_data, dynamics_sim)
+    x_init = [6, 2, 0, 0, 0, 0,
+              0, 3, 0, 0]
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimBoxPivot(cage, gui=gui)
+
 dataset = []
 k = 0
 for i in range(num_trajs):
