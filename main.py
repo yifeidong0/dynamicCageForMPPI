@@ -142,7 +142,7 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationEL(gui=0)
         problem = cageenergylabeler.cageELTest(dynamics_sim)
     if problem_name == 'PlanePush':
-        dynamics_sim = forwardSimulationPlanePush(gui=0)
+        dynamics_sim = forwardSimulationPlanePush(gui=1)
         problem = planepush.planePushTest(dynamics_sim)
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)
