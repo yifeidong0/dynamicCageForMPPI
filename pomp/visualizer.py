@@ -207,8 +207,8 @@ class PlanVisualizationProgram(GLProgram):
 
     def draw_path_animation(self):
         if self.path is not None:
-            # print("!!!!x",self.path[0])
-            # print("!!!!u",self.path[1])
+            print("!!!!x",self.path[0])
+            print("!!!!u",self.path[1])
             if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                 self.display_new_path = True
                 self.prev_path_x = self.path[0]

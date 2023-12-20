@@ -413,7 +413,7 @@ class forwardSimulationBoxPivot():
         self.mass_gripper = params[2]
         self.moment_gripper = params[3]
 
-        self.lateralFriction = 0.5
+        self.lateralFriction = 0.7
         self.rest_length = 3
         self.k = 2  # Spring constant
 
@@ -453,7 +453,9 @@ class forwardSimulationBoxPivot():
                             rollingFriction=0, linearDamping=0, angularDamping=0)
         p.changeDynamics(self.gripperUid2, -1, lateralFriction=0, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
-        p.changeDynamics(self.objectUid, -1, lateralFriction=1, spinningFriction=0, 
+        # p.changeDynamics(planeId, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        #                     rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
 
         # Create a fixed joint between the cubes, acting like a spring

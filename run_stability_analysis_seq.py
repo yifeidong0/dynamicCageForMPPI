@@ -14,7 +14,7 @@ import os
 plannername = 'ao-rrt'
 prname = 'BoxPivot' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing'
 vis = 0
-maxTime = 60
+maxTime = 45
 
 if prname == 'CageEnergyLabeler':
     # dynamics_sim = forwardSimulationEL(gui=0)
@@ -33,8 +33,9 @@ if prname == 'WaterSwing':
 if prname == 'BoxPivot':
     # dynamics_sim = forwardSimulationBoxPivot(gui=0)
     filenames = [
-                'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
-                'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0.csv',
+                # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
+                # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction0.4.csv',
+                'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
                  ]
     
 for filename in filenames:
@@ -71,4 +72,4 @@ for filename in filenames:
             print(ids[i])
             testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
-        # time.sleep(3.0)
+        time.sleep(3.0)

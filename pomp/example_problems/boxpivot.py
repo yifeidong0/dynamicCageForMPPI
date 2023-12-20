@@ -66,7 +66,7 @@ class BoxPivot:
         self.max_velocity = 1
         self.max_ang_velocity = 3
         self.max_acceleration = 3.0
-        self.max_ang_acceleration = 30 # might need to be 100
+        self.max_ang_acceleration = 20 # might need to be 100
         self.mass_object = .3
         self.mass_gripper = 1e-1
         self.moment_object = 8e-1 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=4
