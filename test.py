@@ -378,13 +378,13 @@ for i in range(8000):
                         [0,0,0], 
                         p.LINK_FRAME)
     if i > 800:
-        # p.applyExternalForce(box3ID, -1, # push box3
-        #                     [1,0,0], 
-        #                     box3Position, 
-        #                     p.WORLD_FRAME)
-        p.applyExternalTorque(box3ID, -1, # rotate box3
-                            [0,-5,0], 
+        p.applyExternalForce(box3ID, -1, # push box3
+                            [2,0,0], 
+                            box3Position, 
                             p.WORLD_FRAME)
+        # p.applyExternalTorque(box3ID, -1, # rotate box3
+        #                     [0,-5,0], 
+        #                     p.WORLD_FRAME)
     
     # Get positions of the boxes
     box1Position, _ = p.getBasePositionAndOrientation(box1ID)

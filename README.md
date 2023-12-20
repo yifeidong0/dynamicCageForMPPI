@@ -20,11 +20,11 @@ main: initial trials.
 
 2. 
 bullet-collision: 
+[ballbalance.py]: same task but single-integrator system without any acceleration limits.
 [cageenerylabeler.py]: double-integrator point mass system with moving robot gripper that is embedded with Bullet forward dynamics simulation. Edge collision checking is thus not needed anymore.
 [planepush.py]: similar to the above task but on a horizontal plane.
 [waterswing.py]: Swinging a bottle of water rapidly such that the water does not split.
-[boxpivot.py]: Pivoting a box around one of its edges by pushing with a spring. State space - [rot_box_z, pos_box_x, rot_box_z, vel_box_x, pos_spring1_x, pos_spring2_x], constant - [vel_spring1_x, vel_spring2_x] input space - [torque_box_z, force_box_x]
-[ballbalance.py]: same task but single-integrator system without any acceleration limits.
+[boxpivot.py]: Pivoting a box around one of its edges by pushing with a spring. State space - [pos_box_x, pos_box_z, rot_box_y, vel_box_x, vel_box_z,rot_box_y, pos_spring1_x, pos_spring2_x], constant - [vel_spring1_x, vel_spring2_x], input space - [force_box_x, torque_box_z]
 
 3.
 single-integrator:

@@ -41,6 +41,7 @@ class BoxPivotControlSpace(ControlSpace):
 
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
+        # print("@@@@x_new",x_new[2])
 
         # # Make theta fall in [-pi, pi]
         # x_new[2] = limit_angle_to_pi(x_new[2])
@@ -59,17 +60,17 @@ class BoxPivot:
         self.dynamics_sim = dynamics_sim
         self.num_state = 8 # box 6 + spring 2
         self.num_input = 2
-        self.x_range = 10
-        self.y_range = 10
+        self.x_range = 12
+        self.y_range = 12
         self.offset = 0.0 # extend the landscape
-        self.max_velocity = 3
-        self.max_ang_velocity = 1
-        self.max_acceleration = 5
-        self.max_ang_acceleration = 2
+        self.max_velocity = 1
+        self.max_ang_velocity = 3
+        self.max_acceleration = 3.0
+        self.max_ang_acceleration = 30 # might need to be 100
         self.mass_object = .3
-        self.mass_gripper = 1e-1 # has to be the SAME as the 4face-bottle.urdf file!
-        self.moment_object = 1e-2 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=0.3
-        self.moment_gripper = 1e-2 # has to be the SAME as the 4face-bottle.urdf file! Hollow - (I) = (1/2) * m * R^2 - R ~= 0.5
+        self.mass_gripper = 1e-1
+        self.moment_object = 8e-1 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=4
+        self.moment_gripper = 3e-3 # (2/5) * mass_ball * radius_ball**2
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper]
 
         # Gripper moving velocity (constant)
@@ -82,7 +83,7 @@ class BoxPivot:
         self.goal_state = [0, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
         # self.goal_radius = .2 # MPPI goal radius
         # self.goal_half_extent = 1.5 # AO-xxx goal region
-        self.time_range = .2
+        self.time_range = .5
 
         self.obstacles = []
         self.gravity = -9.81
@@ -99,8 +100,8 @@ class BoxPivot:
         #                      ]
 
     def controlSet(self):
-        return BoxSet([-self.max_acceleration, -self.max_ang_acceleration], 
-                      [self.max_acceleration, self.max_ang_acceleration])
+        return BoxSet([-self.max_acceleration, -1.0*self.max_ang_acceleration], 
+                      [self.max_acceleration, 0.0*self.max_ang_acceleration])
 
     def controlSpace(self):
         # System dynamics
@@ -123,8 +124,8 @@ class BoxPivot:
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
-                                       BoxConfigurationSpace([-self.x_range],[self.x_range]), # spring positions
-                                       BoxConfigurationSpace([-self.x_range],[self.x_range]),
+                                       BoxConfigurationSpace([0.0],[self.x_range]), # spring positions
+                                       BoxConfigurationSpace([0.0],[self.y_range]),
                                        ) # this c-space has to cover the state constraint in MPPI, better with some more margins
         return res
 
@@ -135,7 +136,7 @@ class BoxPivot:
         return BoxSet([-self.offset, -self.offset, 0.0*math.pi,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -2.5*self.x_range, -2.5*self.x_range],
-                      [self.x_range+self.offset, self.y_range+self.offset, (1e-2)*math.pi,
+                      [self.x_range+self.offset, self.y_range+self.offset, (3e-2)*math.pi,
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
                        2.5*self.x_range, 2.5*self.x_range])
 
@@ -172,13 +173,19 @@ class BoxPivotObjectiveFunction(ObjectiveFunction):
         #     delta_alpha = -2*math.pi + delta_alpha
         W = m*u[1]*(xnext[0]-x[0]) + I*u[2]*delta_alpha
         c = max(W, 1e-5)
+        # c = max(abs(W), 1e-5)
 
         return c
 
 
 def boxPivotTest(dynamics_sim,
-                 data = [6.499079904444838,2.397549737084281,0.22622950186326807,1.8207181866422655,1.1495647514494098,0.7609057703831511,
-                         1.6157827276435577,4.439045449428635,0.20465756939330715,2.192905112691566]):
+                #  data=[6.088935001616721,2.085201582357198,0.04356701420972912,0.8179462670670236,0.7514566040947372,0.39286942983033646,
+                #        1.2081902424651314,3.857239623005551,3.363011718477068,1.3836635048618797]
+                 data=[6.499079904444838,2.397549737084281,0.22622950186326807,1.8207181866422655,1.1495647514494098,0.7609057703831511,
+                         1.6157827276435577,4.439045449428635,0.20465756939330715,2.192905112691566]
+                #  data=[8.078300255697453,2.827378659621455,0.8128189302617814,3.3118722652718695,-0.07453201727857538,1.1712296629792454,
+                #        2.791803974737872,5.655365749729913,0.17408929947791152,1.435692406769087]
+                 ):
     p = BoxPivot(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

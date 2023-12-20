@@ -33,8 +33,8 @@ if problem_name == 'WaterSwing':
 if problem_name == 'BoxPivot':
     total_time = 2.
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
-    fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0.0,
-                 3.0, 4.3, 0.0, 0.0, ]
+    fake_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                 0.0, 0.0, 0.0, 0.0, ]
     dynamics_sim = forwardSimulationBoxPivot(gui=0)
     cage = BoxPivot(fake_data, dynamics_sim)
     x_init = [6, 2, 0, 0, 0, 0,

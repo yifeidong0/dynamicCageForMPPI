@@ -415,7 +415,7 @@ class forwardSimulationBoxPivot():
 
         self.lateralFriction = 0.5
         self.rest_length = 3
-        self.k = 8  # Spring constant
+        self.k = 2  # Spring constant
 
         self.height_spring = 3.7
         self.pos_gripper1 = [1000,0,self.height_spring]
