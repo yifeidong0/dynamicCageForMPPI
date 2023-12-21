@@ -6,8 +6,8 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BoxPivot"
-total_time = 2.5
+problem_name = "WaterSwing"
+total_time = 3.5
 gui = 1
 num_via_points = 20
 num_trajs = 1

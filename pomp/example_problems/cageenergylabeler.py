@@ -160,12 +160,12 @@ class CageELObjectiveFunction(ObjectiveFunction):
         
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        c = max((Enext-E), 1e-3)
+        c = max((Enext-E), 1e-5)
         return c
 
 
 def cageELTest(dynamics_sim,
-               data = [1.02, 5.11, 0.00, 2, 1.01, 4.70, -0.00, 0.00, 2, 0.0]):
+               data = [1.02, 5.11, 0.00, 0, 1.01, 4.70, -0.00, 0.00, -1, 0.0]):
     
     p = CageEL(data, dynamics_sim)
 

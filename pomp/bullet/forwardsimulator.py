@@ -286,7 +286,7 @@ class forwardSimulationWaterSwing():
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.lateralFriction = 0.5
+        self.lateralFriction = 0.8
 
         # Geometrics
         self.y_bodies = .3

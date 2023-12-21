@@ -12,9 +12,9 @@ from main import *
 import os
 
 plannername = 'ao-rrt'
-prname = 'BoxPivot' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing'
+prname = 'WaterSwing' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing'
 vis = 0
-maxTime = 45
+maxTime = 60
 
 if prname == 'CageEnergyLabeler':
     # dynamics_sim = forwardSimulationEL(gui=0)
@@ -26,9 +26,11 @@ if prname == 'WaterSwing':
     # dynamics_sim = forwardSimulationWaterSwing(gui=0)
     filenames = [
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
-                'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
+                # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
                 #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
+                'scripted_movement_viapoints_WaterSwing_t3.5.csv',
+                'scripted_movement_viapoints_WaterSwing_t5.5.csv',
                  ]
 if prname == 'BoxPivot':
     # dynamics_sim = forwardSimulationBoxPivot(gui=0)
@@ -72,4 +74,4 @@ for filename in filenames:
             print(ids[i])
             testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
-        time.sleep(3.0)
+        # time.sleep(3.0)
