@@ -554,3 +554,79 @@ class forwardSimulationBoxPivot():
         p.disconnect()
 
 
+class forwardSimulationHerding():
+    def __init__(self, gui=False):
+        pass
+
+    def set_params(self, params):
+        # Kinodynamics
+        self.num_robots = 5
+        self.dim = 2
+        self.mass_object = params[0]
+        self.mass_gripper = params[1]
+
+    def create_shapes(self):
+        pass
+
+    def get_repulsive_force(self, pos_object, pos_gripper):
+        # Get the repulsive force
+        pos_object_g = np.array(pos_object) - np.array(pos_gripper)
+        dist = np.linalg.norm(pos_object_g)
+        force_norm_direction = pos_object_g / dist
+        if dist <= 0.2:
+            force = 5.0 * self.mass_gripper * force_norm_direction
+        else:
+            force = 1.0 / dist * self.mass_gripper * force_norm_direction
+        return force
+    
+    def reset_states(self, states):
+        xo, yo, vxo, vyo = states[:4] # 4+10+10 DoF
+
+        # Object kinematics
+        self.pos_object = np.asarray([xo, yo])
+        self.vel_object = np.asarray([vxo, vyo])
+        # self.pos_object = [xo, 0.0, zo]
+        # self.quat_object = p.getQuaternionFromEuler([0.0, thetao, 0.0])
+        # self.vel_object = [vxo, 0.0, vzo]
+        # self.vel_ang_object = [0.0, omegao, 0.0]
+
+        # # Gripper kinematics
+        # self.pos_gripper = [xg, 0.0, zg]
+        self.pos_gripper = np.asarray(states[4:4+self.dim*self.num_robots])
+        # self.quat_gripper = p.getQuaternionFromEuler([0.0, thetag, 0.0])
+        # self.vel_gripper = [vxg, 0.0, vzg]
+        self.vel_gripper = np.asarray(states[4+self.dim*self.num_robots:4+2*self.dim*self.num_robots])
+
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
+        t, ax, ay = inputs
+        dt = t / float(num_via_points)
+
+        # Step the simulation
+        via_points = []
+        # force_on_object = [self.mass_object*ax, 0.0, self.mass_object*az]
+        # torque_on_object = [0.0, self.moment_object*omega, 0.0]
+        # for i in range(int(t*240)):
+        for i in range(num_via_points):
+            # Calculate the repulsive force
+            force_on_object = np.zeros(self.dim)
+            for j in range(self.num_robots):
+                force_on_object += self.get_repulsive_force(self.pos_object, self.pos_gripper[2*j:2*j+2])
+
+            # Apply the force on the object
+            acc_object = force_on_object / self.mass_object
+            acc_object += np.asarray([ax, ay])
+            self.pos_object += self.vel_object * dt + 0.5 * acc_object * dt * dt
+            self.vel_object += acc_object * dt
+                        
+            # Update robots position
+            self.pos_gripper += self.vel_gripper * dt
+
+            # Print object via-points along the trajectory for visualization
+            new_states = np.concatenate([self.pos_object, self.vel_object, self.pos_gripper]).tolist()
+            if print_via_points:
+                via_points.append(new_states[:2])
+
+        return new_states, via_points
+
+    def finish_sim(self):
+        pass

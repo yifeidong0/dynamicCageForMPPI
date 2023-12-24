@@ -263,6 +263,13 @@ class PlanVisualizationProgram(GLProgram):
                             glLineWidth(1)
                             height_spring = 3.7
                             self.problem.visualizer.drawRobotGL([x2[7], height_spring])
+                        if hasattr(self.problem.controlSpace, "is_herding"):
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2[4:6])
+                            self.problem.visualizer.drawRobotGL(x2[6:8])
+                            self.problem.visualizer.drawRobotGL(x2[8:10])
+                            self.problem.visualizer.drawRobotGL(x2[10:12])
+                            self.problem.visualizer.drawRobotGL(x2[12:14])
 
                     # Process events to update the display
                     glutSwapBuffers()
