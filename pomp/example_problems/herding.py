@@ -22,7 +22,8 @@ class HerdingControlSpace(ControlSpace):
         return self.cage.configurationSpace()
     
     def controlSet(self, x):
-        return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
+        return MultiSet(TimeBiasSet(self.cage.time_range, self.cage.controlSet()),
+                        self.cage.controlSet())
     
     def nextState(self, x, u):
         return self.eval(x, u, 1.0)
@@ -111,20 +112,19 @@ class Herding:
         return self.start_state
 
     def goalSet(self): # TODO: implement a ring set
-        return BoxSet([-self.offset, -self.offset, 
-                       -self.max_velocity, -self.max_velocity, 
-                       -self.offset, -self.offset, -self.offset, -self.offset, 
-                       -self.offset, -self.offset, -self.offset, -self.offset, 
-                       -self.offset, -self.offset,],
-                      [self.x_range+self.offset, 0.0, 
-                       self.max_velocity, self.max_velocity, 
-                       self.x_range+self.offset, self.y_range+self.offset,
-                       self.x_range+self.offset, self.y_range+self.offset,
-                       self.x_range+self.offset, self.y_range+self.offset,
-                       self.x_range+self.offset, self.y_range+self.offset,
-                       self.x_range+self.offset, self.y_range+self.offset,
-                       ])
-
+        bmin = [-self.max_velocity, -self.max_velocity, 
+                -self.offset, -self.offset, -self.offset, -self.offset, 
+                -self.offset, -self.offset, -self.offset, -self.offset, 
+                -self.offset, -self.offset,]
+        bmax = [self.max_velocity, self.max_velocity, 
+                self.x_range+self.offset, self.y_range+self.offset,
+                self.x_range+self.offset, self.y_range+self.offset,
+                self.x_range+self.offset, self.y_range+self.offset,
+                self.x_range+self.offset, self.y_range+self.offset,
+                self.x_range+self.offset, self.y_range+self.offset,
+                ]
+        return MultiSet(RingSet([0.5*self.x_range, 0.5*self.y_range], 0.5*(self.x_range+self.offset), 0.5*self.x_range+self.offset), 
+                        BoxSet(bmin, bmax))
 
 class HerdingObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost

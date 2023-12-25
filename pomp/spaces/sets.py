@@ -229,6 +229,86 @@ class BoxSet(Set):
             return res
 
 
+class RingSet(Set):
+    """
+    Represents a ring in 2D space, defined as the region between two circles with radii r1 and r2.
+    """
+    def __init__(self, c, r1, r2):
+        """
+        Initializes the RingSet.
+        :param c: Center of the ring as a 2D tuple or list (x, y).
+        :param r1: Inner radius of the ring.
+        :param r2: Outer radius of the ring.
+        """
+        assert r1 < r2, "Inner radius must be smaller than outer radius."
+        self.c = np.array(c)
+        self.r1 = r1
+        self.r2 = r2
+
+    def bounds(self):
+        """
+        Returns the bounding box of the ring.
+        """
+        return ([self.c[0] - self.r2, self.c[1] - self.r2],
+                [self.c[0] + self.r2, self.c[1] + self.r2])
+
+    def contains(self, x):
+        """
+        Checks if a point is inside the ring.
+        """
+        dist_sq = np.sum((np.array(x) - self.c) ** 2)
+        return self.r1**2 <= dist_sq <= self.r2**2
+
+    def sample(self):
+        """
+        Samples a random point from the ring.
+        """
+        angle = random.uniform(0, 2 * math.pi)
+        radius = math.sqrt(random.uniform(self.r1**2, self.r2**2))
+        return [self.c[0] + radius * math.cos(angle), self.c[1] + radius * math.sin(angle)]
+
+    def project(self, x):
+        """
+        Projects a point onto the nearest point in the ring.
+        """
+        x_vec = np.array(x) - self.c
+        dist_sq = np.sum(x_vec ** 2)
+        if dist_sq < self.r1**2:
+            return self.c + x_vec * (self.r1 / np.sqrt(dist_sq))
+        elif dist_sq > self.r2**2:
+            return self.c + x_vec * (self.r2 / np.sqrt(dist_sq))
+        return x
+
+    def signedDistance(self, x):
+        """
+        Returns the signed distance of x from the boundary of the ring.
+        """
+        dist = np.sqrt(np.sum((np.array(x) - self.c) ** 2))
+        if dist <= self.r1:
+            return self.r1 - dist
+        elif dist >= self.r2:
+            return dist - self.r2
+        return min(dist - self.r1, self.r2 - dist)
+
+    def signedDistance_gradient(self, x):
+        """
+        Returns the gradient of the signed distance function at x.
+        """
+        x_vec = np.array(x) - self.c
+        dist = np.sqrt(np.sum(x_vec ** 2))
+        if dist == 0:
+            return np.zeros_like(x)
+        grad_outside = x_vec / dist
+        if dist <= self.r1:
+            return -grad_outside
+        elif dist >= self.r2:
+            return grad_outside
+        # If x is inside the ring, the gradient points towards the nearest boundary.
+        if dist - self.r1 < self.r2 - dist:
+            return -grad_outside
+        return grad_outside
+    
+
 class LambdaSet(Set):
     """Given some standalone function fcontains(x) which determines
     membership, produces a Set object.
