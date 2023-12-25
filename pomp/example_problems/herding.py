@@ -8,7 +8,6 @@ from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 from ..structures.toolfunc import *
-import math
 
 class HerdingControlSpace(ControlSpace):
     def __init__(self, cage):
@@ -35,17 +34,8 @@ class HerdingControlSpace(ControlSpace):
         mu = [tc, ax, ay]
 
         xaug = x + self.cage.gripper_vel
-        # vxg_init, vyg_init = self.cage.gripper_vel[:2]
-        # omegag = self.cage.gripper_vel_theta
-        # vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, self.cage.start_state[8], x[8])
-        # xaug = x + [vxg, vyg, omegag]
-
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
-
-        # Make theta fall in [-pi, pi]
-        # x_new[2] = limit_angle_to_pi(x_new[2])
-        # x_new[8] = limit_angle_to_pi(x_new[8])
 
         if print_via_points:
             self.xo_via_points = xo_via_points
@@ -66,7 +56,7 @@ class Herding:
         self.y_range = 10
         self.offset = 4.0 # extend the landscape
         self.max_velocity = 10
-        self.max_acceleration = 2
+        self.max_acceleration = 10
         self.mass_object = 1
         self.mass_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
         self.params = [self.mass_object, self.mass_gripper]
@@ -80,22 +70,6 @@ class Herding:
 
         self.obstacles = []
         self.gravity = -9.81
-
-        # self.cspace_bound = [[0, self.x_range], 
-        #                      [0, self.y_range], 
-        #                      [-math.pi, math.pi], 
-        #                      [-self.max_velocity, self.max_velocity],
-        #                      [-self.max_velocity, self.max_velocity],
-        #                      [-self.max_ang_velocity, self.max_ang_velocity],
-        #                      [-self.x_range, 2*self.x_range], 
-        #                      [-self.y_range, 2*self.y_range], 
-        #                      [-math.pi, math.pi], 
-        #                      ]
-        
-    # def checkStartFeasibility(self): # TODO; bullet collision checking
-    #     gripper = AxisNotAlignedBox(self.obstacles[0][:3], self.obstacles[0][3:])
-    #     contains = gripper.contains(self.start_state[:2])
-    #     return contains
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
@@ -118,10 +92,8 @@ class Herding:
         wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         wspace.addObstacleParam(self.obstacles)
         res =  MultiConfigurationSpace(wspace,
-                                    #    BoxConfigurationSpace([-math.pi],[math.pi]),
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                    #    BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
                                        BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
                                        BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
                                        BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
@@ -132,14 +104,13 @@ class Herding:
                                        BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
                                        BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
                                        BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                    #    BoxConfigurationSpace([-math.pi],[math.pi])
-                                       ) # this c-space has to cover the state constraint in MPPI, better with some more margins
+                                       )
         return res
 
     def startState(self):
         return self.start_state
 
-    def goalSet(self):
+    def goalSet(self): # TODO: implement a ring set
         return BoxSet([-self.offset, -self.offset, 
                        -self.max_velocity, -self.max_velocity, 
                        -self.offset, -self.offset, -self.offset, -self.offset, 
@@ -167,9 +138,8 @@ class HerdingObjectiveFunction(ObjectiveFunction):
 
     def incremental(self, x, u, uparent=None):
         m = self.cage.mass_object
-        # I = self.cage.moment_object
-        # g = self.cage.gravity
 
+        # Roll out
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
 
@@ -185,22 +155,44 @@ class HerdingObjectiveFunction(ObjectiveFunction):
 
         return c
 
+def form_a_random_cage(data, radius=2.0):
+    center = data[:2]
+    num_robot = len(data[4:]) // 4
+    while True:
+        # Generate num_robot equally spaced angles between 0 and 2pi
+        angles = np.linspace(0, 2 * np.pi, num_robot, endpoint=False)
+        angles += np.random.rand(num_robot) * np.pi / num_robot / 1.4
+
+        # Continue if there are two angles that are too close
+        # if np.min(np.abs(np.subtract.outer(angles, angles))) < np.pi / 5:
+        #     continue
+
+        # Derive positions of robots
+        positions = []
+        for angle in angles:
+            positions.append(center[0] + radius * np.cos(angle))
+            positions.append(center[1] + radius * np.sin(angle))
+
+        # Form a new data list
+        data_new = data[:4] + positions + data[4+2*num_robot:]
+
+        return data_new
 
 def HerdingTest(dynamics_sim,
-                   data = [5.0, 5.0, 0.0, 0.0, 
-                           5.0, 5.5, 6, 5.0,
-                           5.5, 4.5, 5.0, 4.0, 4.0, 5.0,
-                           0.0, 0.0, 0.0, 0.0, 
-                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
+                data = [5.0, 5.0, 0.0, 0.0, 
+                        5.0, 5.5, 6, 5.0,           # pos robots
+                        5.3, 4.5, 4.8, 4.5, 4.0, 5.0,
+                        0.0, 0.0, 0.0, 0.0,         # vel robots
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
+    data = form_a_random_cage(data)
     p = Herding(data, dynamics_sim)
 
-    # if p.checkStartFeasibility():
-    #     print('In collision!')
-    #     return False
     objective = HerdingObjectiveFunction(p)
-    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
+    return PlanningProblem(objective.space,
+                           p.startState(),
+                           p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean = True)
+                           euclidean=True)
 
 

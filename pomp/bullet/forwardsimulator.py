@@ -568,15 +568,15 @@ class forwardSimulationHerding():
     def create_shapes(self):
         pass
 
-    def get_repulsive_force(self, pos_object, pos_gripper):
+    def get_repulsive_force(self, pos_object, pos_gripper, k=5.0):
         # Get the repulsive force
         pos_object_g = np.array(pos_object) - np.array(pos_gripper)
         dist = np.linalg.norm(pos_object_g)
         force_norm_direction = pos_object_g / dist
         if dist <= 0.2:
-            force = 5.0 * self.mass_gripper * force_norm_direction
+            force = 5.0 * k * self.mass_gripper * force_norm_direction
         else:
-            force = 1.0 / dist * self.mass_gripper * force_norm_direction
+            force = 1.0 * k / dist * self.mass_gripper * force_norm_direction
         return force
     
     def reset_states(self, states):
@@ -585,16 +585,9 @@ class forwardSimulationHerding():
         # Object kinematics
         self.pos_object = np.asarray([xo, yo])
         self.vel_object = np.asarray([vxo, vyo])
-        # self.pos_object = [xo, 0.0, zo]
-        # self.quat_object = p.getQuaternionFromEuler([0.0, thetao, 0.0])
-        # self.vel_object = [vxo, 0.0, vzo]
-        # self.vel_ang_object = [0.0, omegao, 0.0]
 
         # # Gripper kinematics
-        # self.pos_gripper = [xg, 0.0, zg]
         self.pos_gripper = np.asarray(states[4:4+self.dim*self.num_robots])
-        # self.quat_gripper = p.getQuaternionFromEuler([0.0, thetag, 0.0])
-        # self.vel_gripper = [vxg, 0.0, vzg]
         self.vel_gripper = np.asarray(states[4+self.dim*self.num_robots:4+2*self.dim*self.num_robots])
 
     def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
@@ -603,9 +596,6 @@ class forwardSimulationHerding():
 
         # Step the simulation
         via_points = []
-        # force_on_object = [self.mass_object*ax, 0.0, self.mass_object*az]
-        # torque_on_object = [0.0, self.moment_object*omega, 0.0]
-        # for i in range(int(t*240)):
         for i in range(num_via_points):
             # Calculate the repulsive force
             force_on_object = np.zeros(self.dim)

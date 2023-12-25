@@ -109,8 +109,6 @@ class NeighborhoodSet(Set):
         return d - self.r
 
 
-
-
 class FiniteSet(Set):
     """Represents a finite set of objects in a vector space."""
     def __init__(self,items,metric=None):
@@ -230,7 +228,7 @@ class BoxSet(Set):
             res[imindist] = iminsign
             return res
 
-            
+
 class LambdaSet(Set):
     """Given some standalone function fcontains(x) which determines
     membership, produces a Set object.
