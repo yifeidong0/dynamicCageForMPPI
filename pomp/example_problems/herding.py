@@ -47,9 +47,9 @@ class HerdingControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class Herding:
-    def __init__(self, data, dynamics_sim):
+    def __init__(self, data, dynamics_sim, num_robots=5):
         self.dynamics_sim = dynamics_sim
-        self.num_robot = 5
+        self.num_robot = num_robots
         self.dim_workspace = 2
         self.dim_object = 4
         self.dim_state = self.dim_object + self.dim_workspace * self.num_robot
@@ -60,7 +60,7 @@ class Herding:
         self.max_acceleration = 10
         self.mass_object = 1
         self.mass_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
-        self.params = [self.mass_object, self.mass_gripper]
+        self.params = [self.mass_object, self.mass_gripper, self.num_robot]
 
         # Gripper moving velocity (constant)
         self.gripper_vel = data[self.dim_state:] # list[10,]
@@ -92,37 +92,21 @@ class Herding:
         wspace.box.bmin = [-self.offset,-self.offset]
         wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         wspace.addObstacleParam(self.obstacles)
-        res =  MultiConfigurationSpace(wspace,
+
+        res =  MultiConfigurationSpace(wspace, 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
-                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
-                                       )
+                                       *[BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]),
+                                         BoxConfigurationSpace([-self.offset],[self.y_range+self.offset])]*self.num_robot)
         return res
 
     def startState(self):
         return self.start_state
 
     def goalSet(self): # TODO: implement a ring set
-        bmin = [-self.max_velocity, -self.max_velocity, 
-                -self.offset, -self.offset, -self.offset, -self.offset, 
-                -self.offset, -self.offset, -self.offset, -self.offset, 
-                -self.offset, -self.offset,]
-        bmax = [self.max_velocity, self.max_velocity, 
-                self.x_range+self.offset, self.y_range+self.offset,
-                self.x_range+self.offset, self.y_range+self.offset,
-                self.x_range+self.offset, self.y_range+self.offset,
-                self.x_range+self.offset, self.y_range+self.offset,
-                self.x_range+self.offset, self.y_range+self.offset,
-                ]
+        bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
+        bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
+
         return MultiSet(RingSet([0.5*self.x_range, 0.5*self.y_range], 0.5*(self.x_range+self.offset), 0.5*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
 
@@ -155,37 +139,29 @@ class HerdingObjectiveFunction(ObjectiveFunction):
 
         return c
 
-def form_a_random_cage(data, radius=2.0):
+def form_a_random_cage(data, num_robot=5, radius=2.0):
     center = data[:2]
-    num_robot = len(data[4:]) // 4
+    # num_robot = len(data[4:]) // 4
     while True:
         # Generate num_robot equally spaced angles between 0 and 2pi
-        angles = np.linspace(0, 2 * np.pi, num_robot, endpoint=False)
+        angles = np.linspace(0, 2*np.pi, num_robot, endpoint=False)
         angles += np.random.rand(num_robot) * np.pi / num_robot / 1.4
-
-        # Continue if there are two angles that are too close
-        # if np.min(np.abs(np.subtract.outer(angles, angles))) < np.pi / 5:
-        #     continue
 
         # Derive positions of robots
         positions = []
         for angle in angles:
-            positions.append(center[0] + radius * np.cos(angle))
-            positions.append(center[1] + radius * np.sin(angle))
+            positions.append(center[0] + radius*np.cos(angle))
+            positions.append(center[1] + radius*np.sin(angle))
 
         # Form a new data list
         data_new = data[:4] + positions + data[4+2*num_robot:]
 
         return data_new
 
-def HerdingTest(dynamics_sim,
-                data = [5.0, 5.0, 0.0, 0.0, 
-                        5.0, 5.5, 6, 5.0,           # pos robots
-                        5.3, 4.5, 4.8, 4.5, 4.0, 5.0,
-                        0.0, 0.0, 0.0, 0.0,         # vel robots
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0]):
-    data = form_a_random_cage(data)
-    p = Herding(data, dynamics_sim)
+def HerdingTest(dynamics_sim, data=None, num_robots=5):
+    data = [5.0, 5.0, 0.0, 0.0,] + [0.0, 0.0,]*num_robots + [0.0, 0,0]*num_robots
+    data = form_a_random_cage(data, num_robots)
+    p = Herding(data, dynamics_sim, num_robots)
 
     objective = HerdingObjectiveFunction(p)
     return PlanningProblem(objective.space,

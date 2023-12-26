@@ -560,10 +560,11 @@ class forwardSimulationHerding():
 
     def set_params(self, params):
         # Kinodynamics
-        self.num_robots = 5
+        # self.num_robots = 5
         self.dim = 2
         self.mass_object = params[0]
         self.mass_gripper = params[1]
+        self.num_robots = params[2]
 
     def create_shapes(self):
         pass

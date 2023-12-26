@@ -265,11 +265,9 @@ class PlanVisualizationProgram(GLProgram):
                             self.problem.visualizer.drawRobotGL([x2[7], height_spring])
                         if hasattr(self.problem.controlSpace, "is_herding"):
                             glLineWidth(1)
-                            self.problem.visualizer.drawRobotGL(x2[4:6])
-                            self.problem.visualizer.drawRobotGL(x2[6:8])
-                            self.problem.visualizer.drawRobotGL(x2[8:10])
-                            self.problem.visualizer.drawRobotGL(x2[10:12])
-                            self.problem.visualizer.drawRobotGL(x2[12:14])
+                            num_robot = self.problem.controlSpace.cage.num_robot
+                            for i in range(num_robot):
+                                self.problem.visualizer.drawRobotGL(x2[4+2*i:6+2*i])
 
                     # Process events to update the display
                     glutSwapBuffers()

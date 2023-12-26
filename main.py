@@ -153,8 +153,9 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationBoxPivot(gui=0)
         problem = boxpivot.boxPivotTest(dynamics_sim)
     if problem_name == 'Herding':
+        num_robots = 10
         dynamics_sim = forwardSimulationHerding(gui=0)
-        problem = herding.HerdingTest(dynamics_sim)
+        problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots)
 
     if sys.argv[1] == '-v':
         runViz(problem_name, planner_name, problem)
