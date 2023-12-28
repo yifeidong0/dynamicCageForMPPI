@@ -106,21 +106,21 @@ robotiq-3f-gripper_articulated - articulated version of the robotiq robotiq-3f-g
     <child link="finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_1_joint_2" type="revolute">
     <parent link="finger_1_link_1"/>
     <child link="finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_1_joint_3" type="revolute">
     <parent link="finger_1_link_2"/>
     <child link="finger_1_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <link name="finger_2_link_0">
     <visual>
@@ -220,21 +220,21 @@ robotiq-3f-gripper_articulated - articulated version of the robotiq robotiq-3f-g
     <child link="finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_2_joint_2" type="revolute">
     <parent link="finger_2_link_1"/>
     <child link="finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_2_joint_3" type="revolute">
     <parent link="finger_2_link_2"/>
     <child link="finger_2_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <link name="finger_middle_link_0">
     <visual>
@@ -334,21 +334,21 @@ robotiq-3f-gripper_articulated - articulated version of the robotiq robotiq-3f-g
     <child link="finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_middle_joint_2" type="revolute">
     <parent link="finger_middle_link_1"/>
     <child link="finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <joint name="finger_middle_joint_3" type="revolute">
     <parent link="finger_middle_link_2"/>
     <child link="finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+    <limit effort="1000" lower="0" upper="3.1416" velocity="100"/>
   </joint>
   <link name="palm">
     <visual>
@@ -378,21 +378,21 @@ robotiq-3f-gripper_articulated - articulated version of the robotiq robotiq-3f-g
     <child link="finger_1_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 0.036"/>
-    <limit effort="100" lower="-0.16" upper="0.25" velocity="100"/>
+    <limit effort="1000" lower="-0.16" upper="0.25" velocity="100"/>
   </joint>
   <joint name="palm_finger_2_joint" type="revolute">
     <parent link="palm"/>
     <child link="finger_2_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 -0.036"/>
-    <limit effort="100" lower="-0.25" upper="0.16" velocity="100"/>
+    <limit effort="1000" lower="-0.25" upper="0.16" velocity="100"/>
   </joint>
   <joint name="palm_finger_middle_joint" type="revolute">
     <parent link="palm"/>
     <child link="finger_middle_link_0"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
-    <limit effort="100" lower="-0.16" upper="0.25" velocity="100"/>
+    <limit effort="1000" lower="-0.16" upper="0.25" velocity="100"/>
   </joint>
   <!--
         <include filename="$(find robotiq_3f_gripper_visualization)/cfg/robotiq-3f-gripper_finger_articulated_macro.xacro" />

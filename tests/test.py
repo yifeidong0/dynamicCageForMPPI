@@ -149,29 +149,29 @@
 # dynamics_sim.finish_sim()
 
 ####################### forward sim of calculated escape path Box Pivot
-from pomp.example_problems.boxpivot import *
+# from pomp.example_problems.boxpivot import *
 
-data = [7.057175022493289,2.666821472276362,0.4458188048791134,2.8897499124955996,1.037772590214243,1.0853131332758004,3.0909588106585626,5.002371997836917,-0.601473693634434,2.461966018556275]
-gripper_vel = data[-2:]
-dynamics_sim = forwardSimulationBoxPivot(gui=1)
-cage = BoxPivot(data, dynamics_sim)
-cage.controlSpace()
-time.sleep(4.5)
+# data = [7.057175022493289,2.666821472276362,0.4458188048791134,2.8897499124955996,1.037772590214243,1.0853131332758004,3.0909588106585626,5.002371997836917,-0.601473693634434,2.461966018556275]
+# gripper_vel = data[-2:]
+# dynamics_sim = forwardSimulationBoxPivot(gui=1)
+# cage = BoxPivot(data, dynamics_sim)
+# cage.controlSpace()
+# time.sleep(4.5)
 
-states= [[7.057175022493289, 2.666821472276362, 0.4458188048791134, 2.8897499124955996, 1.037772590214243, 1.0853131332758004, 3.0909588106585626, 5.002371997836917], [7.398496880003466, 2.7192703778476326, 0.5066874187444336, 3.0751317057143184, 0.03132935480629533, 0.040321185744062814, 2.8985267829571497, 5.3124883663027305], [8.201744728374415, 2.75817366752867, 0.56206661758692, 0.38362916667957103, 0.087235977781876, 0.13909627146766132, 2.530090027665026, 6.034383058307879], [8.008121727193748, 2.703464961838547, 0.4870396145987758, -1.4711380377981575, -0.45039827888026956, -0.5437789456772736, 3.094284184365327, 5.619457675642711], [7.820204452861863, 2.6179981229376277, 0.39765796080816634, -1.0638265306427308, -0.7155139979677786, -0.6828012278881793, 2.941921518063143, 5.780206212843101], [7.638721192813267, 1.9997758378857937, -0.00010654271196966325, 0.004550629266490112, 0.004476893284447558, 0.0022741668672033597, 2.4791103738614138, 5.29812285757004], [7.713941308949088, 1.999986673228017, 8.261086974033578e-07, -1.001107631704739e-05, -2.0531510169785605e-06, 3.608864103908649e-07, 2.231031656787603, 5.366867175920232]]
-inputs= [[0.11442836424982207, -1.2273441513618286, -9.468395720526445], [0.46079878846698, -2.9490013776938335, -0.9093533891400831], [0.4704191462751449, -2.771422451005921, -1.4435677987141133], [0.1451282087869632, -2.3629990259936613, -1.2875300688970555], [0.4207833234839916, -0.3895490817868197, -1.801939495060143], [0.43193319982160544, 0.32992159970150103, -5.397456846772952]]
-new_states = states[0]
-for i in range(len(inputs)):
-    # vxg_init, vyg_init = gripper_vel[:2]
-    # omegag = gripper_vel[2]
-    # vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, states[0][8], new_states[8])
-    # print("!!!!", vxg, vyg)
-    # # xaug = x + [vxg, vyg, omegag]
-    dynamics_sim.reset_states(states[i]+gripper_vel)
-    new_states, viapoints = dynamics_sim.run_forward_sim(inputs[i])
-    print('new_states', new_states)
+# states= [[7.057175022493289, 2.666821472276362, 0.4458188048791134, 2.8897499124955996, 1.037772590214243, 1.0853131332758004, 3.0909588106585626, 5.002371997836917], [7.398496880003466, 2.7192703778476326, 0.5066874187444336, 3.0751317057143184, 0.03132935480629533, 0.040321185744062814, 2.8985267829571497, 5.3124883663027305], [8.201744728374415, 2.75817366752867, 0.56206661758692, 0.38362916667957103, 0.087235977781876, 0.13909627146766132, 2.530090027665026, 6.034383058307879], [8.008121727193748, 2.703464961838547, 0.4870396145987758, -1.4711380377981575, -0.45039827888026956, -0.5437789456772736, 3.094284184365327, 5.619457675642711], [7.820204452861863, 2.6179981229376277, 0.39765796080816634, -1.0638265306427308, -0.7155139979677786, -0.6828012278881793, 2.941921518063143, 5.780206212843101], [7.638721192813267, 1.9997758378857937, -0.00010654271196966325, 0.004550629266490112, 0.004476893284447558, 0.0022741668672033597, 2.4791103738614138, 5.29812285757004], [7.713941308949088, 1.999986673228017, 8.261086974033578e-07, -1.001107631704739e-05, -2.0531510169785605e-06, 3.608864103908649e-07, 2.231031656787603, 5.366867175920232]]
+# inputs= [[0.11442836424982207, -1.2273441513618286, -9.468395720526445], [0.46079878846698, -2.9490013776938335, -0.9093533891400831], [0.4704191462751449, -2.771422451005921, -1.4435677987141133], [0.1451282087869632, -2.3629990259936613, -1.2875300688970555], [0.4207833234839916, -0.3895490817868197, -1.801939495060143], [0.43193319982160544, 0.32992159970150103, -5.397456846772952]]
+# new_states = states[0]
+# for i in range(len(inputs)):
+#     # vxg_init, vyg_init = gripper_vel[:2]
+#     # omegag = gripper_vel[2]
+#     # vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, states[0][8], new_states[8])
+#     # print("!!!!", vxg, vyg)
+#     # # xaug = x + [vxg, vyg, omegag]
+#     dynamics_sim.reset_states(states[i]+gripper_vel)
+#     new_states, viapoints = dynamics_sim.run_forward_sim(inputs[i])
+#     print('new_states', new_states)
 
-dynamics_sim.finish_sim()
+# dynamics_sim.finish_sim()
 
 ####################### IRC
 # import numpy as np
@@ -341,6 +341,95 @@ dynamics_sim.finish_sim()
 
 # p.removeConstraint(cid)
 
+
+########################################################### Box pivot
+# import pybullet as p
+# import pybullet_data
+# import time
+# import numpy as np
+
+# # Physics simulation setup
+# p.connect(p.GUI)
+# p.setAdditionalSearchPath(pybullet_data.getDataPath())
+# p.setGravity(0, 0, -10)
+# planeId = p.loadURDF("plane.urdf")
+
+# # Create two cubes
+# height = 3.7
+# box1ID = p.loadURDF("cube.urdf", basePosition=[-3, 0, height])
+# # ballID = p.loadURDF("cube.urdf", basePosition=[0, 0, 4.4])
+# ballID = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
+# m = 1e-3
+# ballID = p.createMultiBody(m, 
+#                             ballID, 
+#                             -1, 
+#                             [0, 0, height])
+# gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[2,2,2])
+# m = .3
+# box3ID = p.createMultiBody(m, 
+#                             gripperId, 
+#                             -1, 
+#                             [6,0,2])
+
+# p.changeDynamics(box1ID, -1, lateralFriction=0, spinningFriction=0, 
+#                     rollingFriction=0, linearDamping=0, angularDamping=0)
+# p.changeDynamics(ballID, -1, lateralFriction=0, spinningFriction=0, 
+#                     rollingFriction=0, linearDamping=0, angularDamping=0)
+# p.changeDynamics(box3ID, -1, lateralFriction=1, spinningFriction=0, 
+#                     rollingFriction=0, linearDamping=0, angularDamping=0)
+
+# # Spring parameters
+# rest_length = 3
+# k = 8  # Spring constant
+
+# # Create a fixed joint between the cubes, acting like a spring
+# c_spring = p.createConstraint(box1ID, -1, ballID, -1, p.JOINT_FIXED, [1, 0, 0], [rest_length/2, 0, 0], [-rest_length/2, 0, 0])
+
+# # Create point-to-point constraints to keep boxes along a line
+# pivotInBox = [0, 0, 0] 
+# pivotInWorld = [0, 0, height]
+# constraint1 = p.createConstraint(box1ID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
+# constraint2 = p.createConstraint(ballID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
+
+# # Simulation loop
+# time.sleep(1)
+# for i in range(8000):
+#     box3Position, _ = p.getBasePositionAndOrientation(box3ID)
+#     p.applyExternalForce(box3ID, -1, # gravity
+#                         [0,0,-9.81*m], 
+#                         box3Position, 
+#                         p.WORLD_FRAME)
+    
+#     p.applyExternalForce(box1ID, -1, # push spring
+#                         [1,0,0], 
+#                         [0,0,0], 
+#                         p.LINK_FRAME)
+#     if i > 800:
+#         p.applyExternalForce(box3ID, -1, # push box3
+#                             [2,0,0], 
+#                             box3Position, 
+#                             p.WORLD_FRAME)
+#         # p.applyExternalTorque(box3ID, -1, # rotate box3
+#         #                     [0,-5,0], 
+#         #                     p.WORLD_FRAME)
+    
+#     # Get positions of the boxes
+#     box1Position, _ = p.getBasePositionAndOrientation(box1ID)
+#     box2Position, _ = p.getBasePositionAndOrientation(ballID)
+    
+#     # Update the maxForce for the spring constraint
+#     maxForce = k * np.abs(np.linalg.norm(np.array(box1Position) - np.array(box2Position)) - rest_length)
+#     p.changeConstraint(c_spring, maxForce=maxForce)
+
+#     # Step simulation
+#     p.stepSimulation()
+#     time.sleep(1./240.)
+
+# # Disconnect from PyBullet
+# p.disconnect()
+
+
+########################################################### shuffling
 import pybullet as p
 import pybullet_data
 import time
@@ -350,78 +439,71 @@ import numpy as np
 p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0, 0, -10)
-planeId = p.loadURDF("plane.urdf")
 
 # Create two cubes
-height = 3.7
-box1ID = p.loadURDF("cube.urdf", basePosition=[-3, 0, height])
-# ballID = p.loadURDF("cube.urdf", basePosition=[0, 0, 4.4])
-ballID = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
-m = 1e-3
-ballID = p.createMultiBody(m, 
-                            ballID, 
-                            -1, 
-                            [0, 0, height])
-gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[2,2,2])
-m = .3
-box3ID = p.createMultiBody(m, 
-                            gripperId, 
-                            -1, 
-                            [6,0,2])
-
-p.changeDynamics(box1ID, -1, lateralFriction=0, spinningFriction=0, 
-                    rollingFriction=0, linearDamping=0, angularDamping=0)
-p.changeDynamics(ballID, -1, lateralFriction=0, spinningFriction=0, 
-                    rollingFriction=0, linearDamping=0, angularDamping=0)
-p.changeDynamics(box3ID, -1, lateralFriction=1, spinningFriction=0, 
+# height = 3.7
+# box1ID = p.loadURDF("cube.urdf", basePosition=[-3, 0, height])
+linkID = p.loadURDF("asset/linkage.urdf", basePosition=[0, 0, 4.7], baseOrientation=p.getQuaternionFromEuler([0,np.pi/2,0]))
+# fishID = p.loadURDF("asset/fine-fish-10/fine-fish-10.urdf", basePosition=[0, -3, 0.5])
+# ballID = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
+# m = 1e-3
+# ballID = p.createMultiBody(m, 
+#                             ballID, 
+#                             -1, 
+#                             [0, 0, height])
+m = 1
+upperID = p.createCollisionShape(p.GEOM_BOX, halfExtents=[10,4,1])
+upperID = p.createMultiBody(m, upperID, -1, [0,0,6.5])
+p.changeDynamics(upperID, -1, lateralFriction=1, spinningFriction=0, 
                     rollingFriction=0, linearDamping=0, angularDamping=0)
 
-# Spring parameters
-rest_length = 3
-k = 8  # Spring constant
+lowerID = p.loadURDF("plane.urdf")
 
-# Create a fixed joint between the cubes, acting like a spring
-c_spring = p.createConstraint(box1ID, -1, ballID, -1, p.JOINT_FIXED, [1, 0, 0], [rest_length/2, 0, 0], [-rest_length/2, 0, 0])
+# Joint parameters
+joint_number = 2  # Joint index, change if a different joint should be controlled
+target_velocity = 1  # rad/s, change to the desired constant velocity
 
-# Create point-to-point constraints to keep boxes along a line
-pivotInBox = [0, 0, 0] 
-pivotInWorld = [0, 0, height]
-constraint1 = p.createConstraint(box1ID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
-constraint2 = p.createConstraint(ballID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
+# Retrieve the number of joints and print their info
+num_joints = p.getNumJoints(linkID)
+for i in range(num_joints):
+    print(p.getJointInfo(linkID, i))
+
+# Set the desired velocity for the first joint and disable the motor to control it directly
+# p.setJointMotorControl2(bodyUniqueId=linkID,
+#                         jointIndex=2,
+#                         controlMode=p.VELOCITY_CONTROL,
+#                         targetVelocity=target_velocity,
+#                         force=500)  # Set a suitable force value
+    
+# # Spring parameters
+# rest_length = 3
+# k = 8  # Spring constant
+
+# # Create a fixed joint between the cubes, acting like a spring
+# c_spring = p.createConstraint(box1ID, -1, ballID, -1, p.JOINT_FIXED, [1, 0, 0], [rest_length/2, 0, 0], [-rest_length/2, 0, 0])
+
+# # Create point-to-point constraints to keep boxes along a line
+# pivotInBox = [0, 0, 0] 
+# pivotInWorld = [0, 0, height]
+# constraint1 = p.createConstraint(box1ID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
+# constraint2 = p.createConstraint(ballID, -1, -1, -1, p.JOINT_PRISMATIC, [1, 0, 0], pivotInBox, pivotInWorld)
 
 # Simulation loop
 time.sleep(1)
 for i in range(8000):
-    box3Position, _ = p.getBasePositionAndOrientation(box3ID)
-    p.applyExternalForce(box3ID, -1, # gravity
-                        [0,0,-9.81*m], 
-                        box3Position, 
+    upperPosition, _ = p.getBasePositionAndOrientation(upperID)
+    p.applyExternalForce(upperID, -1, # gravity
+                        [0,0,8*m], 
+                        upperPosition, 
                         p.WORLD_FRAME)
     
-    p.applyExternalForce(box1ID, -1, # push spring
-                        [1,0,0], 
-                        [0,0,0], 
-                        p.LINK_FRAME)
-    if i > 800:
-        p.applyExternalForce(box3ID, -1, # push box3
-                            [2,0,0], 
-                            box3Position, 
-                            p.WORLD_FRAME)
-        # p.applyExternalTorque(box3ID, -1, # rotate box3
-        #                     [0,-5,0], 
-        #                     p.WORLD_FRAME)
-    
-    # Get positions of the boxes
-    box1Position, _ = p.getBasePositionAndOrientation(box1ID)
-    box2Position, _ = p.getBasePositionAndOrientation(ballID)
-    
-    # Update the maxForce for the spring constraint
-    maxForce = k * np.abs(np.linalg.norm(np.array(box1Position) - np.array(box2Position)) - rest_length)
-    p.changeConstraint(c_spring, maxForce=maxForce)
+    # # Update the maxForce for the spring constraint
+    # maxForce = k * np.abs(np.linalg.norm(np.array(box1Position) - np.array(box2Position)) - rest_length)
+    # p.changeConstraint(c_spring, maxForce=maxForce)
 
     # Step simulation
     p.stepSimulation()
-    time.sleep(1./240.)
+    time.sleep(10./240.)
 
 # Disconnect from PyBullet
 p.disconnect()
