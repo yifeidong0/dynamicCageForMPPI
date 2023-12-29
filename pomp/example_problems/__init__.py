@@ -1,3 +1,3 @@
-__all__ = ['doubleintegrator','dubins','flappy','geometric','pendulum','lqr', 'cage', 
+__all__ = ['doubleintegrator','geometric','cage', 
            'cagemovingobstacle', 'cageplanner', 'ballbalance',
-           'cageenergylabeler','planepush', 'waterswing', 'boxpivot', 'herding']
+           'cageenergylabeler','planepush', 'waterswing', 'boxpivot', 'herding', 'gripper']

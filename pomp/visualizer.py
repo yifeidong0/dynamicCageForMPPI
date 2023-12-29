@@ -188,29 +188,29 @@ class PlanVisualizationProgram(GLProgram):
             glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
             glColor4f(0,0,0,0.5)
             glPointSize(3.0)
-            self.problem.visualizer.drawVerticesGL(V)
+            self.problem.visualizer.drawVerticesGL(V) # draw nodes
             glColor4f(0.5,0.5,0.5,0.5)
             for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
                 # if hasattr(self.problem.controlSpace, "is_cage_planner"):
-                self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
+                x_new = self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
+                if V[i][1] < -1:
+                    print("V[i]",V[i])
                 xo_via_points = self.problem.controlSpace.xo_via_points
-                self.problem.visualizer.beginDraw()
+                self.problem.visualizer.beginDraw() # draw edges
                 glBegin(GL_LINE_STRIP)
                 for p in xo_via_points:
                     glVertex2f(p[0],p[1])
                 glEnd()
                 self.problem.visualizer.endDraw()
-                # else:
-                #     interpolator = self.problem.space.interpolator(V[i], u)
-                #     self.problem.visualizer.drawInterpolatorGL(interpolator)
             glDisable(GL_BLEND)
 
     def draw_path_animation(self):
         if self.path is not None:
-            # print("!!!!x",self.path[0])
-            # print("!!!!u",self.path[1])
+            print("!!!!x",self.path[0])
+            print("!!!!u",self.path[1])
             if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
-                self.display_new_path = True
+                # self.display_new_path = True
+                self.display_new_path = False
                 self.prev_path_x = self.path[0]
         
         if self.display_new_path:

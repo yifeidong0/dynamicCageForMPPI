@@ -52,7 +52,7 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot', 'Herding'}
+all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
@@ -61,6 +61,7 @@ customParameters = {
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':20},
+                    'Gripper':{'maxTime':20},
                     }
 
 def parseParameters(problem,planner):
@@ -144,7 +145,7 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationEL(gui=0)
         problem = cageenergylabeler.cageELTest(dynamics_sim)
     if problem_name == 'PlanePush':
-        dynamics_sim = forwardSimulationPlanePush(gui=1)
+        dynamics_sim = forwardSimulationPlanePush(gui=0)
         problem = planepush.planePushTest(dynamics_sim)
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)
@@ -156,6 +157,9 @@ if __name__=="__main__":
         num_robots = 10
         dynamics_sim = forwardSimulationHerding(gui=0)
         problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots)
+    if problem_name == 'Gripper':
+        dynamics_sim = forwardSimulationGripper(gui=0)
+        problem = gripper.GripperTest(dynamics_sim)
 
     if sys.argv[1] == '-v':
         runViz(problem_name, planner_name, problem)
