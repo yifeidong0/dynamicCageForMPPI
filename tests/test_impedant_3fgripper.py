@@ -26,7 +26,7 @@ p.changeDynamics(gripperId, -1, mass=0)
 # num_joints = p.getNumJoints(gripperId)
 jointIds = [1,2,3,5,6,7,9,10,11]
 initial_positions = [math.pi/8,] * len(jointIds) # Adjust with your desired initial positions
-stiffness = [1e-1,] * len(jointIds)  # P gain for each joint
+stiffness = [1e-2,] * len(jointIds)  # P gain for each joint
 damping = [1e-1,] * len(jointIds)  # D gain for each joint
 # for i, jointId in enumerate(jointIds):
 #     p.resetJointState(gripperId, jointId, initial_positions[i])
@@ -80,18 +80,19 @@ for i in range(8000):
         p.applyExternalForce(objectUniqueId=boxId, linkIndex=-1, forceObj=[-.3*m_box*g,0,1.18*m_box*g], posObj=pos_box, flags=p.WORLD_FRAME)
         p.applyExternalTorque(objectUniqueId=boxId, linkIndex=-1, torqueObj=[-.3,.1,.18], flags=p.WORLD_FRAME)
 
-    if i % 10 == 0:
-        pos, quat_object = p.getBasePositionAndOrientation(boxId)
-        eul_object = p.getEulerFromQuaternion(quat_object) # rad
-        vel_object, vel_ang_object = p.getBaseVelocity(boxId)
-        joint_states = p.getJointStates(gripperId, jointIds)
-        pos_gripper = [state[0] for state in joint_states]
-        vel_gripper = [state[1] for state in joint_states]
+    # # Test reset functionalities
+    # if i % 10 == 0:
+    #     pos, quat_object = p.getBasePositionAndOrientation(boxId)
+    #     eul_object = p.getEulerFromQuaternion(quat_object) # rad
+    #     vel_object, vel_ang_object = p.getBaseVelocity(boxId)
+    #     joint_states = p.getJointStates(gripperId, jointIds)
+    #     pos_gripper = [state[0] for state in joint_states]
+    #     vel_gripper = [state[1] for state in joint_states]
 
-        p.resetBasePositionAndOrientation(boxId, pos, quat_object)
-        p.resetBaseVelocity(boxId, vel_object, vel_ang_object)
-        for i, jid in enumerate(jointIds):
-            p.resetJointState(gripperId, jid, targetValue=pos_gripper[i], targetVelocity=vel_gripper[i])
+    #     p.resetBasePositionAndOrientation(boxId, pos, quat_object)
+    #     p.resetBaseVelocity(boxId, vel_object, vel_ang_object)
+    #     for i, jid in enumerate(jointIds):
+    #         p.resetJointState(gripperId, jid, targetValue=pos_gripper[i], targetVelocity=vel_gripper[i])
 
     # Step simulation
     p.stepSimulation()

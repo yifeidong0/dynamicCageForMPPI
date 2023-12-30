@@ -89,11 +89,11 @@ class Gripper:
         self.x_range = 4
         self.z_range = 4
         self.y_range = 4
-        self.offset = 2.0 # extend the landscape
+        self.offset = 0.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 5
         self.max_acceleration = 3
-        self.max_ang_acceleration = .0
+        self.max_ang_acceleration = .3
         self.mass_object = .5
         self.length_object = .3
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
@@ -103,7 +103,7 @@ class Gripper:
         self.start_state = data[:self.dim_state] # list[6+6+9,] gripper joints velocity
         self.start_gripper_pos = self.start_state[-self.num_joints:]
         self.goal_state = [0,] * self.dim_state # varying goal region
-        self.time_range = 1
+        self.time_range = 1.
 
         self.params = [self.mass_object, self.moment_object, self.length_object, movable_joints, self.start_gripper_pos]
         self.obstacles = []
@@ -131,7 +131,6 @@ class Gripper:
         wspace.addObstacleParam(self.obstacles)
 
         res =  MultiConfigurationSpace(wspace, 
-                                    #    BoxConfigurationSpace([-100],[100]), 
                                        BoxConfigurationSpace([-(self.y_range+self.offset)/2],[(self.y_range+self.offset)/2]), 
                                        *[BoxConfigurationSpace([-math.pi],[math.pi]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),]*self.dim_workspace,
@@ -149,7 +148,7 @@ class Gripper:
                        -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,
                        *[-5e-2,]*self.num_joints
                        ],
-                      [(self.x_range+self.offset)/2, -(self.z_range-self.offset)/2, (self.y_range+self.offset)/2,
+                      [(self.x_range+self.offset)/2, 1.-(self.z_range+self.offset)/2, (self.y_range+self.offset)/2,
                        math.pi, math.pi, math.pi,
                        self.max_velocity, self.max_velocity, self.max_velocity,
                        self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
@@ -197,7 +196,7 @@ def GripperTest(dynamics_sim, data=None):
     movable_joints = [1,2,3,5,6,7,9,10,11]
     num_joints = len(movable_joints)
     num_dim_se3 = 6
-    data = [0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*num_dim_se3 + [math.pi/10]*num_joints + [0.0]*num_joints
+    data = [0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*num_dim_se3 + [math.pi/12]*num_joints + [0.0]*num_joints
     p = Gripper(data, dynamics_sim, movable_joints)
 
     objective = GripperObjectiveFunction(p)

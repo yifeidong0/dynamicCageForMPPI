@@ -189,12 +189,20 @@ class PlanVisualizationProgram(GLProgram):
             glColor4f(0,0,0,0.5)
             glPointSize(3.0)
             self.problem.visualizer.drawVerticesGL(V) # draw nodes
+
+            # Draw static obstacle
+            if hasattr(self.problem.controlSpace, "is_herding"):
+                glLineWidth(1)
+                num_robot = self.problem.controlSpace.cage.num_robot
+                for i in range(num_robot):
+                    self.problem.visualizer.drawRobotGL(V[0][4+2*i:6+2*i])
+
             glColor4f(0.5,0.5,0.5,0.5)
             for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
                 # if hasattr(self.problem.controlSpace, "is_cage_planner"):
                 x_new = self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
-                if V[i][1] < -1:
-                    print("V[i]",V[i])
+                # if V[i][1] < -1:
+                #     print("V[i]",V[i])
                 xo_via_points = self.problem.controlSpace.xo_via_points
                 self.problem.visualizer.beginDraw() # draw edges
                 glBegin(GL_LINE_STRIP)
@@ -235,8 +243,6 @@ class PlanVisualizationProgram(GLProgram):
 
                     # Draw the graph again
                     self.draw_graph()
-                    # print("x",self.path[0])
-                    # print("u",self.path[1])
 
                     for m in range(k+1):
                         x1, u = self.path[0][m], self.path[1][m]

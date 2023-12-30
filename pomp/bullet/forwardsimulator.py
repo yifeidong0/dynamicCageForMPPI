@@ -639,14 +639,16 @@ class forwardSimulationGripper():
         # Kinodynamics
         self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_gripper_pos = params[0], params[1], params[2], params[3], params[4]
         self.num_movable_joints = len(self.movable_joints)
+        self.num_joints = 12
+        self.non_movable_joints = [i for i in range(self.num_joints) if i not in self.movable_joints]
         self.pos_object = [0,0,1.]
         self.quat_object = p.getQuaternionFromEuler([0,0,0])
         self.vel_object = [0,0,0]
 
         self.dim_workspace = 3
         self.lateralFriction = 0.7
-        self.stiffness = [1e-4,] * self.num_movable_joints  # P gain for each joint
-        self.damping = [1e-4,] * self.num_movable_joints  # D gain for each joint
+        self.stiffness = [1e-2,] * self.num_movable_joints  # P gain for each joint
+        self.damping = [1e-1,] * self.num_movable_joints  # D gain for each joint
 
         self.pos_gripper_base = [0,0,0]
         self.quat_gripper_base = p.getQuaternionFromEuler([math.pi/2,0,0])
@@ -683,39 +685,21 @@ class forwardSimulationGripper():
         for i, jid in enumerate(self.movable_joints):
             p.resetJointState(self.gripperUid, jid, targetValue=self.pos_gripper[i], targetVelocity=self.vel_gripper[i])
 
+        # Reset joints of the gripper that is not movable
+        for i, jid in enumerate(self.non_movable_joints):
+            p.resetJointState(self.gripperUid, jid, targetValue=0.0, targetVelocity=0.0)
+
     def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
         t = inputs[0]
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
-        # init_pos_gripper = self.pos_gripper
-        # nominal_vel_gripper = self.vel_gripper
 
         # Step the simulation
         via_points = []
         force_on_object = [self.mass_object*acc for acc in inputs[1:4]]
         torque_on_object = np.dot(np.diag(self.moment_object), np.asarray(inputs[4:7])).tolist()
         for i in range(int(t*240)):
-            # Read the current state of the gripper
-            # joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
-            # target_torques = []
-            # nominal_positions = []
-            # for k in range(self.num_movable_joints):
-            #     current_position, current_velocity, _, _ = joint_states[k]
-
-            #     # Calculate the position deviation and the velocity
-            #     nominal_position = init_pos_gripper[k] + nominal_vel_gripper[k] * i / 240.0
-            #     position_deviation = nominal_position - current_position
-            #     velocity = -current_velocity
-
-            #     # Calculate the control input (torque) based on stiffness and damping
-            #     control_input = self.stiffness[k] * position_deviation + self.damping[k] * velocity
-            #     target_torques.append(control_input)
-            #     nominal_positions.append(nominal_position)
-                # print("getJointStates torques: ", T)
-            #     print("current_position: ", current_position)
-            # print("target_torques: ", target_torques)
-
-            # Apply the calculated torques to all joints at once
+            # Apply the calculated torques to all joints at once  
             p.setJointMotorControlArray(bodyUniqueId=self.gripperUid,
                                         jointIndices=self.movable_joints,
                                         # controlMode=p.VELOCITY_CONTROL,
@@ -737,10 +721,6 @@ class forwardSimulationGripper():
             p.applyExternalTorque(self.objectUid, -1, 
                                 torque_on_object,
                                 p.WORLD_FRAME)
-            # p.applyExternalForce(self.objectUid, -1, # gravity
-            #                      [0,0,self.mass_object*self.g], 
-            #                      self.pos_object, 
-            #                      p.WORLD_FRAME)
             
             p.stepSimulation()
 
