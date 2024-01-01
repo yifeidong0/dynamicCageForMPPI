@@ -744,3 +744,138 @@ class forwardSimulationGripper():
     def finish_sim(self):
         # Clean up and close the simulation
         p.disconnect()
+
+
+class forwardSimulationShuffling():
+    def __init__(self, gui=False):
+        self.visualShapeId = -1
+        self.gui = gui
+        if self.gui:
+            p.connect(p.GUI) # p.GUI
+        else:
+            p.connect(p.DIRECT) # p.GUI
+        p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
+        self.g = -9.81
+        # p.setGravity(0, 0, self.g)
+    
+    def set_params(self, params):
+        # General
+        self.dim_workspace = 3
+        self.dim_se3 = 6
+        self.dim_gripper = 1
+
+        # Object
+        self.pos_object = [0, 0, 4.55]
+        self.quat_object = p.getQuaternionFromEuler([0,np.pi/2,0])
+        self.vel_object = [0,0,0]
+        self.target_positions = [0,0,0,0] # [0]*numJointsLink,
+        self.target_velocities = [0,0,0,0] # [0.0,]*numJointsLink,
+        self.mass_object = 1
+        self.objectUid = p.loadURDF("asset/linkage.urdf", basePosition=self.pos_object, baseOrientation=self.quat_object)
+        self.num_joints = p.getNumJoints(self.objectUid)
+        self.dim_state = 2*(self.dim_se3 + self.num_joints) + self.dim_gripper # 21
+        self.stiffness = [1e0,]*self.num_joints # [8e-3,5e-3,5e-3,1e-2]  # P gain for each joint
+        self.damping = [1e-1,] * self.num_joints  # D gain for each joint
+
+        # Gripper
+        self.pos_gripper = [0, 0, 0]
+        self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
+        self.vel_gripper = [0,0,0]
+        self.vel_ang_gripper = [0,0,0]
+        self.mass_up_gripper = 100
+
+    def create_shapes(self):
+        # Set up object
+        for i in range(self.num_joints+1):
+            p.changeDynamics(self.objectUid, i, lateralFriction=1, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+
+        # Set up environment
+        upperID = p.createCollisionShape(p.GEOM_BOX, halfExtents=[3,2,.2])
+        self.gripperUid = p.createMultiBody(self.mass_up_gripper, upperID, -1, [0,0,5.4])
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=1, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        pivotInBox = [0, 0, 0] 
+        pivotInWorld = [0, 0, 3]
+        _ = p.createConstraint(self.gripperUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], pivotInBox, pivotInWorld)
+
+        lowerID = p.loadURDF("plane.urdf")
+        p.changeDynamics(lowerID, -1, lateralFriction=1, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+
+    def reset_states(self, states):
+        """states: 2*6+2*4+1+1 DoF"""
+        # Object kinematics
+        pos = states[:self.dim_workspace]
+        self.pos_object = [pos[2], pos[0], pos[1]] # pos: y,z,x
+        self.quat_object = p.getQuaternionFromEuler(states[self.dim_workspace:2*self.dim_workspace])
+        self.vel_object = states[2*self.dim_workspace:3*self.dim_workspace]
+        self.vel_ang_object = states[3*self.dim_workspace:4*self.dim_workspace]
+        self.pos_object_joints = states[4*self.dim_workspace:4*self.dim_workspace+self.num_joints]
+        self.vel_object_joints = states[4*self.dim_workspace+self.num_joints:4*self.dim_workspace+2*self.num_joints]
+
+        # Gripper kinematics
+        self.pos_gripper = [0, 0, states[-2]]
+        self.vel_gripper = [0, 0, states[-1]]
+
+        # Reset the kinematics of the object and the gripper
+        p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+        p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
+        for i, jid in enumerate(list(range(self.num_joints))):
+            p.resetJointState(self.objectUid, jid, targetValue=self.pos_object_joints[i], targetVelocity=self.vel_object_joints[i])
+
+        # Reset gripper
+        p.resetBasePositionAndOrientation(self.gripperUid, self.pos_gripper, self.quat_gripper)
+        p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper)
+
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
+        t = inputs[0]
+        interval = int(int(t*240)/num_via_points)
+        interval = 3 if interval==0 else interval
+
+        # Step the simulation
+        via_points = []
+        external_torque = inputs[1:] # list[4,]
+        for i in range(int(t*240)):
+            # Calculate the torques induced by joint elasticity and external force
+            joint_states = p.getJointStates(self.objectUid, list(range(self.num_joints)))
+            joint_angles = [state[0] for state in joint_states]
+            joint_vels = [state[1] for state in joint_states]
+            error_angles = [desired - current for desired, current in zip(self.target_positions, joint_angles)]
+            error_vels = [desired - current for desired, current in zip(self.target_velocities, joint_vels)]
+            target_torques = [kp*e - kd*av for kp, e, kd, av in zip(self.stiffness, error_angles, self.damping, error_vels)]
+            total_torques = [ext+tar for ext, tar in zip(external_torque, target_torques)]
+
+            # Mimic elastic cards stack behavior
+            p.setJointMotorControlArray(bodyUniqueId=self.objectUid,
+                                        jointIndices=list(range(self.num_joints)),
+                                        controlMode=p.VELOCITY_CONTROL,
+                                        targetVelocities=[100,]*self.num_joints,
+                                        forces=total_torques,)
+            
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if print_via_points and (i % interval == 0 or i == int(t*240)-1):
+                self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+                via_points.append([self.pos_object[1], self.pos_object[2]])
+            if self.gui:
+                time.sleep(3/240)
+
+        # Get the object and gripper states
+        pos, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+        pos_object_GL = [pos[1], pos[2], pos[0]] # y,z,x
+        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+        self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+        joint_states = p.getJointStates(self.objectUid, list(range(self.num_joints)))
+        self.pos_object_joints = [state[0] for state in joint_states]
+        # print("!!!pos_object_joints", self.pos_object_joints)
+        self.vel_object_joints = [state[1] for state in joint_states]
+        self.pos_gripper, _ = p.getBasePositionAndOrientation(self.gripperUid)
+
+        new_states = pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + self.pos_object_joints + self.vel_object_joints + [self.pos_gripper[2],]
+        return new_states, via_points
+
+    def finish_sim(self):
+        # Clean up and close the simulation
+        p.disconnect()

@@ -2,11 +2,12 @@ from pomp.example_problems.cageenergylabeler import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.boxpivot import *
+from pomp.example_problems.shuffling import *
 from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "WaterSwing"
+problem_name = "Shuffling"
 total_time = 3.5
 gui = 1
 num_via_points = 20
@@ -41,6 +42,24 @@ if problem_name == 'BoxPivot':
               0, 3, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBoxPivot(cage, gui=gui)
+if problem_name == 'Shuffling':
+    total_time = 7.5
+    headers = ['data_id', 'y', 'z', 'x', 'thetax', 'thetay', 'thetaz', 
+               'vx', 'vy', 'vz', 'omegax', 'omegay', 'omegaz', 
+               'j0', 'j1', 'j2', 'j3', 'jv0', 'jv1', 'jv2', 'jv3',
+               'zg', 'vzg']
+    num_state = len(headers)-1
+    fake_data = [0.0, ]*num_state
+    dynamics_sim = forwardSimulationShuffling(gui=0)
+    cage = Shuffling(fake_data, dynamics_sim)
+    x_init = [0, 4.55, 0, 0, np.pi/2, 0,
+              0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0,
+              0, 0, 0, 0,
+              5.2, 0
+              ]
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimShuffling(cage, gui=gui)
 
 dataset = []
 k = 0

@@ -4,6 +4,7 @@ from pomp.example_problems.waterswing import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.cageenergylabeler import *
 from pomp.example_problems.boxpivot import *
+from pomp.example_problems.shuffling import *
 from pomp.planners import allplanners
 from pomp.visualizer import *
 import time
@@ -12,18 +13,15 @@ from main import *
 import os
 
 plannername = 'ao-rrt'
-prname = 'WaterSwing' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing'
-vis = 0
-maxTime = 60
+prname = 'Shuffling' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+vis = 1
+maxTime = 30 # only useful when vis=0
 
 if prname == 'CageEnergyLabeler':
-    # dynamics_sim = forwardSimulationEL(gui=0)
     filename = ''
 if prname == 'PlanePush':
-    # dynamics_sim = forwardSimulationPlanePush(gui=0)
     filename = ''
 if prname == 'WaterSwing':
-    # dynamics_sim = forwardSimulationWaterSwing(gui=0)
     filenames = [
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
@@ -33,11 +31,14 @@ if prname == 'WaterSwing':
                 'scripted_movement_viapoints_WaterSwing_t5.5.csv',
                  ]
 if prname == 'BoxPivot':
-    # dynamics_sim = forwardSimulationBoxPivot(gui=0)
     filenames = [
                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction0.4.csv',
                 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
+                 ]
+if prname == 'Shuffling':
+    filenames = [
+                'data/shuffling/scripted_movement_viapoints_Shuffling.csv',
                  ]
     
 for filename in filenames:
@@ -68,6 +69,9 @@ for filename in filenames:
         if prname == 'BoxPivot':
             dynamics_sim = forwardSimulationBoxPivot(gui=0)
             problem = boxPivotTest(dynamics_sim, data_i)
+        if prname == 'Shuffling':
+            dynamics_sim = forwardSimulationShuffling(gui=0)
+            problem = ShufflingTest(dynamics_sim, data_i)
         if vis:
             runVisualizer(problem, type=plannername, **params)
         else:

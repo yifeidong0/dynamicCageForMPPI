@@ -52,7 +52,7 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper'}
+all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
@@ -62,6 +62,7 @@ customParameters = {
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':20},
                     'Gripper':{'maxTime':20},
+                    'Shuffling':{'maxTime':20},
                     }
 
 def parseParameters(problem,planner):
@@ -115,7 +116,8 @@ def runViz(problem_name, planner_name, problem):
     for (k,v) in iteritems(params):
         print(" ",k,":",v)
     runVisualizer(problem, type=planner, **params)
-    
+
+
 if __name__=="__main__":
     if len(sys.argv) < 3:
         print("Usage: main.py [-v] Problem Planner1 ... Plannerk")
@@ -160,6 +162,9 @@ if __name__=="__main__":
     if problem_name == 'Gripper':
         dynamics_sim = forwardSimulationGripper(gui=0)
         problem = gripper.GripperTest(dynamics_sim)
+    if problem_name == 'Shuffling':
+        dynamics_sim = forwardSimulationShuffling(gui=0)
+        problem = shuffling.ShufflingTest(dynamics_sim)
 
     if sys.argv[1] == '-v':
         runViz(problem_name, planner_name, problem)

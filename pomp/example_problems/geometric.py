@@ -183,10 +183,12 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         gripper.drawGL()
         self.endDraw()
 
-    def drawVerticesGL(self,qs):
+    def drawVerticesGL(self,qs,a=.1):
         self.beginDraw()
         glBegin(GL_POINTS)
         for q in qs:
+            # if abs(q[12]) < a and abs(q[13]) < a and abs(q[14]) < a and abs(q[15]) < a:
+            #     print("q:", q)
             glVertex2f(q[0],q[1])
         glEnd()
         self.endDraw()

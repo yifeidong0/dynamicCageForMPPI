@@ -134,7 +134,7 @@ class Gripper:
                                        BoxConfigurationSpace([-(self.y_range+self.offset)/2],[(self.y_range+self.offset)/2]), 
                                        *[BoxConfigurationSpace([-math.pi],[math.pi]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),]*self.dim_workspace,
-                                       *[BoxConfigurationSpace([-self.max_ang_acceleration],[self.max_ang_acceleration]),]*self.dim_workspace,
+                                       *[BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-5e-2],[math.pi/2]),]*self.num_joints)
         return res
 
