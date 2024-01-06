@@ -140,6 +140,9 @@ class forwardSimulationPlanePush():
         # self.create_shapes()
     
     def set_params(self, params):
+        self.object_name = 'cylinder' # 'box', 'cylinder'
+        self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
+
         # Kinodynamics
         self.mass_object = params[0]
         self.moment_object = params[1] # moment of inertia
@@ -149,15 +152,18 @@ class forwardSimulationPlanePush():
         
         self.mass_gripper = params[2]
         self.moment_gripper = params[3]
+        self.y_obstacle = params[4]
         self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.lateralFriction = 0.0
+        self.z_bodies = .05
+        self.half_extent_obstacle = [7, .5, self.z_bodies]
+        self.pos_obstacle = [5,self.y_obstacle+self.half_extent_obstacle[1],0]
+        self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
-        # Geometrics
-        self.z_bodies = .1
+        self.lateralFriction = 0.3
 
     def create_shapes(self):
         # Create a plane
@@ -165,26 +171,54 @@ class forwardSimulationPlanePush():
         p.changeDynamics(self.planeId, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
-        # Create an object # TODO import complex shapes from files
-        objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, .6, self.z_bodies])
-        self.objectUid = p.createMultiBody(self.mass_object, 
-                                           objectId, 
-                                           self.visualShapeId, 
-                                           self.pos_object,
-                                           self.quat_object)
+        # Create an object
+        if self.object_name == 'box':
+            objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .2, self.z_bodies])
+            self.objectUid = p.createMultiBody(self.mass_object, 
+                                               objectId, 
+                                               self.visualShapeId, 
+                                               self.pos_object,
+                                               self.quat_object)
+        elif self.object_name == 'cylinder':
+            objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
+            self.objectUid = p.createMultiBody(self.mass_object, 
+                                            objectId, 
+                                            self.visualShapeId, 
+                                            self.pos_object,
+                                            self.quat_object)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
-        gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.5, .5, self.z_bodies])
-        self.gripperUid = p.createMultiBody(self.mass_gripper, 
-                                       gripperId, 
-                                       self.visualShapeId, 
-                                       self.pos_gripper,
-                                       self.quat_gripper)
+        if self.gripper_name == 'box':
+            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
+            self.gripperUid = p.createMultiBody(self.mass_gripper, 
+                                           gripperId, 
+                                           self.visualShapeId, 
+                                           self.pos_gripper,
+                                           self.quat_gripper)
+        elif self.gripper_name == 'cylinder':
+            gripperId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies)
+            self.gripperUid = p.createMultiBody(self.mass_gripper,
+                                                gripperId,
+                                                self.visualShapeId,
+                                                self.pos_gripper,
+                                                self.quat_gripper)
+        elif self.gripper_name == 'bowl':
+            self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
-
+        
+        # Create a static obstacle
+        obstacleId = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.half_extent_obstacle)
+        self.obstacleUid = p.createMultiBody(0, 
+                                       obstacleId, 
+                                       self.visualShapeId, 
+                                       self.pos_obstacle,
+                                       self.quat_obstacle)
+        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        
     def reset_states(self, states):
         xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
 
@@ -196,7 +230,10 @@ class forwardSimulationPlanePush():
 
         # Gripper kinematics
         self.pos_gripper = [xg, yg, 0.0]
-        self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
+        if self.gripper_name == 'bowl':
+            self.quat_gripper = p.getQuaternionFromEuler([-math.pi/2, 0, thetag])
+        else:
+            self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
         self.vel_gripper = [vxg, vyg, 0.0]
         self.vel_ang_gripper = [0.0, 0.0, omegag]
 

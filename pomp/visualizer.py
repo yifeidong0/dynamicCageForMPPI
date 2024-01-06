@@ -139,17 +139,32 @@ class PlanVisualizationProgram(GLProgram):
 
         glDisable(GL_LIGHTING)
         
-        # Draw initial gripper pose
+        # Draw initial manipulator position and goal region
         if hasattr(self.problem.controlSpace, "is_energy_labeler"):
             gripperPose = self.problem.controlSpace.obstacles[:3]
             halfExtent = self.problem.controlSpace.obstacles[3:]
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
+        elif hasattr(self.problem.controlSpace, "is_plane_push"):
+            self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push")
+            self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
+        else:
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:
                 self.problem.visualizer.drawObjectGL(p)
 
+        # Draw start and goal region
+        self.problem.visualizer.drawObjectGL(self.problem.start)
+
+        # Draw roadmap
         self.draw_graph()
+
+        # Draw static/animated path found by the planner
+        self.draw_solution_path()
+        # TODO: print the cost - self.planner.bestPathCost - on the window
 
         #Debug extension cache
         est = None
@@ -175,19 +190,15 @@ class PlanVisualizationProgram(GLProgram):
                     self.problem.visualizer.drawObjectGL(n.x)
         """
 
-        # Draw static/animated path found by the planner
-        self.draw_path_animation()
-
-        # TODO: print the cost - self.planner.bestPathCost - on the window
-
     def draw_graph(self):
+        """Draw the roadmap."""
         if self.G:
             V,E = self.G
             glLineWidth(0.5)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
             glColor4f(0,0,0,0.5)
-            glPointSize(3.0)
+            glPointSize(6.0)
             self.problem.visualizer.drawVerticesGL(V) # draw nodes
 
             # Draw static obstacle
@@ -199,29 +210,28 @@ class PlanVisualizationProgram(GLProgram):
 
             glColor4f(0.5,0.5,0.5,0.5)
             for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
-                # if hasattr(self.problem.controlSpace, "is_cage_planner"):
-                x_new = self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
-                # if V[i][1] < -1:
-                #     print("V[i]",V[i])
+                x_new = self.problem.controlSpace.eval(V[i][:-1], u, 1, print_via_points=True)
                 xo_via_points = self.problem.controlSpace.xo_via_points
-                self.problem.visualizer.beginDraw() # draw edges
-                glBegin(GL_LINE_STRIP)
-                for p in xo_via_points:
-                    glVertex2f(p[0],p[1])
-                glEnd()
-                self.problem.visualizer.endDraw()
+                # self.problem.visualizer.beginDraw() # draw edges
+                # glBegin(GL_LINE_STRIP)
+                # for p in xo_via_points:
+                #     glVertex2f(p[0],p[1])
+                # glEnd()
+                # self.problem.visualizer.endDraw()
             glDisable(GL_BLEND)
 
-    def draw_path_animation(self):
+    def draw_solution_path(self):
         if self.path is not None:
-            print("!!!!x",self.path[0])
-            print("!!!!u",self.path[1])
+            # print("!!!!x",self.path[0])
+            # print("!!!!u",self.path[1])
             if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
                 # self.display_new_path = True
                 self.display_new_path = False
                 self.prev_path_x = self.path[0]
         
-        if self.display_new_path:
+        if not self.display_new_path: # draw static path without animation if no path update
+            self.draw_path_static()
+        else: # in animation mode
             self.problem.visualizer.drawObjectGL(self.problem.start)
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 
@@ -287,16 +297,14 @@ class PlanVisualizationProgram(GLProgram):
                         self.movie_frame += 1
                     time.sleep(0.1)
 
-        else: # draw static path without animation if no path update
-            self.draw_path_static()
-
         self.display_new_path = False
 
     def draw_path_static(self):
+        """Draw the solution path without animation."""
         if self.path:
             # Plot path edges
             glColor3f(0,0.75,0)
-            glLineWidth(7.0)
+            glLineWidth(3.0)
             for q,u in zip(self.path[0][:-1],self.path[1]):
                 interpolator = self.problem.space.interpolator(q,u)
                 self.problem.visualizer.drawInterpolatorGL(interpolator)
@@ -305,10 +313,6 @@ class PlanVisualizationProgram(GLProgram):
             glLineWidth(1)
             for q in self.path[0]:
                 self.problem.visualizer.drawObjectGL(q)
-            
-        # Draw start and goal region
-        self.problem.visualizer.drawObjectGL(self.problem.start)
-        self.problem.visualizer.drawGoalGL(self.problem.goal)
 
     def displayfunc(self):
         GLProgram.displayfunc(self)

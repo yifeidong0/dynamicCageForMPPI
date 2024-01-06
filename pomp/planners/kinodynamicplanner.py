@@ -1092,23 +1092,26 @@ class CostSpaceRRT:
                     #that there's little effect (5/6/2015)
                     #self.rrt.reset()
                     #didreset = True
-        if foundNewPath and not didreset:
-            assert self.bestPathCost is not None
-            #print("Trying pruning...")
-            self.lastPruneCost = self.bestPathCost
-            prunecount = 0
-            for n in self.rrt.nodes:
-                if n.x[-1] > self.bestPathCost or self.rrt.prune(n):
-                    prunecount += 1
-            print("Can prune",prunecount,"of",len(self.rrt.nodes),"nodes")
-            if prunecount > len(self.rrt.nodes)/5:
-                #if prunecount > 0:
-                oldpruner = self.rrt.pruner
-                if self.rrt.pruner is None:
-                    self.rrt.pruner = (lambda n:n.x[-1] >= self.bestPathCost)
-                    self.rrt.pruneTree()
-                    self.rrt.pruner = oldpruner
-                    print("   pruned down to",len(self.rrt.nodes),"nodes")
+        
+        # Pruning
+        # if foundNewPath and not didreset:
+        #     assert self.bestPathCost is not None
+        #     #print("Trying pruning...")
+        #     self.lastPruneCost = self.bestPathCost
+        #     prunecount = 0
+        #     for n in self.rrt.nodes:
+        #         if n.x[-1] > self.bestPathCost or self.rrt.prune(n):
+        #             prunecount += 1
+        #     print("Can prune",prunecount,"of",len(self.rrt.nodes),"nodes")
+        #     if prunecount > len(self.rrt.nodes)/5:
+        #         #if prunecount > 0:
+        #         oldpruner = self.rrt.pruner
+        #         if self.rrt.pruner is None:
+        #             self.rrt.pruner = (lambda n:n.x[-1] >= self.bestPathCost)
+        #             self.rrt.pruneTree()
+        #             self.rrt.pruner = oldpruner
+        #             print("   pruned down to",len(self.rrt.nodes),"nodes")
+                    
         return self.bestPathCost
         
     def getPathCost(self):
@@ -1124,7 +1127,8 @@ class CostSpaceRRT:
     def getRoadmap(self):
         """Returns a roadmap for the base space"""
         (V,E) = self.rrt.getRoadmap()
-        return ([x[:-1] for x in V],E)
+        # return ([x[:-1] for x in V],E)
+        return self.rrt.getRoadmap()
         
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:

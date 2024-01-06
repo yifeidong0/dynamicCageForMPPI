@@ -57,14 +57,16 @@ class PlanePush:
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
-        self.max_ang_velocity = 2 # 1
+        self.max_ang_velocity = 2
         self.max_acceleration = 3
-        self.max_ang_acceleration = 1 # .5
-        self.mass_object = .3
-        self.mass_gripper = 10
-        self.moment_object = .1 # moment of inertia
-        self.moment_gripper = 1
-        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper]
+        self.max_ang_acceleration = 1
+        self.mass_object = 1
+        self.mass_gripper = 4
+        self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
+        self.moment_gripper = self.mass_object * 1e-3
+        self.y_obstacle = 100
+        self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
+        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle]
 
         # Gripper moving velocity (constant)
         self.gripper_vel = data[9:]
@@ -120,24 +122,15 @@ class PlanePush:
     def startState(self):
         return self.start_state
 
-    def goalSet(self, margin=4.0):
-        # Put goal region opposite to gripper movement direction
-        gripper_vel = math.sqrt(self.gripper_vel_x**2 + self.gripper_vel_y**2) + 1e-4
-        dis_x = margin * self.gripper_vel_x / gripper_vel if gripper_vel > 0.1 else 0.0
-        dis_y = margin * self.gripper_vel_y / gripper_vel if gripper_vel > 0.1 else margin
-        goal_pos_o_center = [self.start_state[0] - dis_x,
-                             self.start_state[1] - dis_y]
-        goal_pos_o_bound = [[max(-self.offset, goal_pos_o_center[0]-self.goal_half_extent), 
-                             max(-self.offset, goal_pos_o_center[1]-self.goal_half_extent)], 
-                            [min(self.x_range+self.offset, goal_pos_o_center[0]+self.goal_half_extent), 
-                             min(self.y_range+self.offset, goal_pos_o_center[1]+self.goal_half_extent)]
-                           ]
-        return BoxSet([goal_pos_o_bound[0][0], goal_pos_o_bound[0][1], -math.pi,
-                       -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
-                       -2.5*self.x_range, -2.5*self.y_range, -math.pi],
-                      [goal_pos_o_bound[1][0], goal_pos_o_bound[1][1], math.pi,
-                       self.max_velocity, self.max_velocity, self.max_ang_velocity,
-                       2.5*self.x_range, 2.5*self.y_range, math.pi])
+    def goalSet(self):
+        multibmin = [[-self.offset,-self.offset], [self.start_state[6]+2, -self.offset],]
+        multibmax = [[self.start_state[6]-2, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle],]
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+
+        return MultiSet(UnionBoxSet(multibmin, multibmax),
+                        BoxSet(bmin, bmax))
+
 
 
 class PlanePushObjectiveFunction(ObjectiveFunction):
@@ -194,21 +187,28 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
         # c = max((Enext-E), 1e-5)
 
-        # Work (applied force, torque and friction)
-        delta_alpha = xnext[2]-x[2]
-        if delta_alpha < -math.pi:
-            delta_alpha = 2*math.pi + delta_alpha
-        if delta_alpha > math.pi:
-            delta_alpha = -2*math.pi + delta_alpha
-        W = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[1]-x[1]) + I*u[3]*delta_alpha
-        c = max(W, 1e-5)
+        # Calculating change in position and orientation
+        delta_x = xnext[0] - x[0]
+        delta_y = xnext[1] - x[1]
+        delta_theta = math.atan2(math.sin(xnext[2] - x[2]), math.cos(xnext[2] - x[2]))  # More robust angle difference
 
-        return c
+        # Work done by forces and torque
+        W = m * u[1] * delta_x + m * u[2] * delta_y + I * u[3] * delta_theta
+
+        # Considering both positive and negative work
+        # c = W
+        c = abs(W)
+        
+        # Include a small positive value to avoid zero cost in cases where it's needed
+        return max(c, 1e-5)
 
 
 def planePushTest(dynamics_sim, 
-                  data = [3.0, 5.5, 0.0, 0.0, 3.0, 0,
-                          3.0, 4.3, 0.0, 0.0, 3.0, 0.0]):
+                  data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                          5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                #   data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
+                #           5.0, 4, 0.0, 0.0, 1, 0.0],
+                          ):
     p = PlanePush(data, dynamics_sim)
 
     # if p.checkStartFeasibility():

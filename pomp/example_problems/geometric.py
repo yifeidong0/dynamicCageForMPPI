@@ -37,6 +37,13 @@ class Box(BoxSet):
         BoxSet.__init__(self,[min(x1,x2),min(y1,y2)],[max(x1,x2),max(y1,y2)])
         
     def drawGL(self):
+        # Enable blending for transparency
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        # Set color with alpha for transparency (RGBA)
+        glColor4f(0, 1, 0, 0.2)  # White color with 50% transparency
+
         glBegin(GL_QUADS)
         glVertex2f(*self.bmin)
         glVertex2f(self.bmax[0],self.bmin[1])
@@ -183,13 +190,43 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         gripper.drawGL()
         self.endDraw()
 
-    def drawVerticesGL(self,qs,a=.1):
+    def drawVerticesGL(self, qs):
+        # Determine the range of costs
+        min_cost = min(q[-1] for q in qs)
+        max_cost = max(q[-1] for q in qs)
+        cost_range = max_cost - min_cost if max_cost != min_cost else 1  # prevent division by zero
+
         self.beginDraw()
         glBegin(GL_POINTS)
         for q in qs:
-            # if abs(q[12]) < a and abs(q[13]) < a and abs(q[14]) < a and abs(q[15]) < a:
-            #     print("q:", q)
+            # Normalize the cost to [0,1]
+            normalized_cost = (q[-1] - min_cost) / cost_range
+
+            # Interpolate between blue (low cost) and red (high cost)
+            red = normalized_cost  # Higher cost -> More red
+            blue = 1 - normalized_cost  # Lower cost -> More blue
+            green = 0  # Keeping green constant, but you can adjust it as needed
+
+            # Set the color for the current point
+            glColor4f(red, green, blue, 1)  # Adjust the alpha as needed
+
+            # Draw the point
             glVertex2f(q[0],q[1])
+        glEnd()
+        self.endDraw()
+
+    def drawLineGL(self, a, b):
+        self.beginDraw()
+        glLineWidth(8)
+        glBegin(GL_LINES)  # Use GL_LINES to draw lines
+
+        # Set the color for the line (change as needed)
+        glColor4f(0.3, .3, 0.3, 1)  # Green color
+
+        # Draw the line from a to b
+        glVertex2f(*a)  # Starting point of the line
+        glVertex2f(*b)  # Ending point of the line
+
         glEnd()
         self.endDraw()
 
@@ -203,7 +240,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         glPointSize(7.0)
         self.drawVerticesGL([q])
 
-    def drawGoalGL(self,goal):
+    def drawGoalGL(self, goal, example_name=None):
         self.beginDraw()
         if isinstance(goal,NeighborhoodSubset):
             q = goal.c
@@ -221,13 +258,23 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glVertex2f(q[0],q[1])
             glEnd()
         else:
-            glColor3f(.8,0,.8)
-            glPointSize(7.0)
-            glBegin(GL_POINTS)
-            for i in range(500):
-                q = goal.sample()
-                glVertex2f(q[0],q[1])
-            glEnd()
+            if example_name == "is_plane_push":
+                for i in range(len(goal.components[0].bmin)):
+                    glColor4f(0,1,0,0.5)
+                    o = Box(goal.components[0].bmin[i][0],
+                            goal.components[0].bmin[i][1],
+                            goal.components[0].bmax[i][0],
+                            goal.components[0].bmax[i][1]
+                            )
+                    o.drawGL()
+            else:
+                glColor3f(.8,0,.8)
+                glPointSize(7.0)
+                glBegin(GL_POINTS)
+                for i in range(500):
+                    q = goal.sample()
+                    glVertex2f(q[0],q[1])
+                glEnd()
         self.endDraw()
 
     def drawInterpolatorGL(self,interpolator):

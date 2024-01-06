@@ -229,6 +229,51 @@ class BoxSet(Set):
             return res
 
 
+class UnionBoxSet(Set):
+    """Represents the union of several axis-aligned box sets in a vector space."""
+    def __init__(self, bmin, bmax):
+        """Initialize the UnionBoxSet with lists of minimum and maximum bounds for each box.
+        
+        Args:
+            bmin (list): A list of lists of minimum bounds for each box.
+            bmax (list): A list of lists of maximum bounds for each box.
+        """
+        self.bmin = bmin
+        self.bmax = bmax
+        assert len(bmin) == len(bmax), "bmin and bmax must be lists of the same length."
+        self.boxes = [BoxSet(bmin[i], bmax[i]) for i in range(len(bmin))]
+
+    def dimension(self):
+        return self.boxes[0].dimension() if self.boxes else 0
+
+    def bounds(self):
+        all_bmin, all_bmax = zip(*(box.bounds() for box in self.boxes))
+        bmin = [min(bounds) for bounds in zip(*all_bmin)]
+        bmax = [max(bounds) for bounds in zip(*all_bmax)]
+        return bmin, bmax
+
+    def contains(self, x):
+        return any(box.contains(x) for box in self.boxes)
+
+    def sample(self):
+        box = random.choice(self.boxes)
+        return box.sample()
+
+    def project(self, x):
+        # Project onto the box that x is closest to (in terms of the box center)
+        closest_box = min(self.boxes, key=lambda box: vectorops.distance(x, vectorops.div(vectorops.add(box.bmin, box.bmax), 2)))
+        return closest_box.project(x)
+
+    def signedDistance(self, x):
+        # Return the smallest signed distance among all boxes
+        return min(box.signedDistance(x) for box in self.boxes)
+
+    def signedDistance_gradient(self, x):
+        # Calculate the gradient for the box with the smallest signed distance
+        closest_box = min(self.boxes, key=lambda box: box.signedDistance(x))
+        return closest_box.signedDistance_gradient(x)
+    
+
 class RingSet(Set):
     """
     Represents a ring in 2D space, defined as the region between two circles with radii r1 and r2.
