@@ -190,7 +190,7 @@ class PlanVisualizationProgram(GLProgram):
                     self.problem.visualizer.drawObjectGL(n.x)
         """
 
-    def draw_graph(self):
+    def draw_graph(self, draw_edge=False):
         """Draw the roadmap."""
         if self.G:
             V,E = self.G
@@ -208,17 +208,18 @@ class PlanVisualizationProgram(GLProgram):
                 for i in range(num_robot):
                     self.problem.visualizer.drawRobotGL(V[0][4+2*i:6+2*i])
 
-            glColor4f(0.5,0.5,0.5,0.5)
-            for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
-                x_new = self.problem.controlSpace.eval(V[i][:-1], u, 1, print_via_points=True)
-                xo_via_points = self.problem.controlSpace.xo_via_points
-                # self.problem.visualizer.beginDraw() # draw edges
-                # glBegin(GL_LINE_STRIP)
-                # for p in xo_via_points:
-                #     glVertex2f(p[0],p[1])
-                # glEnd()
-                # self.problem.visualizer.endDraw()
-            glDisable(GL_BLEND)
+            if draw_edge:
+                glColor4f(0.5,0.5,0.5,0.5)
+                for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
+                    x_new = self.problem.controlSpace.eval(V[i][:-1], u, 1, print_via_points=True)
+                    xo_via_points = self.problem.controlSpace.xo_via_points
+                    self.problem.visualizer.beginDraw() # draw edges
+                    glBegin(GL_LINE_STRIP)
+                    for p in xo_via_points:
+                        glVertex2f(p[0],p[1])
+                    glEnd()
+                    self.problem.visualizer.endDraw()
+                glDisable(GL_BLEND)
 
     def draw_solution_path(self):
         if self.path is not None:

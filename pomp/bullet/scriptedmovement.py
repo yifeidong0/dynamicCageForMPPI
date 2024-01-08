@@ -24,6 +24,69 @@ def generate_random_point(bd):
         random_point.append(random_value)
     return random_point
 
+
+class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
+    def __init__(self, cage, gui=False):
+        super().__init__(gui=gui)
+        # p.setGravity(0, 0, self.g)
+
+        self.set_params(cage.params)
+        self.create_shapes()
+
+    def run_forward_sim(self, total_time=10, num_via_points=20):
+        num_steps = int(total_time * 240)  # Number of time steps
+        interval = int(num_steps/num_via_points)
+        interval = 3 if interval==0 else interval
+
+        # Step the simulation
+        via_points = []
+        for t in range(num_steps):
+            # # Apply external force
+            self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            p.applyExternalForce(self.gripperUid, -1, 
+                                [0,8,0], 
+                                self.pos_gripper, 
+                                p.WORLD_FRAME)
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if t % interval == 0 or t == int(t*240)-1:
+                # Get the object and gripper states
+                self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+                self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+                self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+                self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
+                self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
+                self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
+
+                # Get contact forces
+                res = p.getContactPoints(self.gripperUid, self.objectUid)
+                all_contact_normal_forces = [contact[9] for contact in res]
+                max_normal_force = max(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0
+                print('contact max_normal_force: ', max_normal_force)
+
+                # Get bodies closest points distance
+                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 0.01)
+                dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+                print('dist: ', dist)
+                
+                # Get euclidean distance between gripper and object CoM
+                com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
+                print('com_dist: ', com_dist)
+
+                new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
+                            self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
+                            self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
+                            self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
+                            ]
+                via_points.append(new_states)
+
+            if self.gui:
+                time.sleep(2/240)
+
+        return via_points
+
+
 class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
     def __init__(self, cage, gui=False):
         super().__init__(gui=gui)

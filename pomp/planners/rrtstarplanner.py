@@ -102,17 +102,20 @@ class RRTStar(TreePlanner):
             return None
         if nnear.c > self.bestPathCost:
             return None
-        #do rrt* connection
+        
+        # Do rrt* connection
         N = float(self.numIters.count+1)
-        rad = 1.414*(math.log(N)/N) ** (1.0/len(nnear.x));
+        rad = 1.414*(math.log(N)/N) ** (1.0/len(nnear.x))
         k = int(((1.0+1.0/len(xrand))*math.e)*math.log(N))
         if k <=0: k=1
-        u = min(1.0,rad / self.metric(nnear.x,xrand))
-        xend = self.cspace.interpolate(nnear.x,xrand,u)
-        edge = self.cspace.interpolator(nnear.x,xend)
-        if not self.edgeChecker.feasible(edge):
+        # u = min(1.0, rad / self.metric(nnear.x, xrand)) # TODO: only make sense for path length cost
+        u = min(1.0, rad)
+        xend = self.cspace.interpolate(nnear.x, xrand, u) # xend=xrand if u=1
+        edge = self.cspace.interpolator(nnear.x, xend)
+        if not self.edgeChecker.feasible(edge): # TODO
             return None
-        #feasible edge, add it
+        
+        # Feasible edge, add it
         nnew = self.addEdge(nnear,xend,edge)
         nnew.c = nnear.c + edge.length()
         self.nearestNeighbors.add(nnew.x,nnew)

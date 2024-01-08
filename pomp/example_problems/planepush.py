@@ -36,7 +36,7 @@ class PlanePushControlSpace(ControlSpace):
 
         xaug = x + self.cage.gripper_vel
         self.dynamics_sim.reset_states(xaug)
-        x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, 1)
+        x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
         # Make theta fall in [-pi, pi]
         x_new[2] = limit_angle_to_pi(x_new[2])
@@ -58,13 +58,13 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 2
-        self.max_acceleration = 3
+        self.max_acceleration = 10
         self.max_ang_acceleration = 1
         self.mass_object = 1
         self.mass_gripper = 4
         self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
         self.moment_gripper = self.mass_object * 1e-3
-        self.y_obstacle = 100
+        self.y_obstacle = 7
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle]
 
@@ -130,7 +130,6 @@ class PlanePush:
 
         return MultiSet(UnionBoxSet(multibmin, multibmax),
                         BoxSet(bmin, bmax))
-
 
 
 class PlanePushObjectiveFunction(ObjectiveFunction):
@@ -215,9 +214,12 @@ def planePushTest(dynamics_sim,
     #     print('In collision!')
     #     return False
     objective = PlanePushObjectiveFunction(p)
-    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
+    return PlanningProblem(objective.space,
+    # return PlanningProblem(p.configurationSpace(), # for geometric planner - rrt*
+                           p.startState(),
+                           p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean = True)
+                           euclidean=True)
 
 

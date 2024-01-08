@@ -52,12 +52,14 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'CageEnergyLabeler', 'PlanePush', 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
+all_problems = {'CageEnergyLabeler', 'PlanePush', 'PlanePushRrtstar', 
+                'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
                     'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
                     'PlanePush':{'maxTime':20},
+                    'PlanePushRrtstar':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':20},
@@ -149,6 +151,9 @@ if __name__=="__main__":
     if problem_name == 'PlanePush':
         dynamics_sim = forwardSimulationPlanePush(gui=0)
         problem = planepush.planePushTest(dynamics_sim)
+    if problem_name == 'PlanePushRrtstar':
+        dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
+        problem = planepushrrtstar.PlanePushRrtstarTest(dynamics_sim)
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)
         problem = waterswing.waterSwingTest(dynamics_sim)

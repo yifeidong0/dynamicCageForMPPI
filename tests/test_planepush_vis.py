@@ -20,7 +20,7 @@ inputs= [[0.8711948279184758, 0.9768933552599381, -0.31746000007488373, -0.23846
 new_states = states[0]
 for i in range(len(inputs)):
     dynamics_sim.reset_states(states[i]+gripper_vel)
-    new_states, viapoints = dynamics_sim.run_forward_sim_labeler(inputs[i])
+    new_states, viapoints = dynamics_sim.run_forward_sim(inputs[i])
     print('new_states', new_states)
 
 dynamics_sim.finish_sim()

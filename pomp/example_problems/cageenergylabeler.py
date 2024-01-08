@@ -40,7 +40,7 @@ class CageELControlSpace(ControlSpace):
         # print('amount', amount)
         xaug = x + self.cage.gripper_vel
         self.dynamics_sim.reset_states(xaug)
-        x_new, xo_via_points = self.dynamics_sim.run_forward_sim_labeler(mu, 1)
+        x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
         # Make theta fall in [-pi/2, pi/2]
         thetar_i = x_new[6]

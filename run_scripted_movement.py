@@ -7,8 +7,8 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "Shuffling"
-total_time = 3.5
+problem_name = "PlanePush" # "Shuffling"
+total_time = 3.0
 gui = 1
 num_via_points = 20
 num_trajs = 1
@@ -20,7 +20,14 @@ filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 if problem_name == 'CageEnergyLabeler':
     dynamics_sim = forwardSimulationEL(gui=0)
 if problem_name == 'PlanePush':
+    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    fake_data = [5.1, 4.3, 0.0, 0.0, 0.0, 0.0, 
+                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
+    cage = PlanePush(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimPlanePush(cage, gui=gui)
 if problem_name == 'WaterSwing':
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
@@ -65,7 +72,7 @@ dataset = []
 k = 0
 for i in range(num_trajs):
     sim.reset_states(x_init)
-    time.sleep(3)
+    time.sleep(2)
     x_news = sim.run_forward_sim(total_time, num_via_points)
     for x_new in x_news:
         # Check if inside C-space boundaries

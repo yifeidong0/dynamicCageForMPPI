@@ -68,7 +68,9 @@ def makePlanner(type,space,start,goal,
         checker = EpsilonEdgeChecker(space,edgeCheckTolerance)
 
     if type == 'rrt*':
-        planner = RRTStar(space,metric,checker,**params)
+        # planner = RRTStar(space,metric,checker,**params)
+        checker = GeometricEdgeChecker(space, edgeCheckTolerance)
+        planner = RRTStar(space,objective,checker,**params)
     elif type == 'ao-rrt':
         planner = CostSpaceRRT(controlSpace,objective,metric,checker,**params)
         #set direct steering functions for kinematic spaces 

@@ -80,7 +80,7 @@ class forwardSimulationEL():
         p.resetBaseVelocity(self.objectUid, self.vel_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim_labeler(self, inputs, print_via_points=True, num_via_points=10):
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
         t, ax, az = inputs
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
@@ -134,14 +134,17 @@ class forwardSimulationPlanePush():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
-        p.setGravity(0, 0, self.g)
+        self.angle_slope = 0.0 # equivalent to on a slope
+        p.setGravity(0, 
+                     self.g*math.sin(self.angle_slope), 
+                     self.g*math.cos(self.angle_slope),)
 
         # self.set_params(params)
         # self.create_shapes()
     
     def set_params(self, params):
-        self.object_name = 'cylinder' # 'box', 'cylinder'
-        self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'box' # 'box', 'cylinder'
+        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
 
         # Kinodynamics
         self.mass_object = params[0]
@@ -243,7 +246,7 @@ class forwardSimulationPlanePush():
         p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
-    def run_forward_sim_labeler(self, inputs, print_via_points=True, num_via_points=10):
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
         t, ax, ay, omega = inputs
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
@@ -291,6 +294,38 @@ class forwardSimulationPlanePush():
     def finish_sim(self):
         # Clean up and close the simulation
         p.disconnect()
+
+
+class forwardSimulationPlanePushRrtstar(forwardSimulationPlanePush):
+    def __init__(self, gui=False):
+        super().__init__(gui=gui)
+    
+    def set_gripper_pos(self, gripper_pose):
+        xg, yg, thetag = gripper_pose
+        self.pos_gripper = [xg, yg, 0.0]
+        if self.gripper_name == 'bowl':
+            self.quat_gripper = p.getQuaternionFromEuler([-math.pi/2, 0, thetag])
+        else:
+            self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
+
+        # Reset the kinematics
+        p.resetBasePositionAndOrientation(self.gripperUid, self.pos_gripper, self.quat_gripper)
+        
+    def reset_states(self, states):
+        xo, yo, thetao = states # 3 DoF
+        self.pos_object = [xo, yo, 0.0]
+        self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
+        p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+
+    def check_collision(self):
+        # Check for collisions  
+        contacts = p.getContactPoints(self.objectUid, self.gripperUid)
+        if len(contacts) > 0:
+            print("Bodies are in collision")
+            return False
+        else:
+            print("Bodies are not in collision")
+            return True
 
 
 class forwardSimulationWaterSwing():
