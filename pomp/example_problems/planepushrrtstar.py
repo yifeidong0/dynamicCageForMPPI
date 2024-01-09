@@ -16,15 +16,11 @@ class PlanePushRrtstar:
         self.x_range = 10
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
-        # self.max_velocity = 10
-        # self.max_ang_velocity = 2
-        # self.max_acceleration = 10
-        # self.max_ang_acceleration = 1
         self.mass_object = 1
         self.mass_gripper = 4
         self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
         self.moment_gripper = self.mass_object * 1e-3
-        self.y_obstacle = 5
+        self.y_obstacle = 8
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.start_state = data[:3]
         self.gripper_pose = data[6:9]
@@ -74,10 +70,10 @@ class PlanePushRrtstar:
         return max(c, 1e-5)
 
 def PlanePushRrtstarTest(dynamics_sim, 
-                  data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                          5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                #   data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                #           5.0, 4, 0.0, 0.0, 1, 0.0],
+                #   data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                #           5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                  data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
+                          5.0, 4, 0.0, 0.0, 1, 0.0],
                           ):
     p = PlanePushRrtstar(data, dynamics_sim)
     return PlanningProblem(p.configurationSpace(), # for geometric planner - rrt*

@@ -190,7 +190,26 @@ class RRTStar(TreePlanner):
                         nn.setParent(n,nn.x,edge)
                         #nn.c = newcost
                         self.rewire(nn,k=k,rad=rad,first=False,recursive=recursive)
-        
+
+    def getRoadmap(self):
+        """Returns a graph (V,E) where V contains states and E contains
+        triples (i,j,u) where control u connnects V[i] to V[j]"""
+        V = []
+        E = []
+        n = self.root
+        if n is None:
+            return (V,E)
+        V.append(n.x)
+        q = [(n,0)]
+        while len(q) > 0:
+            n,i = q.pop()
+            for c in n.children:
+                j = len(V)
+                E.append((i,j,c.uparent))
+                V.append(c.x+[c.c,])
+                q.append((c,j))
+        return (V,E)
+    
     def pickNode(self,xrand):
         """Picks a node closest to xrand.  If dynamicDomain is True,
         uses the radius associated with the node"""

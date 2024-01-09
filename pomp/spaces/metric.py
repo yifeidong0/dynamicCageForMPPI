@@ -26,4 +26,4 @@ class LpMetric:
     def __init__(self,p):
         self.p = p
     def __call__(self,a,b):
-        return pow(sum(pow(abs(ai-bi),p) for (w,ai,bi) in zip(self.w,a,b)),1.0/p)
+        return pow(sum(pow(abs(ai-bi), self.p) for (w,ai,bi) in zip(self.w,a,b)), 1.0/self.p)

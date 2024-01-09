@@ -33,7 +33,7 @@ class PlanningProblem:
     def cartesian(self):
         return self.euclidean
     def pointToPoint(self):
-        return isinstance(self.goal,SingletonSubset) or isinstance(goal, (list,tuple))
+        return isinstance(self.goal,SingletonSubset) or isinstance(self.goal, (list,tuple))
     def differentiallyConstrained(self):
         return self.controlSpace != None
     def planner(self,type,**params):

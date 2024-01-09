@@ -66,7 +66,8 @@ class PlanePush:
         self.moment_gripper = self.mass_object * 1e-3
         self.y_obstacle = 7
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
-        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle]
+        self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
+        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope]
 
         # Gripper moving velocity (constant)
         self.gripper_vel = data[9:]
@@ -203,11 +204,11 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
 
 
 def planePushTest(dynamics_sim, 
-                  data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                          5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                #   data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                #           5.0, 4, 0.0, 0.0, 1, 0.0],
-                          ):
+                #   data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                #           5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                  data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
+                          5.0, 4, 0.0, 0.0, 3, 0.0],
+                ):
     p = PlanePush(data, dynamics_sim)
 
     # if p.checkStartFeasibility():
