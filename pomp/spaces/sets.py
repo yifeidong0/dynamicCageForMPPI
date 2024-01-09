@@ -8,6 +8,7 @@ from . import differences
 from . import sampling
 from ..klampt import vectorops
 import numpy as np
+from OpenGL.GL import *
 
 
 class Set:
@@ -372,6 +373,9 @@ class ArcErasedSet(Set):
         self.arc_radius = arc_radius
         self.arc_angle_range = arc_angle_range
 
+    def dimension(self):
+        return len(self.canvas_limits[0])
+    
     def contains(self, x):
         """
         Check if a point x is in the remaining red area.
@@ -388,12 +392,48 @@ class ArcErasedSet(Set):
         angle_to_point = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
         # Check if the point is within the angle range and the eraser's effect
-        if (self.arc_angle_range[0] <= angle_to_point <= self.arc_angle_range[1] and
+        if self.arc_angle_range[0] <= self.arc_angle_range[1]:
+            angle_in_range = self.arc_angle_range[0] <= angle_to_point <= self.arc_angle_range[1]
+        else: # the range comes over 2pi
+            angle_in_range = self.arc_angle_range[0] <= angle_to_point or angle_to_point <= self.arc_angle_range[1]
+            
+        if (angle_in_range and
             self.arc_radius - self.eraser_radius <= dist_to_arc_center <= self.arc_radius + self.eraser_radius):
             return False
 
         return True
 
+    def draw_triangle_strips(self, lowb, upb, res=0.01):
+        numdivs = int(math.ceil((upb - lowb) * self.arc_radius / res))
+        glBegin(GL_TRIANGLE_STRIP)
+        for i in range(numdivs + 1):
+            u = lowb + float(i) / float(numdivs) * (upb - lowb)
+            inner_x = self.arc_center[0] + (self.arc_radius - self.eraser_radius) * math.cos(u)
+            inner_y = self.arc_center[1] + (self.arc_radius - self.eraser_radius) * math.sin(u)
+            outer_x = self.arc_center[0] + (self.arc_radius + self.eraser_radius) * math.cos(u)
+            outer_y = self.arc_center[1] + (self.arc_radius + self.eraser_radius) * math.sin(u)
+            glVertex2f(inner_x, inner_y)
+            glVertex2f(outer_x, outer_y)
+        glEnd()
+
+    def drawGL(self, res=0.01):
+        # Draw the square canvas
+        glBegin(GL_QUADS)
+        glColor3f(1, 0, 0)  # Red color for the canvas
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[1][1])
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[1][1])
+        glEnd()
+
+        # Draw the erased arc region
+        glColor3f(1, 1, 1)  # White color to represent the erased area
+        if self.arc_angle_range[0] <= self.arc_angle_range[1]:
+            self.draw_triangle_strips(self.arc_angle_range[0], self.arc_angle_range[1], res)
+        else:
+            range_list = [[self.arc_angle_range[0], 2*np.pi-1e-9], [0.0, self.arc_angle_range[1]]]
+            for i in range(len(range_list)):
+                self.draw_triangle_strips(range_list[i][0], range_list[i][1], res)
 
 class LambdaSet(Set):
     """Given some standalone function fcontains(x) which determines

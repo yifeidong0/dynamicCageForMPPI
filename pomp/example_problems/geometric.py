@@ -259,14 +259,17 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glEnd()
         else:
             if example_name == "is_plane_push" or "is_plane_push_rrtstar":
-                for i in range(len(goal.components[0].bmin)):
-                    glColor4f(0,1,0,0.5)
-                    o = Box(goal.components[0].bmin[i][0],
-                            goal.components[0].bmin[i][1],
-                            goal.components[0].bmax[i][0],
-                            goal.components[0].bmax[i][1]
-                            )
-                    o.drawGL()
+                # for i in range(len(goal.components[0].bmin)):
+                #     glColor4f(0,1,0,0.5)
+                #     o = Box(goal.components[0].bmin[i][0],
+                #             goal.components[0].bmin[i][1],
+                #             goal.components[0].bmax[i][0],
+                #             goal.components[0].bmax[i][1]
+                #             )
+                #     o.drawGL()
+                glColor4f(0,1,0,0.5)
+                goal.components[0].drawGL()
+
             else:
                 glColor3f(.8,0,.8)
                 glPointSize(7.0)
