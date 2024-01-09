@@ -134,18 +134,19 @@ class forwardSimulationPlanePush():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
-        self.angle_slope = 0.0 # equivalent to on a slope
-        p.setGravity(0, 
-                     self.g*math.sin(self.angle_slope), 
-                     self.g*math.cos(self.angle_slope),)
+
 
         # self.set_params(params)
         # self.create_shapes()
     
     def set_params(self, params):
-        self.object_name = 'box' # 'box', 'cylinder'
-        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
-
+        self.object_name = 'cylinder' # 'box', 'cylinder'
+        self.gripper_name = 'bowl' # 'box', 'cylinder', 'bowl'
+        self.angle_slope = params[5] # equivalent to on a slope
+        p.setGravity(0, 
+                     self.g*math.sin(self.angle_slope), 
+                     self.g*math.cos(self.angle_slope),)
+        
         # Kinodynamics
         self.mass_object = params[0]
         self.moment_object = params[1] # moment of inertia
@@ -316,6 +317,7 @@ class forwardSimulationPlanePushRrtstar(forwardSimulationPlanePush):
         self.pos_object = [xo, yo, 0.0]
         self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
         p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+        p.resetBasePositionAndOrientation(self.gripperUid, self.pos_gripper, self.quat_gripper)
 
     def check_collision(self, thres=-5e-3):
         # Check for collisions  
@@ -614,7 +616,6 @@ class forwardSimulationBoxPivot():
         self.pos_gripper2, _ = p.getBasePositionAndOrientation(self.gripperUid2)
         self.vel_gripper1,_ = p.getBaseVelocity(self.gripperUid1)
         self.vel_gripper2,_ = p.getBaseVelocity(self.gripperUid2)
-        # print('!!!run_forward_sim!!!!!!!!', self.eul_object)
 
         new_states = [self.pos_object[0], self.pos_object[2], self.eul_object[1],
                       self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],

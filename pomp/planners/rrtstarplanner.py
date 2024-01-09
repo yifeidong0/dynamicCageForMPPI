@@ -109,8 +109,8 @@ class RRTStar(TreePlanner):
         rad = 1.414*(math.log(N)/N) ** (1.0/len(nnear.x))
         k = int(((1.0+1.0/len(xrand))*math.e)*math.log(N))
         if k <=0: k=1
-        # u = min(1.0, rad / self.metric(nnear.x, xrand)) # TODO: only make sense for path length cost
-        u = min(1.0, rad)
+        u = min(1.0, rad / metric.euclideanMetric(nnear.x, xrand)) # TODO: only make sense for path length cost
+        # u = min(1.0, rad)
         xend = self.cspace.interpolate(nnear.x, xrand, u) # xend=xrand if u=1
         edge = self.cspace.interpolator(nnear.x, xend)
         if not self.edgeChecker.feasible(edge): # TODO
@@ -118,7 +118,8 @@ class RRTStar(TreePlanner):
         
         # Feasible edge, add it
         nnew = self.addEdge(nnear,xend,edge)
-        nnew.c = nnear.c + edge.length()
+        # nnew.c = nnear.c + edge.length()
+        nnew.c = nnear.c + self.metric(nnear.x, nnew.x)
         self.nearestNeighbors.add(nnew.x,nnew)
         self.rewire(nnew,k=k,rad=None,first=True,recursive=False)
         return nnew
@@ -127,7 +128,7 @@ class RRTStar(TreePlanner):
         #gather incoming cost from parent
         changed = False
         if n.parent != None:
-            d = n.parent.c + self.metric(n.x,n.parent.x)
+            d = n.parent.c + self.metric(n.parent.x, n.x)
             if d != n.c:
                 #print "initial cost improvement",n.c,"to",d
                 n.c = d
@@ -149,7 +150,7 @@ class RRTStar(TreePlanner):
             for x,nn in neighbors:
                 if nn == n: continue
                 if nn == n.parent: continue
-                d = self.metric(n.x,nn.x) + nn.c
+                d = self.metric(nn.x, n.x) + nn.c
                 #print nn.x,d,self.metric(n.x,nn.x)
                 dneighbors.append((d,nn))
             dneighbors = sorted(dneighbors,key=lambda x:x[0])
@@ -179,7 +180,7 @@ class RRTStar(TreePlanner):
         if first or recursive:
             #add outgoing edges from n
             for (d,nn) in dneighbors:
-                newcost = n.c + self.metric(n.x,nn.x)
+                newcost = n.c + self.metric(n.x, nn.x)
                 if newcost < nn.c:
                     #print "Outgoing improvement from",nn.c,"to",newcost
                     #potential improvement, check edge and rewire if necessary
