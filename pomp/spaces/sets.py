@@ -354,6 +354,47 @@ class RingSet(Set):
         return grad_outside
     
 
+class ArcErasedSet(Set):
+    """Represents the shape remaining on a square canvas after erasing along an arc trajectory."""
+    def __init__(self, canvas_limits, eraser_radius, arc_center, arc_radius, arc_angle_range):
+        """
+        Initializes the ArcErasedSet.
+        
+        :param canvas_limits: Boundaries of the square canvas [bmin, bmax], bmin=[bmin_d1, ...,bmin_dn].
+        :param eraser_radius: Radius of the circular eraser.
+        :param arc_center: Center of the arc (x, y).
+        :param arc_radius: Radius of the arc.
+        :param arc_angle_range: Angle range of the arc (start_angle, end_angle) in radians.
+        """
+        self.canvas_limits = canvas_limits
+        self.eraser_radius = eraser_radius
+        self.arc_center = np.array(arc_center)
+        self.arc_radius = arc_radius
+        self.arc_angle_range = arc_angle_range
+
+    def contains(self, x):
+        """
+        Check if a point x is in the remaining red area.
+        """
+        # Check if point is inside the canvas
+        if not (self.canvas_limits[0][0] <= x[0] <= self.canvas_limits[1][0] and self.canvas_limits[0][1] <= x[1] <= self.canvas_limits[1][1]):
+            return False
+
+        # Check if point is outside the erased arc path
+        dist_to_arc_center = np.linalg.norm(np.array(x) - self.arc_center)
+        angle_to_point = np.arctan2(x[1] - self.arc_center[1], x[0] - self.arc_center[0])
+
+        # Normalize the angle_to_point within the range [0, 2π)
+        angle_to_point = (angle_to_point + 2 * np.pi) % (2 * np.pi)
+
+        # Check if the point is within the angle range and the eraser's effect
+        if (self.arc_angle_range[0] <= angle_to_point <= self.arc_angle_range[1] and
+            self.arc_radius - self.eraser_radius <= dist_to_arc_center <= self.arc_radius + self.eraser_radius):
+            return False
+
+        return True
+
+
 class LambdaSet(Set):
     """Given some standalone function fcontains(x) which determines
     membership, produces a Set object.
