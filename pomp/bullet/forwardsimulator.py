@@ -317,14 +317,16 @@ class forwardSimulationPlanePushRrtstar(forwardSimulationPlanePush):
         self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
         p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
 
-    def check_collision(self):
+    def check_collision(self, thres=-5e-3):
         # Check for collisions  
-        contacts = p.getContactPoints(self.objectUid, self.gripperUid)
-        if len(contacts) > 0:
-            print("Bodies are in collision")
+        p.stepSimulation()
+        contacts0 = p.getClosestPoints(self.objectUid, self.gripperUid, distance=thres)
+        contacts1 = p.getClosestPoints(self.objectUid, self.obstacleUid, distance=thres)
+        if len(contacts0)+len(contacts1) > 0:
+            # print("Bodies are in collision")
             return False
         else:
-            print("Bodies are not in collision")
+            # print("Bodies are not in collision")
             return True
 
 

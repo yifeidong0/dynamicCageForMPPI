@@ -86,6 +86,7 @@ class RRTStar(TreePlanner):
                     self.goalNodes.append(n)
                     if n.c < self.bestPathCost:
                         self.bestPathCost = n.c
+                        print("New goal node with cost", self.bestPathCost)
                         self.bestPath = self.getPath(n)
                         return True
         return False
@@ -200,7 +201,6 @@ class RRTStar(TreePlanner):
         if n == None:
             return self.bestPath
         return TreePlanner.getPath(self,n)
-
 
 
 class StableSparseRRT(TreePlanner):

@@ -238,6 +238,7 @@ class RRTstarMultiConfigurationSpace(MultiConfigurationSpace):
     def __init__(self, components, dynamics):
         super().__init__(*components)
         self.dynamic = dynamics
+        self.is_plane_push_rrtstar = True
 
     def feasible(self,x):
         self.dynamic.reset_states(x)

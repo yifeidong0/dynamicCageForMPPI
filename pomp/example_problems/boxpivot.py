@@ -41,7 +41,6 @@ class BoxPivotControlSpace(ControlSpace):
 
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
-        # print("@@@@x_new",x_new[2])
 
         # # Make theta fall in [-pi, pi]
         # x_new[2] = limit_angle_to_pi(x_new[2])

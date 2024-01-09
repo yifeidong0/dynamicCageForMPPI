@@ -69,7 +69,8 @@ class PlanePushRrtstar:
 def potentialMetric(a, b):
     # return vectorops.distance(a,b)
     mg = 1
-    c = mg * (b[1]-a[1])
+    c = mg * (a[1]-b[1])
+    # print("!!!!!!c", b[1]-a[1])
     return max(c, 1e-5)
 
 def PlanePushRrtstarTest(dynamics_sim, 

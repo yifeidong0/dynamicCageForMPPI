@@ -149,6 +149,8 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push")
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
+        elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar")
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 

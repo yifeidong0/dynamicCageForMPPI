@@ -258,7 +258,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glVertex2f(q[0],q[1])
             glEnd()
         else:
-            if example_name == "is_plane_push":
+            if example_name == "is_plane_push" or "is_plane_push_rrtstar":
                 for i in range(len(goal.components[0].bmin)):
                     glColor4f(0,1,0,0.5)
                     o = Box(goal.components[0].bmin[i][0],
