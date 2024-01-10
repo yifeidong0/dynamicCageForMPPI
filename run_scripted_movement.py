@@ -8,11 +8,12 @@ import time
 import csv
 
 problem_name = "PlanePush" # "Shuffling"
-total_time = 3.0
+total_time = 2.4
 gui = 1
 num_via_points = 20
 num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
+filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 
 # cage_planner = CagePlanner()
 # ubd = cage_planner.u_boundary
@@ -20,9 +21,11 @@ filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 if problem_name == 'CageEnergyLabeler':
     dynamics_sim = forwardSimulationEL(gui=0)
 if problem_name == 'PlanePush':
+    total_time = 2.3
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    fake_data = [5.1, 4.3, 0.0, 0.0, 0.0, 0.0, 
-                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    headers_metric = ['shortest_distance', 'com_distance', 'max_contact_normal_force']
+    fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
+                 5.3, 4.0, 0.0, 0.0, 1.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
     cage = PlanePush(fake_data, dynamics_sim)
     x_init = fake_data
@@ -89,3 +92,9 @@ with open(filename, mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(headers)
     writer.writerows(dataset)
+
+# Save heuristics to a CSV file with headers
+with open(filename_metric, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(headers_metric)
+    writer.writerows(sim.heuristics_traj)

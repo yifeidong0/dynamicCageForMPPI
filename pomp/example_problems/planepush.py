@@ -58,13 +58,13 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 2
-        self.max_acceleration = 10
-        self.max_ang_acceleration = 1
+        self.max_acceleration = 3
+        self.max_ang_acceleration = .5
         self.mass_object = 1
         self.mass_gripper = 4
         self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
         self.moment_gripper = self.mass_object * 1e-3
-        self.y_obstacle = 7
+        self.y_obstacle = 7 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope]
@@ -123,7 +123,14 @@ class PlanePush:
     def startState(self):
         return self.start_state
 
-    def goalSet(self, goal_margin=1.2, default_radius=1000, t=6.0):
+    def taskGoalSet(self):
+        margin = 0.2
+        box_thickness = 0.2
+        bmin = [-self.offset, self.y_obstacle-box_thickness-margin,-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        bmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+1e-2, math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        return BoxSet(bmin, bmax)
+
+    def goalSet(self, goal_margin=.7, default_radius=1000, t=6.0):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         # multibmin = [[-self.offset, -self.offset], [self.start_state[6]+goal_margin, -self.offset],]
@@ -235,6 +242,8 @@ def planePushTest(dynamics_sim,
                            p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean=True)
+                           euclidean=True,
+                           taskGoal=p.taskGoalSet(),
+                           )
 
 

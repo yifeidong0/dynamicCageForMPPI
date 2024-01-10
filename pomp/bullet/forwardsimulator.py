@@ -140,11 +140,11 @@ class forwardSimulationPlanePush():
         # self.create_shapes()
     
     def set_params(self, params):
-        self.object_name = 'cylinder' # 'box', 'cylinder'
-        self.gripper_name = 'bowl' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'box' # 'box', 'cylinder'
+        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
         self.angle_slope = params[5] # equivalent to on a slope
         p.setGravity(0, 
-                     self.g*math.sin(self.angle_slope), 
+                     self.g*math.sin(self.angle_slope),
                      self.g*math.cos(self.angle_slope),)
         
         # Kinodynamics

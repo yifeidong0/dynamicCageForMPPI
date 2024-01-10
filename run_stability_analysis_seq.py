@@ -12,15 +12,19 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-rrt'
-prname = 'Shuffling' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
-vis = 1
-maxTime = 30 # only useful when vis=0
+plannername = 'ao-est'
+prname = 'PlanePush' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+vis = 0
+maxTime = 60 # only useful when vis=0
 
 if prname == 'CageEnergyLabeler':
-    filename = ''
+    filenames = ''
 if prname == 'PlanePush':
-    filename = ''
+    filenames = [
+        'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
+        'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
+        'data/evaluation/push_fixture/push_point_bias/biased0.3/scripted_movement_viapoints_PlanePush.csv',
+        ]
 if prname == 'WaterSwing':
     filenames = [
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
@@ -28,7 +32,6 @@ if prname == 'WaterSwing':
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
                 #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
                 'scripted_movement_viapoints_WaterSwing_t3.5.csv',
-                'scripted_movement_viapoints_WaterSwing_t5.5.csv',
                  ]
 if prname == 'BoxPivot':
     filenames = [

@@ -40,6 +40,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
 
         # Step the simulation
         via_points = []
+        self.heuristics_traj = []
         for t in range(num_steps):
             # # Apply external force
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
@@ -47,7 +48,6 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                                 [0,8,0], 
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
-            p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
             if t % interval == 0 or t == int(t*240)-1:
@@ -63,16 +63,17 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 res = p.getContactPoints(self.gripperUid, self.objectUid)
                 all_contact_normal_forces = [contact[9] for contact in res]
                 max_normal_force = max(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0
-                print('contact max_normal_force: ', max_normal_force)
+                # print('contact max_normal_force: ', max_normal_force)
 
                 # Get bodies closest points distance
                 dist = p.getClosestPoints(self.gripperUid, self.objectUid, 0.01)
                 dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
-                print('dist: ', dist)
+                # print('dist: ', dist)
                 
                 # Get euclidean distance between gripper and object CoM
                 com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
-                print('com_dist: ', com_dist)
+                # print('com_dist: ', com_dist)
+                self.heuristics_traj.append([dist, com_dist, max_normal_force,])
 
                 new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
                             self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
@@ -81,6 +82,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                             ]
                 via_points.append(new_states)
 
+            p.stepSimulation()
             if self.gui:
                 time.sleep(2/240)
 

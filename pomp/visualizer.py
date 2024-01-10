@@ -90,6 +90,7 @@ class PlanVisualizationProgram(GLProgram):
             self.planner.planMore(1000)
             self.path = self.planner.getPath()
             self.G = self.planner.getRoadmap()
+            self.planner.getMetric()
             self.planner.stats.pretty_print()
             self.refresh()
         elif key=='o':

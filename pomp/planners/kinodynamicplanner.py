@@ -43,7 +43,7 @@ estNumCachedExtensionDrops = 2
 #TEST: add a "bonus extension" to cache after a successful extension
 #this might help wiggle into narrow passages
 estLetItRoll = True
-estNumLetItRollSamples = 50
+estNumLetItRollSamples = 5 # 50
 
 
 
@@ -1034,6 +1034,9 @@ class CostSpaceRRT:
         self.costGoal = CostGoal(goal,self.objective,self.bestPathCost)
         self.rrt.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
 
+    def setTaskGoal(self, taskGoal):
+        self.taskGoal = taskGoal
+
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.costSpaceSampler = HeuristicCostSpaceSampler(Sampler(self.baseSpace),heuristicCostToCome,heuristicCostToGo,self.bestPathCost)
         self.rrt.setConfigurationSampler(self.costSpaceSampler)
@@ -1128,8 +1131,28 @@ class CostSpaceRRT:
         """Returns a roadmap for the base space"""
         (V,E) = self.rrt.getRoadmap()
         # return ([x[:-1] for x in V],E) # do not include cost dimension
-        return self.rrt.getRoadmap() # include cost dimension
+        return (V,E) # include cost dimension
         
+    def getMetric(self):
+        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+        (V,_) = self.getRoadmap()
+        total_prob = 0
+        success_prob = 0
+        non_maneuverability_prob = 0
+        count_success = 0
+        count_maneuver = 0
+        for v in V:
+            prob_density = np.exp(-v[-1])
+            total_prob += prob_density
+            # if region[0] <= x <= region[1] and region[2] <= y <= region[3]:
+            if self.taskGoal.contains(v[:-1]):
+                count_success += 1
+                success_prob += prob_density
+            if self.baseGoal.contains(v[:-1]):
+                count_maneuver += 1
+                non_maneuverability_prob += prob_density
+        return success_prob / total_prob, 1 - non_maneuverability_prob / total_prob
+    
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()
@@ -1175,6 +1198,9 @@ class CostSpaceEST:
         self.costGoal = CostGoal(goal,self.objective,self.bestPathCost)
         self.est.generateDefaultBases(list(range(len(x0))))
         self.est.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
+
+    def setTaskGoal(self, taskGoal):
+        self.taskGoal = taskGoal
 
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.est.pruner = HeuristicCostSpacePruner(heuristicCostToGo,self.bestPathCost)
@@ -1257,6 +1283,26 @@ class CostSpaceEST:
         # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
         return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
 
+    def getMetric(self):
+        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+        (V,_) = self.getRoadmap()
+        total_prob = 0
+        success_prob = 0
+        non_maneuverability_prob = 0
+        count_success = 0
+        count_maneuver = 0
+        for v in V:
+            prob_density = np.exp(-v[-1])
+            total_prob += prob_density
+            # if region[0] <= x <= region[1] and region[2] <= y <= region[3]:
+            if self.taskGoal.contains(v[:-1]):
+                count_success += 1
+                success_prob += prob_density
+            if self.baseGoal.contains(v[:-1]):
+                count_maneuver += 1
+                non_maneuverability_prob += prob_density
+        return success_prob / total_prob, 1 - non_maneuverability_prob / total_prob
+        
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()

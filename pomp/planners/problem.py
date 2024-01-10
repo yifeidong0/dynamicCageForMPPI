@@ -12,7 +12,8 @@ class PlanningProblem:
                  heuristic=None,
                  costLowerBound=None,
                  goalRadius=None,
-                 euclidean=False):
+                 euclidean=False,
+                 taskGoal=None,):
         self.space = space
         if isinstance(space,ControlSpace):
             self.controlSpace = space
@@ -29,6 +30,7 @@ class PlanningProblem:
         self.heuristic = heuristic
         self.costLowerBound = costLowerBound
         self.euclidean = euclidean
+        self.taskGoal = taskGoal
 
     def cartesian(self):
         return self.euclidean
@@ -46,4 +48,5 @@ class PlanningProblem:
                                        heuristic=self.heuristic,
                                        metric=d,
                                        costLowerBound=self.costLowerBound,
+                                       taskGoal=self.taskGoal,
                                        **params)

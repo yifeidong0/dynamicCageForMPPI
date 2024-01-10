@@ -32,6 +32,7 @@ def makePlanner(type,space,start,goal,
                 metric=euclideanMetric,
                 heuristic=None,
                 costLowerBound=None,
+                taskGoal=None,
                 **params):
     if isinstance(space,ControlSpace):
         if type in kinematicPlanners:
@@ -119,6 +120,8 @@ def makePlanner(type,space,start,goal,
             planner.setControlSelector(KinematicControlSelector(controlSpace,controlSpace.nextStateSamplingRange))
     else:
         raise RuntimeError("Invalid planner type "+type)
+    if taskGoal is not None:
+        planner.setTaskGoal(taskGoal)
     planner.setBoundaryConditions(start,goal)
     if type.startswith=='ao' and heuristic != None:
         planner.setHeuristic(*heuristic)
