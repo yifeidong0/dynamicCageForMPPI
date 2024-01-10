@@ -267,12 +267,11 @@ class Geometric2DCSpace(BoxConfigurationSpace):
                 #             goal.components[0].bmax[i][1]
                 #             )
                 #     o.drawGL()
-                glColor4f(0,1,0,0.5)
                 goal.components[0].drawGL()
 
             else:
-                glColor3f(.8,0,.8)
-                glPointSize(7.0)
+                glColor4f(0,1,0,0.5)
+                glPointSize(4.0)
                 glBegin(GL_POINTS)
                 for i in range(500):
                     q = goal.sample()

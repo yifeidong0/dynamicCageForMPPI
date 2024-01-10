@@ -403,6 +403,17 @@ class ArcErasedSet(Set):
 
         return True
 
+    def sample(self):
+        while True:
+            # Randomly sample a point within the canvas
+            x = random.uniform(self.canvas_limits[0][0], self.canvas_limits[1][0])
+            y = random.uniform(self.canvas_limits[0][1], self.canvas_limits[1][1])
+            point = [x, y]
+
+            # Check if the point is not in the erased area
+            if self.contains(point):
+                return point
+                
     def draw_triangle_strips(self, lowb, upb, res=0.01):
         numdivs = int(math.ceil((upb - lowb) * self.arc_radius / res))
         glBegin(GL_TRIANGLE_STRIP)
@@ -418,8 +429,10 @@ class ArcErasedSet(Set):
 
     def drawGL(self, res=0.01):
         # Draw the square canvas
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(0, 1, 0, 0.2)
         glBegin(GL_QUADS)
-        glColor3f(1, 0, 0)  # Red color for the canvas
         glVertex2f(self.canvas_limits[0][0], self.canvas_limits[0][1])
         glVertex2f(self.canvas_limits[1][0], self.canvas_limits[0][1])
         glVertex2f(self.canvas_limits[1][0], self.canvas_limits[1][1])

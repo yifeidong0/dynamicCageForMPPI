@@ -24,7 +24,11 @@ class PlanePushRrtstar:
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.start_state = data[:3]
         self.gripper_pose = data[6:9]
-        self.goal_state = [0,]*3
+        self.gripper_vel = data[9:]
+        self.gripper_vel_x = data[9]
+        self.gripper_vel_y = data[10]
+        self.gripper_vel_theta = data[11]
+
         self.angle_slope = 1/6 * math.pi  # equivalent to on a slope
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope]
         
@@ -53,12 +57,57 @@ class PlanePushRrtstar:
     def startState(self):
         return self.start_state
 
-    def goalSet(self, goal_margin=3):
-        multibmin = [[-self.offset,-self.offset], [self.gripper_pose[0]+goal_margin, -self.offset],]
-        multibmax = [[self.gripper_pose[0]-goal_margin, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle],]
+    def goalSet(self, goal_margin=1.2, default_radius=1000, t=6.0):
+        # multibmin = [[-self.offset,-self.offset], [self.gripper_pose[0]+goal_margin, -self.offset],]
+        # multibmax = [[self.gripper_pose[0]-goal_margin, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle],]
         bmin = [-math.pi,]
         bmax = [math.pi,]
-        return MultiSet(UnionBoxSet(multibmin, multibmax),
+        arcbmin = [-self.offset, -self.offset]
+        arcbmax = [self.x_range+self.offset, self.y_range+self.offset]
+
+        # Calculate arc center and radius
+        gripper_velocity = np.linalg.norm(np.array([self.gripper_vel_x, self.gripper_vel_y]))
+        arc_radius = gripper_velocity / abs(self.gripper_vel_theta) if self.gripper_vel_theta != 0 else default_radius
+        if gripper_velocity >= 3e-1:
+            # Calculate perpendicular direction to velocity
+            perp_direction = [-self.gripper_vel_y, self.gripper_vel_x]
+            perp_direction = perp_direction / np.linalg.norm(perp_direction)
+
+            # Calculate arc center
+            if self.gripper_vel_theta >= 0:
+                arc_center = self.gripper_pose[:2] + perp_direction * arc_radius
+            else:
+                arc_center = self.gripper_pose[:2] - perp_direction * arc_radius
+        else:
+            # Handle linear motion case or set a default large radius
+            arc_center = self.gripper_pose[:2]
+            arc_radius = goal_margin
+            arc_angle_range = [0.0, 2*np.pi-1e-9]
+            return MultiSet(ArcErasedSet([arcbmin, arcbmax], goal_margin, arc_center, arc_radius, arc_angle_range),
+                            BoxSet(bmin, bmax))
+        
+        # Calculate arc angle range
+        angle_to_point = np.arctan2(self.gripper_pose[1] - arc_center[1], self.gripper_pose[0] - arc_center[0])
+
+        # Normalize the angle_to_point within the range [0, 2π)
+        initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
+
+        if self.gripper_vel_theta > 0:
+            # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
+            arc_angle_range = [(initial_pos_angle - goal_margin/arc_radius) % (2*np.pi), 
+                               (initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi)]
+        elif self.gripper_vel_theta < 0:
+            # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
+            arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi), 
+                               (initial_pos_angle + goal_margin/arc_radius) % (2*np.pi),]
+            # arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi), (initial_pos_angle+goal_margin/arc_radius) % (2*np.pi)]
+        else:
+            # If the gripper is not rotating
+            arc_angle_range = [(initial_pos_angle-goal_margin/default_radius) % (2*np.pi), 
+                               (initial_pos_angle+gripper_velocity*t/default_radius) % (2*np.pi)]
+
+        print('arc_angle_range', arc_angle_range, 'arc_radius', arc_radius, 'arc_center', arc_center)
+        return MultiSet(ArcErasedSet([arcbmin, arcbmax], goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
 
     def potentialMetric(self, a, b, is_potential_cost=True):
