@@ -13,7 +13,9 @@ class PlanningProblem:
                  costLowerBound=None,
                  goalRadius=None,
                  euclidean=False,
-                 taskGoal=None,):
+                 taskGoal=None,
+                 maneuverGoal=None,
+                 ):
         self.space = space
         if isinstance(space,ControlSpace):
             self.controlSpace = space
@@ -31,6 +33,7 @@ class PlanningProblem:
         self.costLowerBound = costLowerBound
         self.euclidean = euclidean
         self.taskGoal = taskGoal
+        self.maneuverGoal = maneuverGoal
 
     def cartesian(self):
         return self.euclidean
@@ -49,4 +52,5 @@ class PlanningProblem:
                                        metric=d,
                                        costLowerBound=self.costLowerBound,
                                        taskGoal=self.taskGoal,
+                                       maneuverGoal=self.maneuverGoal,
                                        **params)

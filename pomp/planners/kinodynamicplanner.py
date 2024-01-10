@@ -38,7 +38,7 @@ estUseCachedExtensions = True
 #estUseCachedExtensions = False
 estPrecheckExtensions = True
 #estPrecheckExtensions = False
-estCacheReweightFrequency = 10
+estCacheReweightFrequency = 1 # 10
 estNumCachedExtensionDrops = 2
 #TEST: add a "bonus extension" to cache after a successful extension
 #this might help wiggle into narrow passages
@@ -1037,6 +1037,9 @@ class CostSpaceRRT:
     def setTaskGoal(self, taskGoal):
         self.taskGoal = taskGoal
 
+    def setManeuverGoal(self, maneuverGoal):
+        self.maneuverGoal = maneuverGoal
+
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.costSpaceSampler = HeuristicCostSpaceSampler(Sampler(self.baseSpace),heuristicCostToCome,heuristicCostToGo,self.bestPathCost)
         self.rrt.setConfigurationSampler(self.costSpaceSampler)
@@ -1133,7 +1136,7 @@ class CostSpaceRRT:
         # return ([x[:-1] for x in V],E) # do not include cost dimension
         return (V,E) # include cost dimension
         
-    def getMetric(self):
+    def getMetric(self, a=-3):
         """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
@@ -1142,16 +1145,19 @@ class CostSpaceRRT:
         count_success = 0
         count_maneuver = 0
         for v in V:
-            prob_density = np.exp(-v[-1])
+            prob_density = np.exp(a * v[-1])
             total_prob += prob_density
-            # if region[0] <= x <= region[1] and region[2] <= y <= region[3]:
             if self.taskGoal.contains(v[:-1]):
                 count_success += 1
                 success_prob += prob_density
-            if self.baseGoal.contains(v[:-1]):
+            if self.maneuverGoal.contains(v[:-1]):
                 count_maneuver += 1
                 non_maneuverability_prob += prob_density
-        return success_prob / total_prob, 1 - non_maneuverability_prob / total_prob
+
+        success_metric = success_prob / total_prob
+        maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        return success_metric, maneuver_metric
     
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
@@ -1202,6 +1208,9 @@ class CostSpaceEST:
     def setTaskGoal(self, taskGoal):
         self.taskGoal = taskGoal
 
+    def setManeuverGoal(self, maneuverGoal):
+        self.maneuverGoal = maneuverGoal
+
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.est.pruner = HeuristicCostSpacePruner(heuristicCostToGo,self.bestPathCost)
 
@@ -1243,6 +1252,7 @@ class CostSpaceEST:
                     #Resets seem to really hurt performance
                     #self.est.reset()
 
+        # Pruning
         if do_pruning and foundNewPath:
             #print("Trying pruning...")
             self.lastPruneCost = self.bestPathCost
@@ -1282,8 +1292,8 @@ class CostSpaceEST:
         if self.est.pruner is not None: pruner = self.est.pruner
         # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
         return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
-
-    def getMetric(self):
+    
+    def getMetric(self, a=-0.3):
         """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
@@ -1292,16 +1302,19 @@ class CostSpaceEST:
         count_success = 0
         count_maneuver = 0
         for v in V:
-            prob_density = np.exp(-v[-1])
+            prob_density = np.exp(a * v[-1])
             total_prob += prob_density
-            # if region[0] <= x <= region[1] and region[2] <= y <= region[3]:
             if self.taskGoal.contains(v[:-1]):
                 count_success += 1
                 success_prob += prob_density
-            if self.baseGoal.contains(v[:-1]):
+            if self.maneuverGoal.contains(v[:-1]):
                 count_maneuver += 1
                 non_maneuverability_prob += prob_density
-        return success_prob / total_prob, 1 - non_maneuverability_prob / total_prob
+
+        success_metric = success_prob / total_prob
+        maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        return success_metric, maneuver_metric
         
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:

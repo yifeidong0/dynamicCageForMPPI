@@ -58,8 +58,8 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
         self.max_ang_velocity = 2
-        self.max_acceleration = 3
-        self.max_ang_acceleration = .5
+        self.max_acceleration = 1
+        self.max_ang_acceleration = .25
         self.mass_object = 1
         self.mass_gripper = 4
         self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
@@ -127,17 +127,18 @@ class PlanePush:
         margin = 0.2
         box_thickness = 0.2
         bmin = [-self.offset, self.y_obstacle-box_thickness-margin,-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        bmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+1e-2, math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        bmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+1e-1, math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         return BoxSet(bmin, bmax)
 
-    def goalSet(self, goal_margin=.7, default_radius=1000, t=6.0):
+    def goalSet(self):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        # multibmin = [[-self.offset, -self.offset], [self.start_state[6]+goal_margin, -self.offset],]
-        # multibmax = [[self.start_state[6]-goal_margin, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle],]
-        # return MultiSet(UnionBoxSet(multibmin, multibmax),
-        #                 BoxSet(bmin, bmax))
-
+        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], self.x_range, self.x_range+self.offset), 
+                        BoxSet(bmin, bmax))
+    
+    def maneuverGoalSet(self, goal_margin=.7, default_radius=1000, t=6.0):
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         arcbmin = [-self.offset, -self.offset]
         arcbmax = [self.x_range+self.offset, self.y_range+self.offset]
 
@@ -182,7 +183,6 @@ class PlanePush:
             arc_angle_range = [(initial_pos_angle-goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*t/default_radius) % (2*np.pi)]
 
-        print('arc_angle_range', arc_angle_range, 'arc_radius', arc_radius, 'arc_center', arc_center)
         return MultiSet(ArcErasedSet([arcbmin, arcbmax], goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
 
@@ -203,12 +203,6 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
 
-        # # Energy
-        # E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2
-        # Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2
-        # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        # c = max((Enext-E), 1e-5)
-
         # Calculating change in position and orientation
         delta_x = xnext[0] - x[0]
         delta_y = xnext[1] - x[1]
@@ -218,7 +212,6 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         W = m * u[1] * delta_x + m * u[2] * delta_y + I * u[3] * delta_theta
 
         # Considering both positive and negative work
-        # c = W
         c = abs(W)
         
         # Include a small positive value to avoid zero cost in cases where it's needed
@@ -244,6 +237,7 @@ def planePushTest(dynamics_sim,
                            visualizer=p.workspace(),
                            euclidean=True,
                            taskGoal=p.taskGoalSet(),
+                           maneuverGoal=p.maneuverGoalSet(),
                            )
 
 

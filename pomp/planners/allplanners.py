@@ -33,6 +33,7 @@ def makePlanner(type,space,start,goal,
                 heuristic=None,
                 costLowerBound=None,
                 taskGoal=None,
+                maneuverGoal=None,
                 **params):
     if isinstance(space,ControlSpace):
         if type in kinematicPlanners:
@@ -122,6 +123,8 @@ def makePlanner(type,space,start,goal,
         raise RuntimeError("Invalid planner type "+type)
     if taskGoal is not None:
         planner.setTaskGoal(taskGoal)
+    if maneuverGoal is not None:
+        planner.setManeuverGoal(maneuverGoal)
     planner.setBoundaryConditions(start,goal)
     if type.startswith=='ao' and heuristic != None:
         planner.setHeuristic(*heuristic)

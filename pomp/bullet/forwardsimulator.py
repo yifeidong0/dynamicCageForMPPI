@@ -134,8 +134,6 @@ class forwardSimulationPlanePush():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
-
-
         # self.set_params(params)
         # self.create_shapes()
     
@@ -167,7 +165,7 @@ class forwardSimulationPlanePush():
         self.pos_obstacle = [5,self.y_obstacle+self.half_extent_obstacle[1],0]
         self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
-        self.lateralFriction = 0.3
+        self.lateralFriction = 0.2
 
     def create_shapes(self):
         # Create a plane
