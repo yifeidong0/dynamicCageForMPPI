@@ -17,15 +17,38 @@ class EpsilonEdgeChecker(EdgeChecker):
         """
         self.space = space # it means C-space, MultiConfigurationSpace
         self.resolution = resolution
-    def feasible(self,interpolator,control_space=False):
+    def feasible(self,interpolator):
         l = interpolator.length()
         k = int(math.ceil(l / self.resolution))
         # print('edge checker', k, self.resolution)
-        if not self.space.feasible(interpolator.start(), control_space) or not self.space.feasible(interpolator.end(), control_space):
+        if not self.space.feasible(interpolator.start()) or not self.space.feasible(interpolator.end()):
             return False
         for i in range(k):
             u = float(i+1)/float(k+2)
             x = interpolator.eval(u)
-            if not self.space.feasible(x, control_space):
+            if not self.space.feasible(x):
+                return False
+        return True
+
+class GeometricEdgeChecker(EdgeChecker):
+    """An edge checker that uses a fixed resolution for collision checking in RRT* geometric planners.
+    """
+    def __init__(self, space, resolution):
+        """Arguments:
+            - space: a subclass of ConfigurationSpace
+            - resolution: an edge checking resolution
+        """
+        self.space = space # it means C-space, MultiConfigurationSpace
+        self.resolution = resolution
+    def feasible(self, interpolator, k=10):
+        # l = interpolator.length()
+        # k = int(math.ceil(l / self.resolution))
+        if not self.space.feasible(interpolator.start()) or not self.space.feasible(interpolator.end()):
+            return False
+        for i in range(k):
+            u = float(i+1)/float(k+2)
+            # x = interpolator.eval(u)
+            x = self.space.interpolate(interpolator.start(), interpolator.end(), u)
+            if not self.space.feasible(x):
                 return False
         return True

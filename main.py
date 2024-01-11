@@ -5,6 +5,7 @@ from pomp.planners import allplanners
 from pomp.planners import test
 from pomp.example_problems import *
 from pomp.spaces.objectives import *
+from pomp.bullet.forwardsimulator import *
 import time
 import copy
 import sys
@@ -26,12 +27,24 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
     planner = problem.planner(plannerType,**plannerParams)
     folder = os.path.join("data",problemName)
     mkdir_p(folder)
+    data_id = 0
     if 'data_id' in plannerParams: # TODO
         data_id = plannerParams['data_id']
+
+    # from datetime import datetime
+    # # Get the current timestamp as a string
+    # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = allplanners.filename[plannerType]
+
+    # Concatenate the timestamp with the filename and add the '.csv' extension
+    # file_path = os.path.join(folder, f"{filename}_{timestamp}.csv")
+    file_path = os.path.join(folder, f"{filename}.csv")
+
     test.testPlanner(planner,
                      numTrials,
                      maxTime,
-                     os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
+                     #  os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
+                     file_path,
                      data_id=data_id)
 
 
@@ -39,30 +52,19 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'Kink':geometric.kinkTest(),
-                'Bugtrap':geometric.bugtrapTest(),
-                'Dubins':dubins.dubinsCarTest(),
-                'Dubins2':dubins.dubinsTest2(),
-                'Flappy':flappy.flappyTest(),
-                'Cage':cage.cageTest(),
-                'CageMovingObstacle':cagemovingobstacle.cageMOTest(),
-                'CagePlanner':cageplanner.cagePlannerTest(),
-                'DoubleIntegrator':doubleintegrator.doubleIntegratorTest(),
-                'Pendulum':pendulum.pendulumTest(),
-                'LQR':lqr.lqrTest()}
+all_problems = {'CageEnergyLabeler', 'PlanePush', 'PlanePushRrtstar', 
+                'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
 defaultParameters = {'maxTime':30}
-customParameters = {'Kink':{'maxTime':40,'nextStateSamplingRange':0.15},
-                    'Bugtrap':{'maxTime':40,'nextStateSamplingRange':0.15},
-                    'Pendulum':{'maxTime':120,'edgeCheckTolerance':0.1,'selectionRadius':.3,'witnessRadius':0.16},
-                    'Flappy':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
-                    'Cage':{'maxTime':120,'edgeCheckTolerance':4,'selectionRadius':70,'witnessRadius':35},
-                    'CageMovingObstacle':{'maxTime':120,'edgeCheckTolerance':10,'selectionRadius':70,'witnessRadius':35},
-                    'CagePlanner':{'maxTime':120,'edgeCheckTolerance':.1,'selectionRadius':.05,'witnessRadius':.05},
-                    # 'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.01,'selectionRadius':.05,'witnessRadius':.05},
-                    'DoubleIntegrator':{'maxTime':60,'selectionRadius':0.3,'witnessRadius':0.3},
-                    'Dubins':{'selectionRadius':0.25,'witnessRadius':0.2},
-                    'Dubins2':{'selectionRadius':0.25,'witnessRadius':0.2}
+customParameters = {
+                    'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
+                    'PlanePush':{'maxTime':20},
+                    'PlanePushRrtstar':{'maxTime':20},
+                    'WaterSwing':{'maxTime':20},
+                    'BoxPivot':{'maxTime':20},
+                    'Herding':{'maxTime':20},
+                    'Gripper':{'maxTime':20},
+                    'Shuffling':{'maxTime':20},
                     }
 
 def parseParameters(problem,planner):
@@ -91,53 +93,34 @@ def parseParameters(problem,planner):
         planner = name
     return planner,params
 
-def runTests(problems = None,planners = None):
-    global all_planners,all_problems
-    if planners == None or planners == 'all' or planners[0] == 'all':
-        planners = all_planners
-
-    if problems == None or problems == 'all' or problems[0] == 'all':
-        problems = all_problems.keys()
-
-    for prname in problems:
-        pr = all_problems[prname] # PlanningProblem
-        for p in planners:
-            p,params = parseParameters(prname,p)
-            maxTime = params['maxTime']
-            del params['maxTime']
-            if pr.differentiallyConstrained() and p in allplanners.kinematicPlanners:
-                #p does not support differentially constrained problems
-                continue
-            testPlannerDefault(pr,prname,maxTime,p,**params)
-            print("Finished test on problem",prname,"with planner",p)
-            print("Parameters:")
-            for (k,v) in iteritems(params):
-                print(" ",k,":",v)
-    return
-
-def runViz(problem,planner):
-    #runVisualizer(rrtChallengeTest(),type=planner,nextStateSamplingRange=0.15,edgeCheckTolerance = 0.005)
-    planner,params = parseParameters(problem,planner)
-    if 'maxTime' in params:
-        del params['maxTime']
-    
-    print("Planning on problem",problem,"with planner",planner)
+def runTests(problem_name, planner_name, problem):
+    planner_name, params = parseParameters(problem_name, planner_name)
+    maxTime = params['maxTime']
+    del params['maxTime']
+    if problem.differentiallyConstrained() and planner_name in allplanners.kinematicPlanners:
+        return
+        #p does not support differentially constrained problems
+    testPlannerDefault(problem, problem_name, maxTime, planner_name, **params)
+    print("Finished test on problem", problem_name, "with planner", planner_name)
     print("Parameters:")
     for (k,v) in iteritems(params):
         print(" ",k,":",v)
-    runVisualizer(all_problems[problem],type=planner,**params)
-    
-if __name__=="__main__":
-    #HACK: uncomment one of these to test manually
-    #runViz('Kink','rrt*')
-    #test KD-tree in noneuclidean spaces
-    #runViz('Pendulum','ao-rrt(numControlSamples=10,nearestNeighborMethod=bruteforce)')
-    #runViz('Pendulum','ao-rrt')
-    #runViz('Dubins','stable-sparse-rrt(selectionRadius=0.25,witnessRadius=0.2)')
-    #runViz('DoubleIntegrator','stable-sparse-rrt(selectionRadius=0.3,witnessRadius=0.3)')
-    #runViz('Pendulum','stable-sparse-rrt(selectionRadius=0.3,witnessRadius=0.16)')
-    #runViz('Flappy','stable-sparse-rrt(selectionRadius=70,witnessRadius=35)')
+    return
 
+def runViz(problem_name, planner_name, problem):
+    #runVisualizer(rrtChallengeTest(),type=planner,nextStateSamplingRange=0.15,edgeCheckTolerance = 0.005)
+    planner, params = parseParameters(problem_name, planner_name)
+    if 'maxTime' in params:
+        del params['maxTime']
+    
+    print("Planning on problem",problem_name,"with planner",planner)
+    print("Parameters:")
+    for (k,v) in iteritems(params):
+        print(" ",k,":",v)
+    runVisualizer(problem, type=planner, **params)
+
+
+if __name__=="__main__":
     if len(sys.argv) < 3:
         print("Usage: main.py [-v] Problem Planner1 ... Plannerk")
         print()
@@ -153,10 +136,42 @@ if __name__=="__main__":
         exit(0)
     if sys.argv[1] == '-v':
         from pomp.visualizer import runVisualizer
-        #visualization mode
-        print("Testing visualization with problem",sys.argv[2],"and planner",sys.argv[3])
-        runViz(sys.argv[2],sys.argv[3])
+        # visualization mode
+        problem_name = sys.argv[2]
+        planner_name = sys.argv[3]
+        print("Testing visualization with problem", problem_name, "and planner", planner_name)
     else:
-        print()
-        print("Testing problems",sys.argv[1],"with planners",sys.argv[2:])
-        runTests(problems=[sys.argv[1]],planners=sys.argv[2:])
+        problem_name = sys.argv[1]
+        planner_name = sys.argv[2]
+        print("Testing problems", problem_name, "with planners", planner_name)
+
+    if problem_name == 'CageEnergyLabeler':
+        dynamics_sim = forwardSimulationEL(gui=0)
+        problem = cageenergylabeler.cageELTest(dynamics_sim)
+    if problem_name == 'PlanePush':
+        dynamics_sim = forwardSimulationPlanePush(gui=0)
+        problem = planepush.planePushTest(dynamics_sim)
+    if problem_name == 'PlanePushRrtstar':
+        dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
+        problem = planepushrrtstar.PlanePushRrtstarTest(dynamics_sim)
+    if problem_name == 'WaterSwing':
+        dynamics_sim = forwardSimulationWaterSwing(gui=0)
+        problem = waterswing.waterSwingTest(dynamics_sim)
+    if problem_name == 'BoxPivot':
+        dynamics_sim = forwardSimulationBoxPivot(gui=0)
+        problem = boxpivot.boxPivotTest(dynamics_sim)
+    if problem_name == 'Herding':
+        num_robots = 10
+        dynamics_sim = forwardSimulationHerding(gui=0)
+        problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots)
+    if problem_name == 'Gripper':
+        dynamics_sim = forwardSimulationGripper(gui=0)
+        problem = gripper.GripperTest(dynamics_sim)
+    if problem_name == 'Shuffling':
+        dynamics_sim = forwardSimulationShuffling(gui=0)
+        problem = shuffling.ShufflingTest(dynamics_sim)
+
+    if sys.argv[1] == '-v':
+        runViz(problem_name, planner_name, problem)
+    else:
+        runTests(problem_name, planner_name, problem)

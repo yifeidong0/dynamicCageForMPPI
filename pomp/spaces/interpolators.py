@@ -104,11 +104,13 @@ class PiecewiseLinearInterpolator(Interpolator):
 class LambdaInterpolator(Interpolator):
     """A helper that takes a function feval(u) that
     interpolates between 0 and 1 and returns an interpolator object."""
-    def __init__(self,feval,space=None,lengthDivisions=0):
+    def __init__(self,feval,space=None,lengthDivisions=0, xnext=None):
         self.feval = feval
         self.space = space
         self.lengthDivisions = lengthDivisions
-        Interpolator.__init__(self,feval(0),feval(1))
+        b = xnext if xnext is not None else feval(1.0) # feval(1.0) goes to a wrong answer!
+        # b = feval(1.0)
+        Interpolator.__init__(self,feval(0),b) # forward dyn. twice
     def length(self):
         if self.lengthDivisions == 0:
             if self.space == None:

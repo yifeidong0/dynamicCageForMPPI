@@ -12,7 +12,10 @@ class PlanningProblem:
                  heuristic=None,
                  costLowerBound=None,
                  goalRadius=None,
-                 euclidean=False):
+                 euclidean=False,
+                 taskGoal=None,
+                 maneuverGoal=None,
+                 ):
         self.space = space
         if isinstance(space,ControlSpace):
             self.controlSpace = space
@@ -29,19 +32,25 @@ class PlanningProblem:
         self.heuristic = heuristic
         self.costLowerBound = costLowerBound
         self.euclidean = euclidean
+        self.taskGoal = taskGoal
+        self.maneuverGoal = maneuverGoal
 
     def cartesian(self):
         return self.euclidean
     def pointToPoint(self):
-        return isinstance(self.goal,SingletonSubset) or isinstance(goal,(list,tuple))
+        return isinstance(self.goal,SingletonSubset) or isinstance(self.goal, (list,tuple))
     def differentiallyConstrained(self):
         return self.controlSpace != None
     def planner(self,type,**params):
         d = metric.euclideanMetric if self.euclidean else self.configurationSpace.distance
-        return allplanners.makePlanner(type,space=self.space,
-                           start=self.start,goal=self.goal,
-                           objective=self.objective,
-                           heuristic=self.heuristic,
-                           metric=d,
-                           costLowerBound=self.costLowerBound,
-                           **params)
+        return allplanners.makePlanner(type,
+                                       space=self.space,
+                                       start=self.start,
+                                       goal=self.goal,
+                                       objective=self.objective,
+                                       heuristic=self.heuristic,
+                                       metric=d,
+                                       costLowerBound=self.costLowerBound,
+                                       taskGoal=self.taskGoal,
+                                       maneuverGoal=self.maneuverGoal,
+                                       **params)

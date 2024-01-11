@@ -32,6 +32,8 @@ def makePlanner(type,space,start,goal,
                 metric=euclideanMetric,
                 heuristic=None,
                 costLowerBound=None,
+                taskGoal=None,
+                maneuverGoal=None,
                 **params):
     if isinstance(space,ControlSpace):
         if type in kinematicPlanners:
@@ -68,7 +70,9 @@ def makePlanner(type,space,start,goal,
         checker = EpsilonEdgeChecker(space,edgeCheckTolerance)
 
     if type == 'rrt*':
-        planner = RRTStar(space,metric,checker,**params)
+        # planner = RRTStar(space,metric,checker,**params)
+        checker = GeometricEdgeChecker(space, edgeCheckTolerance)
+        planner = RRTStar(space,objective,checker,**params)
     elif type == 'ao-rrt':
         planner = CostSpaceRRT(controlSpace,objective,metric,checker,**params)
         #set direct steering functions for kinematic spaces 
@@ -117,6 +121,10 @@ def makePlanner(type,space,start,goal,
             planner.setControlSelector(KinematicControlSelector(controlSpace,controlSpace.nextStateSamplingRange))
     else:
         raise RuntimeError("Invalid planner type "+type)
+    if taskGoal is not None:
+        planner.setTaskGoal(taskGoal)
+    if maneuverGoal is not None:
+        planner.setManeuverGoal(maneuverGoal)
     planner.setBoundaryConditions(start,goal)
     if type.startswith=='ao' and heuristic != None:
         planner.setHeuristic(*heuristic)

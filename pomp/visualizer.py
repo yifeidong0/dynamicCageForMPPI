@@ -80,6 +80,8 @@ class PlanVisualizationProgram(GLProgram):
     def keyboardfunc(self,key,x,y):
         key = key.decode("utf-8") 
         print("Key",key,"pressed at",x,y)
+        # print('self.height',self.height) # 640
+        # print('self.width',self.width) # 640
         if key==' ':
             print("Planning 1...")
             self.planner.planMore(1)
@@ -92,6 +94,7 @@ class PlanVisualizationProgram(GLProgram):
             self.planner.planMore(1000)
             self.path = self.planner.getPath()
             self.G = self.planner.getRoadmap()
+            self.planner.getMetric()
             self.planner.stats.pretty_print()
             self.refresh()
         elif key=='o':
@@ -132,7 +135,8 @@ class PlanVisualizationProgram(GLProgram):
     def display(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0,1,1,0,-1,1)
+        # glOrtho(0,1,1,0,-1,1)
+        glOrtho(0,1,0,1,-1,1) # origin: bottom left
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glEnable(GL_POINT_SMOOTH)
@@ -140,25 +144,35 @@ class PlanVisualizationProgram(GLProgram):
 
         glDisable(GL_LIGHTING)
         
-        # Draw initial gripper pose
-        if hasattr(self.problem.controlSpace, "is_cage_planner"):
-            gripperPose = self.problem.controlSpace.obstacle_pose
-            halfExtent = self.problem.controlSpace.half_extents_gripper
-            glColor3f(0, 0.65, 0)
-            self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        elif hasattr(self.problem.controlSpace, "is_energy_labeler"):
+        # Draw initial manipulator position and goal region
+        if hasattr(self.problem.controlSpace, "is_energy_labeler"):
             gripperPose = self.problem.controlSpace.obstacles[:3]
             halfExtent = self.problem.controlSpace.obstacles[3:]
             glColor3f(0, 0.65, 0)
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
-        else: # cageMO and cage 
-            self.problem.visualizer.drawObstaclesGL()
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
+        elif hasattr(self.problem.controlSpace, "is_plane_push"):
+            self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push")
+            self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
+        elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar")
+        else:
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
 
         if hasattr(self.planner,'nextSampleList'):
             for p in self.planner.nextSampleList:
-                self.problem.visualizer.drawRobotGL(p)
+                self.problem.visualizer.drawObjectGL(p)
 
+        # Draw start and goal region
+        self.problem.visualizer.drawObjectGL(self.problem.start)
+
+        # Draw roadmap
         self.draw_graph()
+
+        # Draw static/animated path found by the planner
+        self.draw_solution_path()
+        # TODO: print the cost - self.planner.bestPathCost - on the window
 
         #Debug extension cache
         est = None
@@ -172,7 +186,7 @@ class PlanVisualizationProgram(GLProgram):
             for (w,(n,u,e)) in zip(*est.extensionCache):
                 glColor4f(1,0,1,(0.1+0.9*w/sumw))
                 self.problem.visualizer.drawInterpolatorGL(e)
-                #self.problem.visualizer.drawRobotGL(e.end())
+                #self.problem.visualizer.drawObjectGL(e.end())
             glDisable(GL_BLEND)
             glLineWidth(1.0)
 
@@ -181,114 +195,63 @@ class PlanVisualizationProgram(GLProgram):
         if est:
             for n in est.nodes:
                 if est.density(n.x) <= 1.0:
-                    self.problem.visualizer.drawRobotGL(n.x)
+                    self.problem.visualizer.drawObjectGL(n.x)
         """
 
-        # Draw static/animated path found by the planner
-        self.draw_path_animation()
-
-        # TODO: print the cost - self.planner.bestPathCost - on the window
-
-    def draw_graph(self):
+    def draw_graph(self, draw_edge=False):
+        """Draw the roadmap."""
         if self.G:
             V,E = self.G
             glLineWidth(0.5)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
             glColor4f(0,0,0,0.5)
-            glPointSize(3.0)
-            self.problem.visualizer.drawVerticesGL(V)
-            glColor4f(0.5,0.5,0.5,0.5)
-            for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
-                if hasattr(self.problem.controlSpace, "is_cage_planner"):
-                    self.problem.controlSpace.eval(V[i], u, 1, print_via_points=True)
+            glPointSize(6.0)
+            self.problem.visualizer.drawVerticesGL(V) # draw nodes
+
+            # Draw static obstacle
+            if hasattr(self.problem.controlSpace, "is_herding"):
+                glLineWidth(1)
+                num_robot = self.problem.controlSpace.cage.num_robot
+                for i in range(num_robot):
+                    self.problem.visualizer.drawRobotGL(V[0][4+2*i:6+2*i])
+
+            if draw_edge:
+                glColor4f(0.5,0.5,0.5,0.5)
+                for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
+                    x_new = self.problem.controlSpace.eval(V[i][:-1], u, 1, print_via_points=True)
                     xo_via_points = self.problem.controlSpace.xo_via_points
-                    self.problem.visualizer.beginDraw()
+                    self.problem.visualizer.beginDraw() # draw edges
                     glBegin(GL_LINE_STRIP)
                     for p in xo_via_points:
                         glVertex2f(p[0],p[1])
                     glEnd()
                     self.problem.visualizer.endDraw()
-                else:
-                    interpolator = self.problem.space.interpolator(V[i], u)
-                    self.problem.visualizer.drawInterpolatorGL(interpolator)
-            glDisable(GL_BLEND)
+                glDisable(GL_BLEND)
 
-    def draw_path_animation(self):
-        if hasattr(self.problem.controlSpace, "is_moving_obstacle"):
-            if self.path is not None:
-                if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
-                    self.display_new_path = True
-                    self.prev_path_x = self.path[0]
-            
-            if self.display_new_path:
-                self.problem.visualizer.drawRobotGL(self.problem.start)
-                self.problem.visualizer.drawGoalGL(self.problem.goal)
+    def draw_solution_path(self):
+        if self.path is not None:
+            # print("!!!!x",self.path[0])
+            # print("!!!!u",self.path[1])
+            if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
+                # self.display_new_path = True
+                self.display_new_path = False
+                self.prev_path_x = self.path[0]
+        
+        if not self.display_new_path: # draw static path without animation if no path update
+            self.draw_path_static()
+        else: # in animation mode
+            self.problem.visualizer.drawObjectGL(self.problem.start)
+            self.problem.visualizer.drawGoalGL(self.problem.goal)
 
-                if self.path and len(self.path[0]) > 1:
-                    for k in range(len(self.path[0]) - 1):
-                        if k >= len(self.path[0])-1:
-                            break
-                        x1, u = self.path[0][k], self.path[1][k]
-                        x2 = self.path[0][k+1]
+            if self.path and len(self.path[0]) > 1:
+                for k in range(len(self.path[0]) - 1):
+                    if k >= len(self.path[0])-1:
+                        break
+                    x1, u = self.path[0][k], self.path[1][k]
+                    x2 = self.path[0][k+1]
 
-                        # Clear the previous obstacle by drawing a background color (e.g., white)
-                        glColor3f(1, 1, 1)
-                        self.problem.visualizer.drawObstaclesGL(x1[4:6])
-
-                        # Draw the new obstacle at q2
-                        # glColor3f(0.2,0.2,0.2)
-                        glColor3f(0, 0.65, 0)
-                        self.problem.visualizer.drawObstaclesGL(x2[4:6])
-
-                        # Draw the graph again
-                        self.draw_graph()
-
-                        for m in range(k+1):
-                            x1, u = self.path[0][m], self.path[1][m]
-                            x2 = self.path[0][k+1]
-                            # Interpolate and draw all previous line segments
-                            glColor3f(0, 0, 1)
-                            glLineWidth(2.0)
-                            interpolator = self.problem.space.interpolator(x1, u)
-                            self.problem.visualizer.drawInterpolatorGL(interpolator)
-                            # Draw the node x2
-                            glLineWidth(1)
-                            self.problem.visualizer.drawRobotGL(x2)
-
-                        # Process events to update the display
-                        glutSwapBuffers()
-                        glutMainLoopEvent()
-
-                        # Pause and save screen
-                        if self.display_new_path:
-                            time.sleep(0.1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
-                        if self.save_movie:
-                            self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
-                            self.movie_frame += 1
-
-            else: # draw static path without animation if no path update
-                self.draw_path_static()
-
-            self.display_new_path = False
-
-        if hasattr(self.problem.controlSpace, "is_cage_planner") or hasattr(self.problem.controlSpace, "is_energy_labeler"):
-            if self.path is not None:
-                if not are_nested_lists_equal(self.prev_path_x, self.path[0]):
-                    self.display_new_path = True
-                    self.prev_path_x = self.path[0]
-            
-            if self.display_new_path:
-                self.problem.visualizer.drawRobotGL(self.problem.start)
-                self.problem.visualizer.drawGoalGL(self.problem.goal)
-
-                if self.path and len(self.path[0]) > 1:
-                    for k in range(len(self.path[0]) - 1):
-                        if k >= len(self.path[0])-1:
-                            break
-                        x1, u = self.path[0][k], self.path[1][k]
-                        x2 = self.path[0][k+1]
-
+                    if hasattr(self.problem.controlSpace, "is_energy_labeler"):
                         # Clear the previous obstacle by drawing a background color (e.g., white)
                         glColor3f(1, 1, 1)
                         self.problem.visualizer.drawGripperGL(x1[4:7], self.problem.controlSpace.half_extents_gripper)
@@ -297,47 +260,60 @@ class PlanVisualizationProgram(GLProgram):
                         glColor3f(0, 0.65, 0)
                         self.problem.visualizer.drawGripperGL(x2[4:7], self.problem.controlSpace.half_extents_gripper)
 
-                        # Draw the graph again
-                        self.draw_graph()
+                    # Draw the graph again
+                    self.draw_graph()
 
-                        for m in range(k+1):
-                            x1, u = self.path[0][m], self.path[1][m]
-                            x2 = self.path[0][k+1]
-                            # Interpolate and draw all previous line segments
-                            glColor3f(0, 0, 1)
-                            glLineWidth(2.0)
-                            interpolator = self.problem.space.interpolator(x1, u)
-                            self.problem.visualizer.drawInterpolatorGL(interpolator)
-                            # Draw the node x2
+                    for m in range(k+1):
+                        x1, u = self.path[0][m], self.path[1][m]
+                        x2 = self.path[0][k+1]
+
+                        # Interpolate and draw all previous line segments along object trajectory
+                        glColor3f(0, 0.75, 0)
+                        glLineWidth(7.0)
+                        interpolator = self.problem.space.interpolator(x1, u)
+                        self.problem.visualizer.drawInterpolatorGL(interpolator)
+                        
+                        # Draw the node x2 along object trajectory
+                        glLineWidth(1)
+                        self.problem.visualizer.drawObjectGL(x2[:2])
+
+                        # Indicate robot gripper's center moving position
+                        if hasattr(self.problem.controlSpace, "is_water_swing"):
                             glLineWidth(1)
-                            self.problem.visualizer.drawRobotGL(x2)
+                            self.problem.visualizer.drawRobotGL(x2[6:8])
+                        if hasattr(self.problem.controlSpace, "is_plane_push"):
+                            glLineWidth(1)
+                            self.problem.visualizer.drawRobotGL(x2[6:8])
+                        if hasattr(self.problem.controlSpace, "is_box_pivot"):
+                            glLineWidth(1)
+                            height_spring = 3.7
+                            self.problem.visualizer.drawRobotGL([x2[7], height_spring])
+                        if hasattr(self.problem.controlSpace, "is_herding"):
+                            glLineWidth(1)
+                            num_robot = self.problem.controlSpace.cage.num_robot
+                            for i in range(num_robot):
+                                self.problem.visualizer.drawRobotGL(x2[4+2*i:6+2*i])
 
-                        # Process events to update the display
-                        glutSwapBuffers()
-                        glutMainLoopEvent()
+                    # Process events to update the display
+                    glutSwapBuffers()
+                    glutMainLoopEvent()
 
-                        # Pause and save screen
-                        if self.display_new_path:
-                            time.sleep(1*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
-                        if self.save_movie:
-                            self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
-                            self.movie_frame += 1
-                        time.sleep(.3)
-                        self.just_animated = True
+                    # Pause and save screen
+                    if self.display_new_path:
+                        time.sleep(0.03*u[0]) # <0.05*u[0] might cause frame chaos in the generated movies
+                    if self.save_movie:
+                        self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                        self.movie_frame += 1
+                    time.sleep(0.1)
 
-            else: # draw static path without animation if no path update
-                self.draw_path_static()
-
-            self.display_new_path = False
-
-        else: # cases other than cageMO
-            self.draw_path_static()
+        self.display_new_path = False
 
     def draw_path_static(self):
+        """Draw the solution path without animation."""
         if self.path:
             # Plot path edges
-            glColor3f(0,0,1)
-            glLineWidth(2.0)
+            glColor3f(0,0.75,0)
+            glLineWidth(3.0)
             for q,u in zip(self.path[0][:-1],self.path[1]):
                 interpolator = self.problem.space.interpolator(q,u)
                 self.problem.visualizer.drawInterpolatorGL(interpolator)
@@ -345,11 +321,7 @@ class PlanVisualizationProgram(GLProgram):
             # Plot path nodes
             glLineWidth(1)
             for q in self.path[0]:
-                self.problem.visualizer.drawRobotGL(q)
-            
-        # Draw start and goal region
-        self.problem.visualizer.drawRobotGL(self.problem.start)
-        self.problem.visualizer.drawGoalGL(self.problem.goal)
+                self.problem.visualizer.drawObjectGL(q)
 
     def displayfunc(self):
         GLProgram.displayfunc(self)

@@ -27,7 +27,7 @@ estHierarchyLevels = 2
 #OK value for no cache
 #estNumExtensionSamples = 10
 #small cache
-estNumExtensionSamples = 50
+estNumExtensionSamples = 5 # 50
 #large cache
 #estNumExtensionSamples = 1000
 #Tests seem to indicate that cached extensions aren't very useful
@@ -38,12 +38,12 @@ estUseCachedExtensions = True
 #estUseCachedExtensions = False
 estPrecheckExtensions = True
 #estPrecheckExtensions = False
-estCacheReweightFrequency = 10
+estCacheReweightFrequency = 1 # 10
 estNumCachedExtensionDrops = 2
 #TEST: add a "bonus extension" to cache after a successful extension
 #this might help wiggle into narrow passages
 estLetItRoll = True
-estNumLetItRollSamples = 50
+estNumLetItRollSamples = 5 # 50
 
 
 
@@ -63,7 +63,7 @@ class RandomControlSelector(ControlSelector):
         self.metric = metric
         self.numSamples = numSamples
 
-    def select(self,x,xdesired):
+    def select(self, x, xdesired):
         ubest = None
         #do we want to eliminate extensions that do not improve the metric
         #from the starting configuration?  experiments suggest no 5/6/2015
@@ -359,7 +359,8 @@ class RRT(TreePlanner):
                 xrand = self.goalSampler.sample()
             else:
                 xrand = self.configurationSampler.sample()
-            if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
+            # if not self.cspace.feasible(xrand, self.controlSpace.baseSpace): # MultiConfigurationSpace.feasible
+            if not self.cspace.feasible(xrand): # MultiConfigurationSpace.feasible
                 return None
         else:
             xrand = self.nextSampleList.pop(0)
@@ -367,7 +368,7 @@ class RRT(TreePlanner):
         if nnear is None:
             return None
         nnear.numExpansionsAttempted += 1
-        u = self.controlSelector.select(nnear.x,xrand)
+        u = self.controlSelector.select(nnear.x, xrand) # select a u with best cost from rrtNumControlSampleIters u's
         if u is None:
             #do we want to adjust the dynamic domain?
             if self.dynamicDomain:
@@ -377,19 +378,24 @@ class RRT(TreePlanner):
                     nnear.ddRadius = self.dynamicDomainInitialRadius
             self.stats.count('controlSelectionFailure').add(1)
             return None
-        edge = self.controlSpace.interpolator(nnear.x,u)
-        if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
-            if self.dynamicDomain:
-                if hasattr(nnear,'ddRadius'):
-                    nnear.ddRadius *= (1.0-self.dynamicDomainGrowthParameter)
-                else:
-                    nnear.ddRadius = self.dynamicDomainInitialRadius
-            return None
-        #feasible edge, add it
+        is_double_integration = True # TODO
+        uparent = nnear.uparent if not is_double_integration else None
+        edge = self.controlSpace.interpolator(nnear.x, u, uparent) # eval 3 times in CostControlSpace.interpolator
+
+        # TODO: no more collision check since bullet forward sim will avoid collisions of gripper and object.
+        # if not self.edgeChecker.feasible(edge, self.controlSpace.baseSpace):
+        #     if self.dynamicDomain:
+        #         if hasattr(nnear,'ddRadius'):
+        #             nnear.ddRadius *= (1.0-self.dynamicDomainGrowthParameter)
+        #         else:
+        #             nnear.ddRadius = self.dynamicDomainInitialRadius
+        #     return None
+
+        # feasible edge, add it
         if self.dynamicDomain:
             if hasattr(nnear,'ddRadius'):
                 nnear.ddRadius *= (1.0+self.dynamicDomainGrowthParameter)
-        nnew = self.addEdge(nnear,u,edge)
+        nnew = self.addEdge(nnear,u,edge) # create a new node nnew that connects with nnear by action u
         if self.prune(nnew):
             nnew.destroy()
             self.nodes.pop()
@@ -417,7 +423,7 @@ class RRT(TreePlanner):
             newchildren = []
             delchildren = []
             for c in n.children:
-                if self.prune(c) or not self.cspace.feasible(c.x, self.controlSpace.baseSpace):
+                if self.prune(c) or not self.cspace.feasible(c.x):
                     delchildren.append(c)
                 else:
                     newchildren.append(c)
@@ -562,6 +568,7 @@ class EST(TreePlanner):
                     edge = extensions[i][2]
                     de = self.density(edge.end())
                     weights[i] = 1.0/(1.0+de**2)
+        # multiple nodes and samples per node in one expand but only one that goes towards sparse area is selected.
         for n in range(numNodeSamples - len(weights)):
             #self.stats.count('numExtensionSamples').add(1)
             nnear = self.pickNode()
@@ -583,8 +590,8 @@ class EST(TreePlanner):
                         continue
                     if estPrecheckExtensions:
                         #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                        # if not self.edgeChecker.feasible(edge):
+                        #     continue
                         de = self.density(edge.end())
                         extensions.append((nnear,u,edge))
                         # pick with probability inversely proportional to density
@@ -627,12 +634,12 @@ class EST(TreePlanner):
                 extensions[i] = extensions[-1]
                 weights.pop(-1)
                 extensions.pop(-1)
-        if not estPrecheckExtensions:
-            #cached extensions are pre-checked for feasibility
-            #self.stats.count('numEdgeChecks').add(1)
-            if not self.edgeChecker.feasible(edge):
-	        #TODO: penalize this node
-                return None
+        # if not estPrecheckExtensions:
+        #     #cached extensions are pre-checked for feasibility
+        #     #self.stats.count('numEdgeChecks').add(1)
+        #     if not self.edgeChecker.feasible(edge):
+	    #     #TODO: penalize this node
+        #         return None
 
         #feasible edge, add it
         nnew = self.addEdge(n,u,edge)
@@ -650,10 +657,10 @@ class EST(TreePlanner):
                     edge = self.controlSpace.interpolator(nnew.x,u)
                     if not self.cspace.feasible(edge.end()):
                         continue
-                    if estPrecheckExtensions:
-                        #self.stats.count('numEdgeChecks').add(1)
-                        if not self.edgeChecker.feasible(edge):
-                            continue
+                    # if estPrecheckExtensions:
+                    #     #self.stats.count('numEdgeChecks').add(1)
+                    #     if not self.edgeChecker.feasible(edge):
+                    #         continue
                     de = self.density(edge.end())
                     extensions.append((nnew,u,edge))
                     # pick with probability inversely proportional to density
@@ -1008,7 +1015,9 @@ class CostSpaceRRT:
         self.stats = Profiler()
         self.stats.items['rrt'] = self.rrt.stats
         self.numIters = self.stats.count('numIters')
-                
+        self.taskGoal = None
+        self.maneuverGoal = None
+
     def destroy(self):
         """To be nice to the GC, call this to free up memory after you're
         done planning"""
@@ -1026,6 +1035,12 @@ class CostSpaceRRT:
         self.baseGoal = goal
         self.costGoal = CostGoal(goal,self.objective,self.bestPathCost)
         self.rrt.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
+
+    def setTaskGoal(self, taskGoal):
+        self.taskGoal = taskGoal
+
+    def setManeuverGoal(self, maneuverGoal):
+        self.maneuverGoal = maneuverGoal
 
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.costSpaceSampler = HeuristicCostSpaceSampler(Sampler(self.baseSpace),heuristicCostToCome,heuristicCostToGo,self.bestPathCost)
@@ -1066,7 +1081,7 @@ class CostSpaceRRT:
         else:
             self.metric.costWeight = 0.0
     
-    def planMore(self,iters):
+    def planMore(self, iters, do_pruning=False):
         didreset = False
         foundNewPath = False
         for n in range(iters):
@@ -1085,7 +1100,9 @@ class CostSpaceRRT:
                     #that there's little effect (5/6/2015)
                     #self.rrt.reset()
                     #didreset = True
-        if foundNewPath and not didreset:
+        
+        # Pruning
+        if do_pruning and foundNewPath and not didreset:
             assert self.bestPathCost is not None
             #print("Trying pruning...")
             self.lastPruneCost = self.bestPathCost
@@ -1102,6 +1119,7 @@ class CostSpaceRRT:
                     self.rrt.pruneTree()
                     self.rrt.pruner = oldpruner
                     print("   pruned down to",len(self.rrt.nodes),"nodes")
+                    
         return self.bestPathCost
         
     def getPathCost(self):
@@ -1117,8 +1135,32 @@ class CostSpaceRRT:
     def getRoadmap(self):
         """Returns a roadmap for the base space"""
         (V,E) = self.rrt.getRoadmap()
-        return ([x[:-1] for x in V],E)
+        # return ([x[:-1] for x in V],E) # do not include cost dimension
+        return (V,E) # include cost dimension
         
+    def getMetric(self, a=-3):
+        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+        (V,_) = self.getRoadmap()
+        total_prob = 0
+        success_prob = 0
+        non_maneuverability_prob = 0
+        count_success = 0
+        count_maneuver = 0
+        for v in V:
+            prob_density = np.exp(a * v[-1])
+            total_prob += prob_density
+            if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
+                count_success += 1
+                success_prob += prob_density
+            if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
+                count_maneuver += 1
+                non_maneuverability_prob += prob_density
+
+        success_metric = success_prob / total_prob
+        maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        return success_metric, maneuver_metric
+    
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()
@@ -1145,6 +1187,8 @@ class CostSpaceEST:
         self.stats.items['est'] = self.est.stats
         self.numIters = self.stats.count('numIters')
         self.lastPruneCost = None
+        self.taskGoal = None
+        self.maneuverGoal = None
 
     def destroy(self):
         """To be nice to the GC, call this to free up memory after you're
@@ -1164,6 +1208,12 @@ class CostSpaceEST:
         self.costGoal = CostGoal(goal,self.objective,self.bestPathCost)
         self.est.generateDefaultBases(list(range(len(x0))))
         self.est.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
+
+    def setTaskGoal(self, taskGoal):
+        self.taskGoal = taskGoal
+
+    def setManeuverGoal(self, maneuverGoal):
+        self.maneuverGoal = maneuverGoal
 
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.est.pruner = HeuristicCostSpacePruner(heuristicCostToGo,self.bestPathCost)
@@ -1189,7 +1239,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self,iters):
+    def planMore(self, iters, do_pruning=False):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)
@@ -1206,7 +1256,8 @@ class CostSpaceEST:
                     #Resets seem to really hurt performance
                     #self.est.reset()
 
-        if foundNewPath:
+        # Pruning
+        if do_pruning and foundNewPath:
             #print("Trying pruning...")
             self.lastPruneCost = self.bestPathCost
             prunecount = 0
@@ -1243,8 +1294,32 @@ class CostSpaceEST:
         (V,E) = self.est.getRoadmap()
         pruner = (lambda x:False)
         if self.est.pruner is not None: pruner = self.est.pruner
-        return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))])
+        # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
+        return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
+    
+    def getMetric(self, a=-0.3):
+        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+        (V,_) = self.getRoadmap()
+        total_prob = 0
+        success_prob = 0
+        non_maneuverability_prob = 0
+        count_success = 0
+        count_maneuver = 0
+        for v in V:
+            prob_density = np.exp(a * v[-1])
+            total_prob += prob_density
+            if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
+                count_success += 1
+                success_prob += prob_density
+            if self.taskGoal is not None and self.maneuverGoal.contains(v[:-1]):
+                count_maneuver += 1
+                non_maneuverability_prob += prob_density
 
+        success_metric = success_prob / total_prob
+        maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        return success_metric, maneuver_metric
+        
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()
@@ -1254,282 +1329,282 @@ class CostSpaceEST:
         return [x[:-1] for x in xs],us,cost
 
 
-class RepeatedRRT(RRT):
-    """The repeated Rapidly-exploring Random Tree planner.
-    """
-    def __init__(self,controlSpace,objective,metric,edgeChecker,
-                 **params):
-        """Given a ControlSpace controlSpace, a metric, and an edge checker"""
-        RRT.__init__(self,controlSpace,metric,edgeChecker,**params)
-        self.objective = objective
-        self.bestPath = None
-        self.bestPathCost = None
-        self.doprune = False
+# class RepeatedRRT(RRT):
+#     """The repeated Rapidly-exploring Random Tree planner.
+#     """
+#     def __init__(self,controlSpace,objective,metric,edgeChecker,
+#                  **params):
+#         """Given a ControlSpace controlSpace, a metric, and an edge checker"""
+#         RRT.__init__(self,controlSpace,metric,edgeChecker,**params)
+#         self.objective = objective
+#         self.bestPath = None
+#         self.bestPathCost = None
+#         self.doprune = False
         
-    def reset(self):
-        """Resets all planning effort"""
-        RRT.reset(self)
-        self.bestPath = None
-        self.bestPathCost = None
+#     def reset(self):
+#         """Resets all planning effort"""
+#         RRT.reset(self)
+#         self.bestPath = None
+#         self.bestPathCost = None
         
-    def setBoundaryConditions(self,x0,goal):
-        """Sets the start and goal"""
-        RRT.setBoundaryConditions(self,x0,goal)
-        #add cost term to root node
-        self.root.c = 0
+#     def setBoundaryConditions(self,x0,goal):
+#         """Sets the start and goal"""
+#         RRT.setBoundaryConditions(self,x0,goal)
+#         #add cost term to root node
+#         self.root.c = 0
         
-    def planMore(self,iters):
-        foundNewPath = False
-        for n in range(iters):
-            self.numIters += 1
-            n = RRT.expand(self)
-            if n is None:
-                continue
-            if not hasattr(n,'c'):
-                n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-            if self.goal is not None and self.goal.contains(n.x):
-                totalcost = n.c + self.objective.terminal(n.x)
-                if self.bestPath is None or totalcost < self.bestPathCost:
-                    print("RRT found path with new cost",totalcost)
-                    foundNewPath = True
-                    self.bestPathCost = totalcost
-                    self.bestPath = RRT.getPath(self,n)
-                    RRT.reset(self)
-                    return True
-                if not self.doprune:
-                    #rrt found a path and we're not doing pruning... just reset the RRT
-                    RRT.reset(self)
-                    return False
-        if self.doprune and foundNewPath:
-            prunecount = 0
-            for n in self.nodes:
-                if n.c > self.bestPathCost or self.prune(n):
-                    prunecount += 1
-            if prunecount > len(self.nodes)/5 and prunecount > 100:
-                #print("Can prune",prunecount,"of",len(self.nodes),"nodes")
-                oldpruner = self.pruner
-                if self.pruner is None:
-                    self.pruner = (lambda n:n.c >= self.bestPathCost)
-                    self.pruneTree()
-                self.pruner = oldpruner
-            #print("   pruned down to",len(self.nodes),"nodes")
-        return False
+#     def planMore(self,iters):
+#         foundNewPath = False
+#         for n in range(iters):
+#             self.numIters += 1
+#             n = RRT.expand(self)
+#             if n is None:
+#                 continue
+#             if not hasattr(n,'c'):
+#                 n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#             if self.goal is not None and self.goal.contains(n.x):
+#                 totalcost = n.c + self.objective.terminal(n.x)
+#                 if self.bestPath is None or totalcost < self.bestPathCost:
+#                     print("RRT found path with new cost",totalcost)
+#                     foundNewPath = True
+#                     self.bestPathCost = totalcost
+#                     self.bestPath = RRT.getPath(self,n)
+#                     RRT.reset(self)
+#                     return True
+#                 if not self.doprune:
+#                     #rrt found a path and we're not doing pruning... just reset the RRT
+#                     RRT.reset(self)
+#                     return False
+#         if self.doprune and foundNewPath:
+#             prunecount = 0
+#             for n in self.nodes:
+#                 if n.c > self.bestPathCost or self.prune(n):
+#                     prunecount += 1
+#             if prunecount > len(self.nodes)/5 and prunecount > 100:
+#                 #print("Can prune",prunecount,"of",len(self.nodes),"nodes")
+#                 oldpruner = self.pruner
+#                 if self.pruner is None:
+#                     self.pruner = (lambda n:n.c >= self.bestPathCost)
+#                     self.pruneTree()
+#                 self.pruner = oldpruner
+#             #print("   pruned down to",len(self.nodes),"nodes")
+#         return False
         
-    def prune(self,n):
-        if not self.doprune or self.bestPathCost is None: return False
-        if not hasattr(n,'c'):
-            n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-        if n.c > self.bestPathCost:
-            return True
-        if self.pruner:
-            return self.pruner(node)
-        return False
+#     def prune(self,n):
+#         if not self.doprune or self.bestPathCost is None: return False
+#         if not hasattr(n,'c'):
+#             n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#         if n.c > self.bestPathCost:
+#             return True
+#         if self.pruner:
+#             return self.pruner(node)
+#         return False
         
-    def getPathCost(self):
-        return self.bestPathCost
+#     def getPathCost(self):
+#         return self.bestPathCost
         
-    def getPath(self,n=None):
-        """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
-        if n is not None:
-            return RRT.getPath(self,n)
-        if self.bestPath is None:
-            return None
-        return self.bestPath
+#     def getPath(self,n=None):
+#         """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
+#         if n is not None:
+#             return RRT.getPath(self,n)
+#         if self.bestPath is None:
+#             return None
+#         return self.bestPath
 
-    def getBestPath(self,obj,goal=None):
-        if obj is self.objective and goal is self.goal and self.bestPath is not None:
-            return self.getPath()
-        return RRT.getBestPath(self,obj,goal)
-
-
-class AnytimeRRT(RRT):
-    """The Anytime Rapidly-exploring Random Tree planner (Ferguson and Stentz,
-    06).
-    """
-    def __init__(self,controlSpace,objective,metric,edgeChecker,
-                 **params):
-        """Given a ControlSpace controlSpace, a metric, and an edge checker"""
-        #amount that the cost/nearness weight gets shifted each time a path
-        #is found
-        self.weightIncrement = popdefault(params,'weightIncrement',0.1)
-        #amount required for path cost shrinkage
-        self.epsilon = popdefault(params,'epsilon',0.01)
-        #must use brute force picking
-        #commented out because pickNode does this already
-        #params['nearestNeighborMethod'] = 'bruteforce'  
-        RRT.__init__(self,controlSpace,metric,edgeChecker,**params)
-        self.objective = objective
-        self.bestPath = None
-        self.bestPathCost = None
-        self.distanceWeight = 1
-        self.costWeight = 0
-
-    def pickNode(self,xrand):
-        """Picks a node closest to xrand."""
-        nnear = None    
-        dbest = infty
-        for n in self.nodes:
-            d = self.distanceWeight*self.metric(n.x,xrand) + self.costWeight*n.c
-            if d < dbest and not self.prune(n):
-                nnear = n
-                dbest = d
-        return nnear
-        
-    def reset(self):
-        """Resets all planning effort"""
-        RRT.reset(self)
-        self.bestPath = None
-        self.bestPathCost = None
-        self.distanceWeight = 1
-        self.costWeight = 0
-        
-    def setBoundaryConditions(self,x0,goal):
-        """Sets the start and goal"""
-        RRT.setBoundaryConditions(self,x0,goal)
-        #add cost term to root node
-        self.root.c = 0
-        
-    def planMore(self,iters):
-        foundNewPath = False
-        for n in range(iters):
-            self.numIters += 1
-            n = RRT.expand(self)
-            if n is None: continue
-            if not hasattr(n,'c'):
-                n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-            if self.goal is not None and self.goal.contains(n.x):
-                totalcost = n.c + self.objective.terminal(n.x)
-                if self.bestPath is None or totalcost < self.bestPathCost*(1.0-self.epsilon):
-                    print("Anytime-RRT found path with new cost",totalcost)
-                    self.distanceWeight -= self.weightIncrement
-                    self.distanceWeight = max(self.distanceWeight,0)
-                    self.costWeight += self.weightIncrement
-                    self.costWeight = min(self.costWeight,1)
-                    foundNewPath = True
-                    self.bestPathCost = totalcost
-                    self.bestPath = RRT.getPath(self,n)
-                    RRT.reset(self)
-                    return True
-        return False
-        
-    def prune(self,n):
-        if self.bestPathCost is None: return False
-        if not hasattr(n,'c'):
-            n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-        if n.c > self.bestPathCost*(1.0-self.epsilon):
-            return True
-        if self.pruner:
-            return self.pruner(node)
-        return False
-        
-    def getPathCost(self):
-        return self.bestPathCost
-        
-    def getPath(self,n=None):
-        """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
-        if n is not None:
-            return RRT.getPath(self,n)
-        if self.bestPath is None:
-            return None
-        return self.bestPath
-
-    def getBestPath(self,obj,goal=None):
-        if obj is self.objective and goal is self.goal and self.bestPath is not None:
-            return self.getPath()
-        return RRT.getBestPath(self,obj,goal)
+#     def getBestPath(self,obj,goal=None):
+#         if obj is self.objective and goal is self.goal and self.bestPath is not None:
+#             return self.getPath()
+#         return RRT.getBestPath(self,obj,goal)
 
 
-class RepeatedEST(ESTWithProjections):
-    """The repeated Expansive Space Tree planner.
-    """
-    def __init__(self,controlSpace,objective,edgeChecker,
-                 **params):
-        """Given a ControlSpace controlSpace, a metric, and an edge checker"""
-        ESTWithProjections.__init__(self,controlSpace,edgeChecker,**params)
-        self.objective = objective
-        self.bestPath = None
-        self.bestPathCost = None
-        self.doprune = False
+# class AnytimeRRT(RRT):
+#     """The Anytime Rapidly-exploring Random Tree planner (Ferguson and Stentz,
+#     06).
+#     """
+#     def __init__(self,controlSpace,objective,metric,edgeChecker,
+#                  **params):
+#         """Given a ControlSpace controlSpace, a metric, and an edge checker"""
+#         #amount that the cost/nearness weight gets shifted each time a path
+#         #is found
+#         self.weightIncrement = popdefault(params,'weightIncrement',0.1)
+#         #amount required for path cost shrinkage
+#         self.epsilon = popdefault(params,'epsilon',0.01)
+#         #must use brute force picking
+#         #commented out because pickNode does this already
+#         #params['nearestNeighborMethod'] = 'bruteforce'  
+#         RRT.__init__(self,controlSpace,metric,edgeChecker,**params)
+#         self.objective = objective
+#         self.bestPath = None
+#         self.bestPathCost = None
+#         self.distanceWeight = 1
+#         self.costWeight = 0
 
-    def reset(self):
-        """Resets all planning effort"""
-        ESTWithProjections.reset(self)
-        self.bestPath = None
-        self.bestPathCost = None
+#     def pickNode(self,xrand):
+#         """Picks a node closest to xrand."""
+#         nnear = None    
+#         dbest = infty
+#         for n in self.nodes:
+#             d = self.distanceWeight*self.metric(n.x,xrand) + self.costWeight*n.c
+#             if d < dbest and not self.prune(n):
+#                 nnear = n
+#                 dbest = d
+#         return nnear
+        
+#     def reset(self):
+#         """Resets all planning effort"""
+#         RRT.reset(self)
+#         self.bestPath = None
+#         self.bestPathCost = None
+#         self.distanceWeight = 1
+#         self.costWeight = 0
+        
+#     def setBoundaryConditions(self,x0,goal):
+#         """Sets the start and goal"""
+#         RRT.setBoundaryConditions(self,x0,goal)
+#         #add cost term to root node
+#         self.root.c = 0
+        
+#     def planMore(self,iters):
+#         foundNewPath = False
+#         for n in range(iters):
+#             self.numIters += 1
+#             n = RRT.expand(self)
+#             if n is None: continue
+#             if not hasattr(n,'c'):
+#                 n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#             if self.goal is not None and self.goal.contains(n.x):
+#                 totalcost = n.c + self.objective.terminal(n.x)
+#                 if self.bestPath is None or totalcost < self.bestPathCost*(1.0-self.epsilon):
+#                     print("Anytime-RRT found path with new cost",totalcost)
+#                     self.distanceWeight -= self.weightIncrement
+#                     self.distanceWeight = max(self.distanceWeight,0)
+#                     self.costWeight += self.weightIncrement
+#                     self.costWeight = min(self.costWeight,1)
+#                     foundNewPath = True
+#                     self.bestPathCost = totalcost
+#                     self.bestPath = RRT.getPath(self,n)
+#                     RRT.reset(self)
+#                     return True
+#         return False
+        
+#     def prune(self,n):
+#         if self.bestPathCost is None: return False
+#         if not hasattr(n,'c'):
+#             n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#         if n.c > self.bestPathCost*(1.0-self.epsilon):
+#             return True
+#         if self.pruner:
+#             return self.pruner(node)
+#         return False
+        
+#     def getPathCost(self):
+#         return self.bestPathCost
+        
+#     def getPath(self,n=None):
+#         """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
+#         if n is not None:
+#             return RRT.getPath(self,n)
+#         if self.bestPath is None:
+#             return None
+#         return self.bestPath
 
-    def setBoundaryConditions(self,x0,goal):
-        """Sets the start and goal"""
-        ESTWithProjections.setBoundaryConditions(self,x0,goal)
-        #add cost term to root node
-        self.root.c = 0
+#     def getBestPath(self,obj,goal=None):
+#         if obj is self.objective and goal is self.goal and self.bestPath is not None:
+#             return self.getPath()
+#         return RRT.getBestPath(self,obj,goal)
 
-    def planMore(self,iters):
-        foundNewPath = False
-        for n in range(iters):
-            self.numIters += 1
-            n = ESTWithProjections.expand(self)
-            if n is None: continue
-            if not hasattr(n,'c'):
-                n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-            if self.goal is not None and self.goal.contains(n.x):
-                totalcost = n.c + self.objective.terminal(n.x)
-                if self.bestPath is None or totalcost < self.bestPathCost:
-                    print("EST found path with new cost",totalcost)
-                    foundNewPath = True
-                    self.bestPathCost = totalcost
-                    self.bestPath = ESTWithProjections.getPath(self,n)
-                    ESTWithProjections.reset(self)
-                    return True
-                if not self.doprune:
-                    ESTWithProjections.reset(self)
-                    return False
-        if self.doprune and foundNewPath:
-            foundNewPath = False
-            prunecount = 0
-            for n in self.nodes:
-                if n.c > self.bestPathCost or self.prune(n):
-                    prunecount += 1
-            if prunecount > len(self.nodes)/5 and prunecount > 100:
-                #print("Can prune",prunecount,"of",len(self.nodes),"nodes")
-                oldpruner = self.pruner
-                if self.pruner is None:
-                    self.pruner = (lambda n:n.c >= self.bestPathCost)
-                    self.pruneTree()
-                self.pruner = oldpruner
-            #print("   pruned down to",len(self.nodes),"nodes")
-        return False
-        
-    def pruneExtension(self,n,u):
-        if not self.doprune or self.bestPathCost is None: return False
-        if n.c + self.objective.incremental(n.x,u) > self.bestPathCost:
-            return True
-        return False
-        
-    def prune(self,n):
-        if not self.doprune or self.bestPathCost is None: return False
-        if not hasattr(n,'c'):
-            n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
-        if n.c > self.bestPathCost:
-            return True
-        if self.pruner:
-            return self.pruner(node)
-        return False
-        
-    def getPathCost(self):
-        return self.bestPathCost
-        
-    def getPath(self,n=None):
-        """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
-        if n is not None:
-            return ESTWithProjections.getPath(self,n)
-        if self.bestPath is None:
-            return None
-        return self.bestPath
 
-    def getBestPath(self,obj,goal=None):
-        if obj is self.objective and goal is self.goal and self.bestPath is not None:
-            return self.getPath()
-        return ESTWithProjections.getBestPath(self,obj,goal)
+# class RepeatedEST(ESTWithProjections):
+#     """The repeated Expansive Space Tree planner.
+#     """
+#     def __init__(self,controlSpace,objective,edgeChecker,
+#                  **params):
+#         """Given a ControlSpace controlSpace, a metric, and an edge checker"""
+#         ESTWithProjections.__init__(self,controlSpace,edgeChecker,**params)
+#         self.objective = objective
+#         self.bestPath = None
+#         self.bestPathCost = None
+#         self.doprune = False
+
+#     def reset(self):
+#         """Resets all planning effort"""
+#         ESTWithProjections.reset(self)
+#         self.bestPath = None
+#         self.bestPathCost = None
+
+#     def setBoundaryConditions(self,x0,goal):
+#         """Sets the start and goal"""
+#         ESTWithProjections.setBoundaryConditions(self,x0,goal)
+#         #add cost term to root node
+#         self.root.c = 0
+
+#     def planMore(self,iters):
+#         foundNewPath = False
+#         for n in range(iters):
+#             self.numIters += 1
+#             n = ESTWithProjections.expand(self)
+#             if n is None: continue
+#             if not hasattr(n,'c'):
+#                 n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#             if self.goal is not None and self.goal.contains(n.x):
+#                 totalcost = n.c + self.objective.terminal(n.x)
+#                 if self.bestPath is None or totalcost < self.bestPathCost:
+#                     print("EST found path with new cost",totalcost)
+#                     foundNewPath = True
+#                     self.bestPathCost = totalcost
+#                     self.bestPath = ESTWithProjections.getPath(self,n)
+#                     ESTWithProjections.reset(self)
+#                     return True
+#                 if not self.doprune:
+#                     ESTWithProjections.reset(self)
+#                     return False
+#         if self.doprune and foundNewPath:
+#             foundNewPath = False
+#             prunecount = 0
+#             for n in self.nodes:
+#                 if n.c > self.bestPathCost or self.prune(n):
+#                     prunecount += 1
+#             if prunecount > len(self.nodes)/5 and prunecount > 100:
+#                 #print("Can prune",prunecount,"of",len(self.nodes),"nodes")
+#                 oldpruner = self.pruner
+#                 if self.pruner is None:
+#                     self.pruner = (lambda n:n.c >= self.bestPathCost)
+#                     self.pruneTree()
+#                 self.pruner = oldpruner
+#             #print("   pruned down to",len(self.nodes),"nodes")
+#         return False
+        
+#     def pruneExtension(self,n,u):
+#         if not self.doprune or self.bestPathCost is None: return False
+#         if n.c + self.objective.incremental(n.x,u) > self.bestPathCost:
+#             return True
+#         return False
+        
+#     def prune(self,n):
+#         if not self.doprune or self.bestPathCost is None: return False
+#         if not hasattr(n,'c'):
+#             n.c = n.parent.c + self.objective.incremental(n.parent.x,n.uparent)
+#         if n.c > self.bestPathCost:
+#             return True
+#         if self.pruner:
+#             return self.pruner(node)
+#         return False
+        
+#     def getPathCost(self):
+#         return self.bestPathCost
+        
+#     def getPath(self,n=None):
+#         """Returns ([x0,...,xn],[u1,...,un]) for the base space."""
+#         if n is not None:
+#             return ESTWithProjections.getPath(self,n)
+#         if self.bestPath is None:
+#             return None
+#         return self.bestPath
+
+#     def getBestPath(self,obj,goal=None):
+#         if obj is self.objective and goal is self.goal and self.bestPath is not None:
+#             return self.getPath()
+#         return ESTWithProjections.getBestPath(self,obj,goal)
 
 
 class _CostSpaceObjectiveAdapter(ObjectiveFunction):

@@ -12,8 +12,8 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
     print("Testing planner for %d trials, %f seconds"%(numTrials,maxTime))
     print("Saving to",filename)
     if id == 0:
-        f = open(filename,'w')
-        f.write("data_id,trial,plan iters,plan time,best cost\n")
+        f = open(filename,'a')
+        f.write("data_id,trial,plan_iters,plan_time,best_cost,success_metric,maneuverability_metric\n")
     elif id > 0:
         f = open(filename,'a')
     for trial in range(numTrials):
@@ -51,8 +51,9 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
             temp.items["Stats:"] = planner.stats
             temp.pretty_print()
         print()
+        success_metric, maneuverability_metric = planner.getMetric()
         print("Final cost:",curCost)
         print()
 
-        f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+'\n')
+        f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+","+str(success_metric)+","+str(maneuverability_metric)+'\n')
     f.close()

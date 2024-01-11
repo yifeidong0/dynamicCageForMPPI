@@ -8,6 +8,7 @@ from . import differences
 from . import sampling
 from ..klampt import vectorops
 import numpy as np
+from OpenGL.GL import *
 
 
 class Set:
@@ -107,8 +108,6 @@ class NeighborhoodSet(Set):
     def signedDistance(self,x):
         d = vectorops.distance(x,self.c)
         return d - self.r
-
-
 
 
 class FiniteSet(Set):
@@ -230,7 +229,225 @@ class BoxSet(Set):
             res[imindist] = iminsign
             return res
 
+
+class UnionBoxSet(Set):
+    """Represents the union of several axis-aligned box sets in a vector space."""
+    def __init__(self, bmin, bmax):
+        """Initialize the UnionBoxSet with lists of minimum and maximum bounds for each box.
+        
+        Args:
+            bmin (list): A list of lists of minimum bounds for each box.
+            bmax (list): A list of lists of maximum bounds for each box.
+        """
+        self.bmin = bmin
+        self.bmax = bmax
+        assert len(bmin) == len(bmax), "bmin and bmax must be lists of the same length."
+        self.boxes = [BoxSet(bmin[i], bmax[i]) for i in range(len(bmin))]
+
+    def dimension(self):
+        return self.boxes[0].dimension() if self.boxes else 0
+
+    def bounds(self):
+        all_bmin, all_bmax = zip(*(box.bounds() for box in self.boxes))
+        bmin = [min(bounds) for bounds in zip(*all_bmin)]
+        bmax = [max(bounds) for bounds in zip(*all_bmax)]
+        return bmin, bmax
+
+    def contains(self, x):
+        return any(box.contains(x) for box in self.boxes)
+
+    def sample(self):
+        box = random.choice(self.boxes)
+        return box.sample()
+
+    def project(self, x):
+        # Project onto the box that x is closest to (in terms of the box center)
+        closest_box = min(self.boxes, key=lambda box: vectorops.distance(x, vectorops.div(vectorops.add(box.bmin, box.bmax), 2)))
+        return closest_box.project(x)
+
+    def signedDistance(self, x):
+        # Return the smallest signed distance among all boxes
+        return min(box.signedDistance(x) for box in self.boxes)
+
+    def signedDistance_gradient(self, x):
+        # Calculate the gradient for the box with the smallest signed distance
+        closest_box = min(self.boxes, key=lambda box: box.signedDistance(x))
+        return closest_box.signedDistance_gradient(x)
+    
+
+class RingSet(Set):
+    """
+    Represents a ring in 2D space, defined as the region between two circles with radii r1 and r2.
+    """
+    def __init__(self, c, r1, r2):
+        """
+        Initializes the RingSet.
+        :param c: Center of the ring as a 2D tuple or list (x, y).
+        :param r1: Inner radius of the ring.
+        :param r2: Outer radius of the ring.
+        """
+        assert r1 < r2, "Inner radius must be smaller than outer radius."
+        self.c = np.array(c)
+        self.r1 = r1
+        self.r2 = r2
+
+    def bounds(self):
+        """
+        Returns the bounding box of the ring.
+        """
+        return ([self.c[0] - self.r2, self.c[1] - self.r2],
+                [self.c[0] + self.r2, self.c[1] + self.r2])
+
+    def contains(self, x):
+        """
+        Checks if a point is inside the ring.
+        """
+        dist_sq = np.sum((np.array(x) - self.c) ** 2)
+        return self.r1**2 <= dist_sq <= self.r2**2
+
+    def sample(self):
+        """
+        Samples a random point from the ring.
+        """
+        angle = random.uniform(0, 2 * math.pi)
+        radius = math.sqrt(random.uniform(self.r1**2, self.r2**2))
+        return [self.c[0] + radius * math.cos(angle), self.c[1] + radius * math.sin(angle)]
+
+    def project(self, x):
+        """
+        Projects a point onto the nearest point in the ring.
+        """
+        x_vec = np.array(x) - self.c
+        dist_sq = np.sum(x_vec ** 2)
+        if dist_sq < self.r1**2:
+            return self.c + x_vec * (self.r1 / np.sqrt(dist_sq))
+        elif dist_sq > self.r2**2:
+            return self.c + x_vec * (self.r2 / np.sqrt(dist_sq))
+        return x
+
+    def signedDistance(self, x):
+        """
+        Returns the signed distance of x from the boundary of the ring.
+        """
+        dist = np.sqrt(np.sum((np.array(x) - self.c) ** 2))
+        if dist <= self.r1:
+            return self.r1 - dist
+        elif dist >= self.r2:
+            return dist - self.r2
+        return min(dist - self.r1, self.r2 - dist)
+
+    def signedDistance_gradient(self, x):
+        """
+        Returns the gradient of the signed distance function at x.
+        """
+        x_vec = np.array(x) - self.c
+        dist = np.sqrt(np.sum(x_vec ** 2))
+        if dist == 0:
+            return np.zeros_like(x)
+        grad_outside = x_vec / dist
+        if dist <= self.r1:
+            return -grad_outside
+        elif dist >= self.r2:
+            return grad_outside
+        # If x is inside the ring, the gradient points towards the nearest boundary.
+        if dist - self.r1 < self.r2 - dist:
+            return -grad_outside
+        return grad_outside
+    
+
+class ArcErasedSet(Set):
+    """Represents the shape remaining on a square canvas after erasing along an arc trajectory."""
+    def __init__(self, canvas_limits, eraser_radius, arc_center, arc_radius, arc_angle_range):
+        """
+        Initializes the ArcErasedSet.
+        
+        :param canvas_limits: Boundaries of the square canvas [bmin, bmax], bmin=[bmin_d1, ...,bmin_dn].
+        :param eraser_radius: Radius of the circular eraser.
+        :param arc_center: Center of the arc (x, y).
+        :param arc_radius: Radius of the arc.
+        :param arc_angle_range: Angle range of the arc (start_angle, end_angle) in radians.
+        """
+        self.canvas_limits = canvas_limits
+        self.eraser_radius = eraser_radius
+        self.arc_center = np.array(arc_center)
+        self.arc_radius = arc_radius
+        self.arc_angle_range = arc_angle_range
+
+    def dimension(self):
+        return len(self.canvas_limits[0])
+    
+    def contains(self, x):
+        """
+        Check if a point x is in the remaining red area.
+        """
+        # Check if point is inside the canvas
+        if not (self.canvas_limits[0][0] <= x[0] <= self.canvas_limits[1][0] and self.canvas_limits[0][1] <= x[1] <= self.canvas_limits[1][1]):
+            return False
+
+        # Check if point is outside the erased arc path
+        dist_to_arc_center = np.linalg.norm(np.array(x) - self.arc_center)
+        angle_to_point = np.arctan2(x[1] - self.arc_center[1], x[0] - self.arc_center[0])
+
+        # Normalize the angle_to_point within the range [0, 2π)
+        angle_to_point = (angle_to_point + 2 * np.pi) % (2 * np.pi)
+
+        # Check if the point is within the angle range and the eraser's effect
+        if self.arc_angle_range[0] <= self.arc_angle_range[1]:
+            angle_in_range = self.arc_angle_range[0] <= angle_to_point <= self.arc_angle_range[1]
+        else: # the range comes over 2pi
+            angle_in_range = self.arc_angle_range[0] <= angle_to_point or angle_to_point <= self.arc_angle_range[1]
             
+        if (angle_in_range and
+            self.arc_radius - self.eraser_radius <= dist_to_arc_center <= self.arc_radius + self.eraser_radius):
+            return False
+
+        return True
+
+    def sample(self):
+        while True:
+            # Randomly sample a point within the canvas
+            x = random.uniform(self.canvas_limits[0][0], self.canvas_limits[1][0])
+            y = random.uniform(self.canvas_limits[0][1], self.canvas_limits[1][1])
+            point = [x, y]
+
+            # Check if the point is not in the erased area
+            if self.contains(point):
+                return point
+                
+    def draw_triangle_strips(self, lowb, upb, res=0.01):
+        numdivs = int(math.ceil((upb - lowb) * self.arc_radius / res))
+        glBegin(GL_TRIANGLE_STRIP)
+        for i in range(numdivs + 1):
+            u = lowb + float(i) / float(numdivs) * (upb - lowb)
+            inner_x = self.arc_center[0] + (self.arc_radius - self.eraser_radius) * math.cos(u)
+            inner_y = self.arc_center[1] + (self.arc_radius - self.eraser_radius) * math.sin(u)
+            outer_x = self.arc_center[0] + (self.arc_radius + self.eraser_radius) * math.cos(u)
+            outer_y = self.arc_center[1] + (self.arc_radius + self.eraser_radius) * math.sin(u)
+            glVertex2f(inner_x, inner_y)
+            glVertex2f(outer_x, outer_y)
+        glEnd()
+
+    def drawGL(self, res=0.01):
+        # Draw the square canvas
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(0, 1, 0, 0.2)
+        glBegin(GL_QUADS)
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[1][1])
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[1][1])
+        glEnd()
+
+        # Draw the erased arc region
+        glColor3f(1, 1, 1)  # White color to represent the erased area
+        if self.arc_angle_range[0] <= self.arc_angle_range[1]:
+            self.draw_triangle_strips(self.arc_angle_range[0], self.arc_angle_range[1], res)
+        else:
+            range_list = [[self.arc_angle_range[0], 2*np.pi-1e-9], [0.0, self.arc_angle_range[1]]]
+            for i in range(len(range_list)):
+                self.draw_triangle_strips(range_list[i][0], range_list[i][1], res)
+
 class LambdaSet(Set):
     """Given some standalone function fcontains(x) which determines
     membership, produces a Set object.

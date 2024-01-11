@@ -86,6 +86,7 @@ class RRTStar(TreePlanner):
                     self.goalNodes.append(n)
                     if n.c < self.bestPathCost:
                         self.bestPathCost = n.c
+                        print("New goal node with cost", self.bestPathCost)
                         self.bestPath = self.getPath(n)
                         return True
         return False
@@ -102,19 +103,23 @@ class RRTStar(TreePlanner):
             return None
         if nnear.c > self.bestPathCost:
             return None
-        #do rrt* connection
+        
+        # Do rrt* connection
         N = float(self.numIters.count+1)
-        rad = 1.414*(math.log(N)/N) ** (1.0/len(nnear.x));
+        rad = 1.414*(math.log(N)/N) ** (1.0/len(nnear.x))
         k = int(((1.0+1.0/len(xrand))*math.e)*math.log(N))
         if k <=0: k=1
-        u = min(1.0,rad / self.metric(nnear.x,xrand))
-        xend = self.cspace.interpolate(nnear.x,xrand,u)
-        edge = self.cspace.interpolator(nnear.x,xend)
-        if not self.edgeChecker.feasible(edge):
+        u = min(1.0, rad / metric.euclideanMetric(nnear.x, xrand)) # TODO: only make sense for path length cost
+        # u = min(1.0, rad)
+        xend = self.cspace.interpolate(nnear.x, xrand, u) # xend=xrand if u=1
+        edge = self.cspace.interpolator(nnear.x, xend)
+        if not self.edgeChecker.feasible(edge): # TODO
             return None
-        #feasible edge, add it
+        
+        # Feasible edge, add it
         nnew = self.addEdge(nnear,xend,edge)
-        nnew.c = nnear.c + edge.length()
+        # nnew.c = nnear.c + edge.length()
+        nnew.c = nnear.c + self.metric(nnear.x, nnew.x)
         self.nearestNeighbors.add(nnew.x,nnew)
         self.rewire(nnew,k=k,rad=None,first=True,recursive=False)
         return nnew
@@ -123,7 +128,7 @@ class RRTStar(TreePlanner):
         #gather incoming cost from parent
         changed = False
         if n.parent != None:
-            d = n.parent.c + self.metric(n.x,n.parent.x)
+            d = n.parent.c + self.metric(n.parent.x, n.x)
             if d != n.c:
                 #print "initial cost improvement",n.c,"to",d
                 n.c = d
@@ -145,7 +150,7 @@ class RRTStar(TreePlanner):
             for x,nn in neighbors:
                 if nn == n: continue
                 if nn == n.parent: continue
-                d = self.metric(n.x,nn.x) + nn.c
+                d = self.metric(nn.x, n.x) + nn.c
                 #print nn.x,d,self.metric(n.x,nn.x)
                 dneighbors.append((d,nn))
             dneighbors = sorted(dneighbors,key=lambda x:x[0])
@@ -175,7 +180,7 @@ class RRTStar(TreePlanner):
         if first or recursive:
             #add outgoing edges from n
             for (d,nn) in dneighbors:
-                newcost = n.c + self.metric(n.x,nn.x)
+                newcost = n.c + self.metric(n.x, nn.x)
                 if newcost < nn.c:
                     #print "Outgoing improvement from",nn.c,"to",newcost
                     #potential improvement, check edge and rewire if necessary
@@ -185,7 +190,26 @@ class RRTStar(TreePlanner):
                         nn.setParent(n,nn.x,edge)
                         #nn.c = newcost
                         self.rewire(nn,k=k,rad=rad,first=False,recursive=recursive)
-        
+
+    def getRoadmap(self):
+        """Returns a graph (V,E) where V contains states and E contains
+        triples (i,j,u) where control u connnects V[i] to V[j]"""
+        V = []
+        E = []
+        n = self.root
+        if n is None:
+            return (V,E)
+        V.append(n.x)
+        q = [(n,0)]
+        while len(q) > 0:
+            n,i = q.pop()
+            for c in n.children:
+                j = len(V)
+                E.append((i,j,c.uparent))
+                V.append(c.x+[c.c,])
+                q.append((c,j))
+        return (V,E)
+    
     def pickNode(self,xrand):
         """Picks a node closest to xrand.  If dynamicDomain is True,
         uses the radius associated with the node"""
@@ -197,7 +221,6 @@ class RRTStar(TreePlanner):
         if n == None:
             return self.bestPath
         return TreePlanner.getPath(self,n)
-
 
 
 class StableSparseRRT(TreePlanner):

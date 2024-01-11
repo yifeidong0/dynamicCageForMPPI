@@ -46,7 +46,7 @@ class CageMO:
         self.gripper_vel_y = -6.0
 
         self.start_state = [450, 390, 0, self.gripper_vel_y, 0, 0]
-        self.goal_state = [950, 900, 0, 0, 0, 0]
+        self.goal_state = [950, 100, 0, 0, 0, 0]
         self.goal_radius = 50
         self.time_range = 10
 
@@ -55,7 +55,7 @@ class CageMO:
             #  (575, 200, 50, 200), 
              (375, 395, 120, 70), 
              ]
-        self.gravity = 9.81
+        self.gravity = -9.81
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
@@ -95,11 +95,11 @@ class CageMO:
 
     def goalSet(self):
         r = self.goal_radius
-        return BoxSet([self.goal_state[0]-r,self.goal_state[1]-r,
-                       self.goal_state[2]-self.max_velocity,self.goal_state[3]-self.max_velocity, 
+        return BoxSet([self.goal_state[0]-r, self.goal_state[1]-r,
+                       self.goal_state[2]-self.max_velocity, self.goal_state[3]-self.max_velocity, 
                        self.goal_state[4]-self.x_range/2, self.goal_state[5]-self.y_range/2],
-                      [self.goal_state[0]+r,self.goal_state[1]+r,
-                       self.goal_state[2]+self.max_velocity,self.goal_state[3]+self.max_velocity, 
+                      [self.goal_state[0]+r, self.goal_state[1]+r,
+                       self.goal_state[2]+self.max_velocity, self.goal_state[3]+self.max_velocity, 
                        self.goal_state[4]+self.x_range/2, self.goal_state[5]+self.y_range/2])
 
 
@@ -115,8 +115,8 @@ class CageMOObjectiveFunction(ObjectiveFunction):
     def incremental(self,x,u):
         # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
         xnext = self.space.nextState(x,u)
-        E = self.cage.gravity*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        Enext = self.cage.gravity*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
+        E = abs(self.cage.gravity)*(self.cage.y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
+        Enext = abs(self.cage.gravity)*(self.cage.y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
         c = max((Enext-E), 0.001)
 
         return c

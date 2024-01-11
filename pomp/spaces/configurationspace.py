@@ -88,7 +88,7 @@ class CartesianConfigurationSpace(GeodesicSpace,ConfigurationSpace):
         self.d = d
         
     def __str__(self):
-        return "Cartesian C-Space R^"+str(d)
+        return "Cartesian C-Space R^"+str(self.d)
 
     def dimension(self):
         return self.d
@@ -115,7 +115,7 @@ class GeodesicConfigurationSpace(GeodesicSpace,ConfigurationSpace):
         return self.geodesic.interpolate(a,b,u)
 
     def interpolator(self,x,y):
-        return GeodesicInterpolator(x,y,geodesic)
+        return GeodesicInterpolator(x,y,self.geodesic)
 
     def clearance(self,x):
         return float('inf')
@@ -193,49 +193,10 @@ class MultiConfigurationSpace(MultiSet,GeodesicConfigurationSpace):
         #TODO: take weights into account
         return self.join(c.sampleNeighborhood(xi,r) for xi,c in zip(self.split(x),self.components))
 
-    def feasible(self,x,controlSpace=None):
-        try:
-            is_moving_obstacle = controlSpace.is_moving_obstacle
-        except AttributeError:
-            is_moving_obstacle = False
-        try:
-            is_cage_planner = controlSpace.is_cage_planner
-        except AttributeError:
-            is_cage_planner = False
-        try:
-            is_energy_labeler = controlSpace.is_energy_labeler
-        except AttributeError:
-            is_energy_labeler = False
-
-        # Check if gripper in collision with object in the case of CagePlanner
-        if is_cage_planner:
-            is_feasible = controlSpace.check_state_feasibility(x)
-            if not is_feasible: 
-                return False
-
+    def feasible(self,x):
         for xi,c in zip(self.split(x),self.components):
-            # C-space point / xrand checker for updated moving obstacles in cageMO
-            if type(c).__name__=='Geometric2DCSpace' and is_moving_obstacle: 
-                if not c.feasible(xi,obstaclePos=x[4:6]):
-                    return False # in collision
-                else: 
-                    continue
-
-            # C-space point / xrand checker for updated moving obstacles in cageEL
-            if type(c).__name__=='Geometric2DCSpace' and is_energy_labeler: 
-                if not c.feasible(xi,obstaclePos=x[4:7]):
-                    return False # in collision
-                else: 
-                    continue
-
-            # C-space point checker in cases other than cageMO
-            if type(c).__name__=='MultiConfigurationSpace':
-                if not c.feasible(xi,controlSpace): 
-                    return False
-            else:
-                if not c.feasible(xi): 
-                    return False
-
+            if not c.feasible(xi): 
+                return False
         return True
 
     def distance(self,a,b):
@@ -270,6 +231,19 @@ class MultiConfigurationSpace(MultiSet,GeodesicConfigurationSpace):
                 i += 1
             j += g.shape[-1]
         return grad
+
+
+class RRTstarMultiConfigurationSpace(MultiConfigurationSpace):
+    """A cartesian product of multiple ConfigurationSpaces for RRT* geometric planners"""
+    def __init__(self, components, dynamics):
+        super().__init__(*components)
+        self.dynamic = dynamics
+        self.is_plane_push_rrtstar = True
+
+    def feasible(self,x):
+        self.dynamic.reset_states(x)
+        return self.dynamic.check_collision()
+
 
 class SingletonSubset(Set):
     """A single point, with a distance given by a ConfigurationSpace.

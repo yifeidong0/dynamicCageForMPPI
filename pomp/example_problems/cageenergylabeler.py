@@ -6,11 +6,15 @@ from ..spaces.configurationspace import *
 from ..spaces.edgechecker import *
 from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
+from ..bullet.forwardsimulator import *
 import math
 
 class CageELControlSpace(ControlSpace):
     def __init__(self,cage):
         self.cage = cage
+        self.dynamics_sim = cage.dynamics_sim
+        self.dynamics_sim.set_params(cage.params)
+        self.dynamics_sim.create_shapes()
         self.is_energy_labeler = True
         self.half_extents_gripper = cage.half_extents_gripper # [x,z]
         self.obstacles = self.cage.obstacles[0]
@@ -24,63 +28,73 @@ class CageELControlSpace(ControlSpace):
     def nextState(self, x, u):
         return self.eval(x, u, 1.0)
     
-    def eval(self, x, u, amount, theta_min=-math.pi/2, theta_max=math.pi/2):
+    def eval(self, x, u, amount, theta_min=-math.pi, theta_max=math.pi, print_via_points=False):
         x_i,y_i,vx_i,vy_i,xr_i,yr_i,thetar_i = x # state space, 7D (4: cage, 3: robot gripper)
-        t,thrust_x,thrust_y = u # control space
-        tc = t*amount
-        net_acceler_x = thrust_x
-        net_acceler_y = self.cage.gravity + thrust_y
+        t, ax, ay = u # control space
+        tc = t * amount
+        mu = [tc, ax, ay]
+        # net_acceler_x = thrust_x
+        # net_acceler_y = self.cage.gravity + thrust_y
+
+        # print('mu', mu)
+        # print('amount', amount)
+        xaug = x + self.cage.gripper_vel
+        self.dynamics_sim.reset_states(xaug)
+        x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
         # Make theta fall in [-pi/2, pi/2]
-        thetar_i = thetar_i + self.cage.gripper_vel_theta*tc
+        thetar_i = x_new[6]
         if thetar_i > theta_max:
-            thetar_i = (thetar_i - theta_max) % math.pi + theta_min
+            thetar_i = (thetar_i - theta_max) % (2*math.pi) + theta_min
         elif thetar_i < theta_min:
-            thetar_i = theta_max - (theta_min - thetar_i) % math.pi
-        
-        return [x_i+vx_i*tc+0.5*net_acceler_x*(tc**2), 
-                y_i+vy_i*tc+0.5*net_acceler_y*(tc**2), 
-                vx_i+net_acceler_x*tc,
-                vy_i+net_acceler_y*tc,
-                xr_i+self.cage.gripper_vel_x*tc,
-                yr_i+self.cage.gripper_vel_y*tc,
-                thetar_i
-                ]
+            thetar_i = theta_max - (theta_min - thetar_i) % (2*math.pi)
+        x_new[6] = thetar_i
+
+        if print_via_points:
+            self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
+
+        return x_new[:7]
     
-    def interpolator(self,x,u):
-        return LambdaInterpolator(lambda s:self.eval(x,u,s),self.configurationSpace(),10)
+    def interpolator(self, x, u, xnext=None):
+        return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class CageEL:
-    def __init__(self, data):
+    def __init__(self, data, dynamics_sim):
+        self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.max_velocity = 20
-        self.max_acceleration = 20
-        self.mass_object = 1 # import params from cageplanner
+        self.max_velocity = 10
+        self.max_acceleration = 2
+        self.mass_object = .1 # import params from cageplanner
         self.half_extents_gripper = [.7, .4] # movement on x-z plane
         self.half_gripper_l = self.half_extents_gripper[0]
         self.half_gripper_w = self.half_extents_gripper[1]
+        self.mass_gripper = 10
+        self.moment_gripper = 1 # moment of inertia
+        self.radius_object = 0.01
+        self.params = [self.mass_object, self.mass_gripper, self.moment_gripper, 
+                       self.half_extents_gripper, self.radius_object]
 
         # Gripper moving velocity (constant)
+        self.gripper_vel = data[7:]
         self.gripper_vel_x = data[7]
         self.gripper_vel_y = data[8]
         self.gripper_vel_theta = data[9]
 
         self.start_state = data[:7]
-        self.goal_state = [5, 10, 0, 0, 0, 0, 0] # varying goal region
+        self.goal_state = [5, data[1]-1.5, 0, 0, 0, 0, 0] # varying goal region
         self.goal_radius = .2
-        self.time_range = .5
+        self.time_range = 1
 
         self.obstacles = [
              (data[4], data[5], data[6], self.half_gripper_l, self.half_gripper_w), # centerx,centery,length,width,orientation 
              ]
-        self.gravity = 9.81
+        self.gravity = -9.81
 
-    def checkStartFeasibility(self):
-        gripper = AxisNotAlignedBox(self.obstacles[0][:3], self.obstacles[0][3:])
-        contains = gripper.contains(self.start_state[:2])
-        print('contains', contains)
-        return contains
+    # def checkStartFeasibility(self): # TODO; bullet collision checking
+    #     gripper = AxisNotAlignedBox(self.obstacles[0][:3], self.obstacles[0][3:])
+    #     contains = gripper.contains(self.start_state[:2])
+    #     return contains
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
@@ -108,8 +122,8 @@ class CageEL:
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
                                        BoxConfigurationSpace([-2.5*self.x_range],[2.5*self.x_range]),
-                                       BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.x_range]),
-                                       BoxConfigurationSpace([-math.pi/2],[math.pi/2])
+                                       BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.y_range]),
+                                       BoxConfigurationSpace([-math.pi],[math.pi])
                                        ) # this c-space has to cover the state constraint in MPPI, better with some more margins
         return res
 
@@ -117,12 +131,12 @@ class CageEL:
         return self.start_state
 
     def goalSet(self, offset=2):
-        return BoxSet([0.0-offset, self.goal_state[1],
+        return BoxSet([-offset, -offset,
                        -self.max_velocity, -self.max_velocity, 
-                       -2.5*self.x_range, -2.5*self.y_range, -math.pi/2],
-                      [self.x_range+offset, self.y_range+offset,
+                       -2.5*self.x_range, -2.5*self.y_range, -math.pi],
+                      [self.x_range+offset, self.goal_state[1],
                        self.max_velocity, self.max_velocity, 
-                       2.5*self.x_range, 2.5*self.y_range, math.pi/2])
+                       2.5*self.x_range, 2.5*self.y_range, math.pi])
 
 
 class CageELObjectiveFunction(ObjectiveFunction):
@@ -133,33 +147,38 @@ class CageELObjectiveFunction(ObjectiveFunction):
         self.cage = cage
         self.space = cage.controlSpace()
         self.timestep = timestep
+        self.xnext = None
 
-    def incremental(self,x,u):
+    def incremental(self, x, u, uparent=None):
         m = self.cage.mass_object
-        g = self.cage.gravity
-        y_range = self.cage.y_range
-        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
+        g = abs(self.cage.gravity)
+
         xnext = self.space.nextState(x,u)
-        E = m*g*(y_range-x[1]) + 0.5*(x[2]**2+x[3]**2)
-        Enext = m*g*(y_range-xnext[1]) + 0.5*(xnext[2]**2+xnext[3]**2)
-
-        # c = max((Enext-E), 0.001)
-        # c = max((Enext-E), 1e-5) + 1/(1+xnext[1])
-        # c = max((Enext-E), 0.001) + u[0]
-        # print('c1',max((Enext-E), 1e-3))
-        # print('c2',(1e-1)*(abs(u[0]) + abs(u[1]) + abs(u[2])))
-        c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-
+        self.xnext = xnext
+        E = m*g*x[1] + 0.5*m*(x[2]**2+x[3]**2)
+        Enext = m*g*xnext[1] + 0.5*m*(xnext[2]**2+xnext[3]**2)
+        
+        # Energy E_k+E_g total increase cost (BUG: root node is asked to be pruned without max)
+        # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
+        c = max((Enext-E), 1e-5)
         return c
 
 
-def cageELTest(data):
-    p = CageEL(data)
-    p.checkStartFeasibility()
+def cageELTest(dynamics_sim,
+               data = [1.02, 5.11, 0.00, 0, 1.01, 4.70, -0.00, 0.00, -1, 0.0]):
+    
+    p = CageEL(data, dynamics_sim)
+
+    # if p.checkStartFeasibility():
+    #     print('In collision!')
+    #     return False
     objective = CageELObjectiveFunction(p)
-    return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(),
+    # return PlanningProblem(p.controlSpace(),p.startState(),p.goalSet(), # double bullet running...
+    return PlanningProblem(objective.space,
+                           p.startState(),
+                           p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean = True)
+                           euclidean=True)
 
 
