@@ -208,7 +208,7 @@ class forwardSimulationPlanePush():
                                                 self.pos_gripper,
                                                 self.quat_gripper)
         elif self.gripper_name == 'bowl':
-            self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper)
+            self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         

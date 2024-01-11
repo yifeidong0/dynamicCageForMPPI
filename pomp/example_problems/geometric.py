@@ -243,6 +243,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         self.drawVerticesGL([q])
 
     def drawGoalGL(self, goal, example_name=None, color='escapeGoal'):
+        # Set the colors for the goals
         if color == 'escapeGoal':
             c = [1, 0, 0, 0.2]
         elif color == 'maneuverGoal':

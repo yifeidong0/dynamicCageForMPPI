@@ -152,7 +152,7 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationPlanePush(gui=0)
         problem = planepush.planePushTest(dynamics_sim)
     if problem_name == 'PlanePushRrtstar':
-        dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
+        dynamics_sim = forwardSimulationPlanePushRrtstar(gui=1)
         problem = planepushrrtstar.PlanePushRrtstarTest(dynamics_sim)
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)

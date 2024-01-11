@@ -1,13 +1,7 @@
 x_range,10
 y_range,10
 offset,2.0
-max_velocity,10
-max_ang_velocity,2
-max_acceleration,1
-max_ang_acceleration,0.25
-time_range,1
 gravity,-9.81
-task_goal_margin,0.2
 maneuver_goal_margin,0.7
 maneuver_goal_tmax,6.0
 mass_object,1

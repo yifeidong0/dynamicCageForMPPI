@@ -40,7 +40,7 @@ class GeometricEdgeChecker(EdgeChecker):
         """
         self.space = space # it means C-space, MultiConfigurationSpace
         self.resolution = resolution
-    def feasible(self, interpolator, k=10):
+    def feasible(self, interpolator, k=20):
         # l = interpolator.length()
         # k = int(math.ceil(l / self.resolution))
         if not self.space.feasible(interpolator.start()) or not self.space.feasible(interpolator.end()):

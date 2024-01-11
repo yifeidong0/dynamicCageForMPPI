@@ -51,7 +51,11 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
             temp.items["Stats:"] = planner.stats
             temp.pretty_print()
         print()
-        success_metric, maneuverability_metric = planner.getMetric()
+        metric = planner.getMetric()
+        if metric is None:
+            success_metric, maneuverability_metric = None, None
+        else:
+            success_metric, maneuverability_metric = metric
         print("Final cost:",curCost)
         print()
 

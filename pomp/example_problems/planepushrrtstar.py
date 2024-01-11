@@ -17,7 +17,7 @@ class PlanePushRrtstar:
         self.x_range = 10
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
-        self.y_obstacle = 8
+        self.y_obstacle = 7
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.start_state = data[:3]
         self.gripper_pose = data[6:9]
@@ -27,13 +27,13 @@ class PlanePushRrtstar:
         self.gripper_vel_theta = data[11]
         self.lateral_friction_coef = 0.2
 
-        self.object_name = 'cylinder' # 'box', 'cylinder'
-        self.gripper_name = 'bowl' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'box' # 'box', 'cylinder'
+        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
         self.mass_gripper = 4
         self.moment_object = self.mass_gripper * 1e-1 # TODO: accurate values. moment of inertia
         self.moment_gripper = self.mass_object * 1e-3
-        self.angle_slope = 1/6 * math.pi  # equivalent to on a slope
+        self.angle_slope = 0 * math.pi  # equivalent to on a slope
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
         self.maneuver_goal_margin = .7
@@ -127,22 +127,26 @@ class PlanePushRrtstar:
 
         return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
-
-    def potentialMetric(self, a, b, is_potential_cost=True):
+        # return MultiSet(BoxSet([0,0], [10,1]),
+        #                 BoxSet(bmin, bmax))
+    
+    def potentialMetric(self, a, b, is_potential_cost=1):
         """Potential-based metric for RRT* - edge cost from a to b"""
         if is_potential_cost:
-            c = self.mass_object * abs(self.gravity) * math.sin(self.angle_slope) * (b[1]-a[1])
+            c = (self.mass_object * abs(self.gravity) * math.sin(self.angle_slope) * (b[1]-a[1]) 
+                 + euclideanMetric(a, b) * self.lateral_friction_coef * abs(self.gravity) * self.mass_object * math.cos(self.angle_slope))
         else:
             c = euclideanMetric(a, b) # path length cost
         return max(c, 1e-5)
 
 def PlanePushRrtstarTest(dynamics_sim, 
-                #   data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                #           5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                  data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                          5.0, 4, 0.0, 0.0, 1, 0.0],
-                          ):
-    p = PlanePushRrtstar(data, dynamics_sim)
+                        data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                                5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                        # data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
+                        #         5.0, 4, 0.0, 0.0, 1, 0.0],
+                        save_hyperparams=0,
+                        ):
+    p = PlanePushRrtstar(data, dynamics_sim, save_hyperparams)
     return PlanningProblem(p.configurationSpace(), # for geometric planner - rrt*
                            p.startState(),
                            p.goalSet(),

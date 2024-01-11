@@ -110,7 +110,6 @@ class RRTStar(TreePlanner):
         k = int(((1.0+1.0/len(xrand))*math.e)*math.log(N))
         if k <=0: k=1
         u = min(1.0, rad / metric.euclideanMetric(nnear.x, xrand)) # TODO: only make sense for path length cost
-        # u = min(1.0, rad)
         xend = self.cspace.interpolate(nnear.x, xrand, u) # xend=xrand if u=1
         edge = self.cspace.interpolator(nnear.x, xend)
         if not self.edgeChecker.feasible(edge): # TODO
@@ -190,7 +189,10 @@ class RRTStar(TreePlanner):
                         nn.setParent(n,nn.x,edge)
                         #nn.c = newcost
                         self.rewire(nn,k=k,rad=rad,first=False,recursive=recursive)
-
+        
+    def getMetric(self):
+        return None, None
+    
     def getRoadmap(self):
         """Returns a graph (V,E) where V contains states and E contains
         triples (i,j,u) where control u connnects V[i] to V[j]"""
@@ -212,7 +214,7 @@ class RRTStar(TreePlanner):
     
     def getMetric(self):
         pass
-    
+
     def pickNode(self,xrand):
         """Picks a node closest to xrand.  If dynamicDomain is True,
         uses the radius associated with the node"""

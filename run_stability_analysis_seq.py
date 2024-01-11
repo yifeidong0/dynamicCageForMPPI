@@ -2,6 +2,7 @@ from pomp.bullet.scriptedmovement import *
 from pomp.example_problems.cageplanner import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.planepush import *
+from pomp.example_problems.planepushrrtstar import *
 from pomp.example_problems.cageenergylabeler import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
@@ -12,14 +13,14 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-rrt' # 'ao-est'
-prname = 'PlanePush' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'rrt*' # 'ao-est', 'rrt*'
+prname = 'PlanePushRrtstar' # 'PlanePushRrtstar', 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 60 # only useful when vis=0
+maxTime = 3 # only useful when vis=0
 
 if prname == 'CageEnergyLabeler':
     filenames = ''
-if prname == 'PlanePush':
+if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
         'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
         'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
@@ -66,6 +67,9 @@ for filename in filenames:
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
             problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)
+        if prname == 'PlanePushRrtstar':
+            dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
+            problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'WaterSwing':
             dynamics_sim = forwardSimulationWaterSwing(gui=0)
             problem = waterSwingTest(dynamics_sim, data_i)
