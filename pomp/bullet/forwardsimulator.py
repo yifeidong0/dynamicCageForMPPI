@@ -138,8 +138,6 @@ class forwardSimulationPlanePush():
         # self.create_shapes()
     
     def set_params(self, params):
-        self.object_name = 'box' # 'box', 'cylinder'
-        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
         self.angle_slope = params[5] # equivalent to on a slope
         p.setGravity(0, 
                      self.g*math.sin(self.angle_slope),
@@ -155,6 +153,10 @@ class forwardSimulationPlanePush():
         self.mass_gripper = params[2]
         self.moment_gripper = params[3]
         self.y_obstacle = params[4]
+        self.object_name = params[6] # 'box', 'cylinder'
+        self.gripper_name = params[7] # 'box', 'cylinder', 'bowl'
+        self.lateral_friction_coef = params[8]
+
         self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
@@ -165,12 +167,11 @@ class forwardSimulationPlanePush():
         self.pos_obstacle = [5,self.y_obstacle+self.half_extent_obstacle[1],0]
         self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
-        self.lateralFriction = 0.2
 
     def create_shapes(self):
         # Create a plane
         self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
-        p.changeDynamics(self.planeId, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object
@@ -188,7 +189,7 @@ class forwardSimulationPlanePush():
                                             self.visualShapeId, 
                                             self.pos_object,
                                             self.quat_object)
-        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
@@ -208,7 +209,7 @@ class forwardSimulationPlanePush():
                                                 self.quat_gripper)
         elif self.gripper_name == 'bowl':
             self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper)
-        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a static obstacle
@@ -218,7 +219,7 @@ class forwardSimulationPlanePush():
                                        self.visualShapeId, 
                                        self.pos_obstacle,
                                        self.quat_obstacle)
-        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
     def reset_states(self, states):
@@ -360,7 +361,7 @@ class forwardSimulationWaterSwing():
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.lateralFriction = 0.8
+        self.lateral_friction_coef = 0.8
 
         # Geometrics
         self.y_bodies = .3
@@ -368,7 +369,7 @@ class forwardSimulationWaterSwing():
     def create_shapes(self):
         # Create a plane
         # self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
-        # p.changeDynamics(self.planeId, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        # p.changeDynamics(self.planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
         #                  rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object # TODO import complex shapes from files
@@ -378,7 +379,7 @@ class forwardSimulationWaterSwing():
                                            self.visualShapeId, 
                                            self.pos_object,
                                            self.quat_object)
-        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
@@ -389,7 +390,7 @@ class forwardSimulationWaterSwing():
         #                                self.pos_gripper,
         #                                self.quat_gripper)
         self.gripperUid = p.loadURDF("asset/4face-bottle.urdf", self.pos_gripper, self.quat_gripper)
-        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
 
     def reset_states(self, states):
@@ -487,7 +488,7 @@ class forwardSimulationBoxPivot():
         self.mass_gripper = params[2]
         self.moment_gripper = params[3]
 
-        self.lateralFriction = 0.7
+        self.lateral_friction_coef = 0.7
         self.rest_length = 3
         self.k = 2  # Spring constant
 
@@ -527,9 +528,9 @@ class forwardSimulationBoxPivot():
                             rollingFriction=0, linearDamping=0, angularDamping=0)
         p.changeDynamics(self.gripperUid2, -1, lateralFriction=0, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
-        # p.changeDynamics(planeId, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        # p.changeDynamics(planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
         #                     rollingFriction=0, linearDamping=0, angularDamping=0)
-        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateralFriction, spinningFriction=0, 
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
 
         # Create a fixed joint between the cubes, acting like a spring
@@ -719,7 +720,7 @@ class forwardSimulationGripper():
         self.vel_object = [0,0,0]
 
         self.dim_workspace = 3
-        self.lateralFriction = 0.7
+        self.lateral_friction_coef = 0.7
         self.stiffness = [1e-2,] * self.num_movable_joints  # P gain for each joint
         self.damping = [1e-1,] * self.num_movable_joints  # D gain for each joint
 

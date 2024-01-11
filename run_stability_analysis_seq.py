@@ -15,7 +15,7 @@ import os
 plannername = 'ao-rrt' # 'ao-est'
 prname = 'PlanePush' # 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 30 # only useful when vis=0
+maxTime = 60 # only useful when vis=0
 
 if prname == 'CageEnergyLabeler':
     filenames = ''
@@ -65,7 +65,7 @@ for filename in filenames:
             problem = cageELTest(dynamics_sim, data_i)
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
-            problem = planePushTest(dynamics_sim, data_i)
+            problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'WaterSwing':
             dynamics_sim = forwardSimulationWaterSwing(gui=0)
             problem = waterSwingTest(dynamics_sim, data_i)

@@ -58,8 +58,6 @@ class PlanePushRrtstar:
         return self.start_state
 
     def goalSet(self, goal_margin=1.2, default_radius=1000, t=6.0):
-        # multibmin = [[-self.offset,-self.offset], [self.gripper_pose[0]+goal_margin, -self.offset],]
-        # multibmax = [[self.gripper_pose[0]-goal_margin, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle],]
         bmin = [-math.pi,]
         bmax = [math.pi,]
         arcbmin = [-self.offset, -self.offset]
@@ -93,14 +91,13 @@ class PlanePushRrtstar:
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
         if self.gripper_vel_theta > 0:
-            # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
+            # If the gripper is rotating counterclockwise
             arc_angle_range = [(initial_pos_angle - goal_margin/arc_radius) % (2*np.pi), 
                                (initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi)]
         elif self.gripper_vel_theta < 0:
-            # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
+            # If the gripper is rotating clockwise
             arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi), 
                                (initial_pos_angle + goal_margin/arc_radius) % (2*np.pi),]
-            # arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*t) % (2*np.pi), (initial_pos_angle+goal_margin/arc_radius) % (2*np.pi)]
         else:
             # If the gripper is not rotating
             arc_angle_range = [(initial_pos_angle-goal_margin/default_radius) % (2*np.pi), 
