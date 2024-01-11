@@ -52,7 +52,7 @@ class PlanePushControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=False):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
@@ -80,10 +80,16 @@ class PlanePush:
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
 
         # Gripper moving velocity (constant)
-        self.gripper_vel = data[9:]
-        self.gripper_vel_x = data[9]
-        self.gripper_vel_y = data[10]
-        self.gripper_vel_theta = data[11]
+        if not quasistatic_motion:
+            self.gripper_vel = data[9:]
+            self.gripper_vel_x = data[9]
+            self.gripper_vel_y = data[10]
+            self.gripper_vel_theta = data[11]
+        else:
+            self.gripper_vel = [0, 0, 0]
+            self.gripper_vel_x = 0
+            self.gripper_vel_y = 0
+            self.gripper_vel_theta = 0
 
         self.start_state = data[:9]
         self.goal_state = [5, data[1]-1.5, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
@@ -237,10 +243,10 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
 
 
 def planePushTest(dynamics_sim, 
-                #   data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                #           5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                        5.0, 4, 0.0, 1, 1, 0],
+                data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                        5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                # data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
+                #         5.0, 4, 0.0, 0, 1, 0],
                 save_hyperparams=False,
                 ):
     p = PlanePush(data, dynamics_sim, save_hyperparams)

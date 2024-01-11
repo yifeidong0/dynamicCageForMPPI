@@ -13,10 +13,10 @@ import csv
 from main import *
 import os
 
-plannername = 'rrt*' # 'ao-est', 'rrt*'
-prname = 'PlanePushRrtstar' # 'PlanePushRrtstar', 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'ao-rrt' # 'ao-est', 'rrt*'
+prname = 'PlanePush' # 'PlanePushRrtstar', 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 3 # only useful when vis=0
+maxTime = 1 # only used when vis=0
 
 if prname == 'CageEnergyLabeler':
     filenames = ''
