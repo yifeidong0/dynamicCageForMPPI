@@ -210,6 +210,9 @@ class RRTStar(TreePlanner):
                 q.append((c,j))
         return (V,E)
     
+    def getMetric(self):
+        pass
+    
     def pickNode(self,xrand):
         """Picks a node closest to xrand.  If dynamicDomain is True,
         uses the radius associated with the node"""

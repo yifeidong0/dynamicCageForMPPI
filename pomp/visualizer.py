@@ -141,7 +141,6 @@ class PlanVisualizationProgram(GLProgram):
         glLoadIdentity()
         glEnable(GL_POINT_SMOOTH)
         glDisable(GL_DEPTH_TEST)
-
         glDisable(GL_LIGHTING)
         
         # Draw initial manipulator position and goal region
@@ -153,10 +152,13 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawGoalGL(self.problem.goal)
         elif hasattr(self.problem.controlSpace, "is_plane_push"):
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
-            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push")
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_plane_push", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_plane_push", color='taskGoal')
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
-            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar")
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar", color='maneuverGoal')
+            self.problem.visualizer.drawLineGL(*self.problem.space.obstacle_borderline) # obstacle border represented by a line
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 

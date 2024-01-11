@@ -229,6 +229,20 @@ class BoxSet(Set):
             res[imindist] = iminsign
             return res
 
+    def drawGL(self, c=[1,0,0,0.2]):
+        # Enable blending for transparency
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        # Set color with alpha for transparency (RGBA)
+        glColor4f(*c)  # White color with 50% transparency
+
+        glBegin(GL_QUADS)
+        glVertex2f(*self.bmin)
+        glVertex2f(self.bmax[0],self.bmin[1])
+        glVertex2f(*self.bmax)
+        glVertex2f(self.bmin[0],self.bmax[1])
+        glEnd()
 
 class UnionBoxSet(Set):
     """Represents the union of several axis-aligned box sets in a vector space."""
@@ -273,6 +287,10 @@ class UnionBoxSet(Set):
         # Calculate the gradient for the box with the smallest signed distance
         closest_box = min(self.boxes, key=lambda box: box.signedDistance(x))
         return closest_box.signedDistance_gradient(x)
+    
+    def drawGL(self, c=[1,0,0,0.2]):
+        for box in self.boxes:
+            box.drawGL(c)
     
 
 class RingSet(Set):
@@ -354,6 +372,29 @@ class RingSet(Set):
             return -grad_outside
         return grad_outside
     
+    def drawGL(self, color=[1,0,0,0.2]):
+        # Enable blending for transparency
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        # Set color with alpha for transparency (RGBA)
+        glColor4f(*color)
+
+        # Draw the outer circle
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(*self.c)
+        for i in range(101):
+            angle = 2 * math.pi * i / 100
+            glVertex2f(self.c[0] + self.r2 * math.cos(angle), self.c[1] + self.r2 * math.sin(angle))
+        glEnd()        
+        
+        # Draw the inner circle in white
+        glColor4f(1, 1, 1, 1)
+        glBegin(GL_TRIANGLE_FAN)
+        for i in range(101):
+            angle = 2 * math.pi * i / 100
+            glVertex2f(self.c[0] + self.r1 * math.cos(angle), self.c[1] + self.r1 * math.sin(angle))
+        glEnd()        
 
 class ArcErasedSet(Set):
     """Represents the shape remaining on a square canvas after erasing along an arc trajectory."""
@@ -427,11 +468,11 @@ class ArcErasedSet(Set):
             glVertex2f(outer_x, outer_y)
         glEnd()
 
-    def drawGL(self, res=0.01):
+    def drawGL(self, color=[1,0,0,0.2], res=0.01):
         # Draw the square canvas
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glColor4f(0, 1, 0, 0.2)
+        glColor4f(*color)
         glBegin(GL_QUADS)
         glVertex2f(self.canvas_limits[0][0], self.canvas_limits[0][1])
         glVertex2f(self.canvas_limits[1][0], self.canvas_limits[0][1])

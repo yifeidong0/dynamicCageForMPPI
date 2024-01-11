@@ -242,7 +242,14 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         glPointSize(7.0)
         self.drawVerticesGL([q])
 
-    def drawGoalGL(self, goal, example_name=None):
+    def drawGoalGL(self, goal, example_name=None, color='escapeGoal'):
+        if color == 'escapeGoal':
+            c = [1, 0, 0, 0.2]
+        elif color == 'maneuverGoal':
+            c = [0, 1, 0, 0.2]
+        elif color == 'taskGoal':
+            c = [0, 0, 1, 0.2]
+
         self.beginDraw()
         if isinstance(goal,NeighborhoodSubset):
             q = goal.c
@@ -261,24 +268,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glEnd()
         else:
             if example_name == "is_plane_push" or "is_plane_push_rrtstar":
-                # for i in range(len(goal.components[0].bmin)): # multi-box set
-                #     glColor4f(0,1,0,0.5)
-                #     o = Box(goal.components[0].bmin[i][0],
-                #             goal.components[0].bmin[i][1],
-                #             goal.components[0].bmax[i][0],
-                #             goal.components[0].bmax[i][1]
-                #             )
-                #     o.drawGL()
-
-                # goal.components[0].drawGL() # erase set
-
-                glColor4f(0,1,0,0.5) # ring set
-                glPointSize(4.0)
-                glBegin(GL_POINTS)
-                for i in range(500):
-                    q = goal.sample()
-                    glVertex2f(q[0],q[1])
-                glEnd()
+                goal.components[0].drawGL(c) # erase set, union box set, ring set
             else:
                 glColor4f(0,1,0,0.5)
                 glPointSize(4.0)

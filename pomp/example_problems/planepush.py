@@ -96,7 +96,8 @@ class PlanePush:
                             self.maneuver_goal_tmax] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
                                    'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 'maneuver_goal_tmax',
-                                   'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope']
+                                   'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
+                                   'object_name', 'gripper_name', 'lateral_friction_coef']
         
         if save_hyperparams:
             self.saveHyperparams()
@@ -141,18 +142,17 @@ class PlanePush:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self):
-        box_thickness = 0.2
-        bmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin, 
-                -math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        bmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin, 
-                math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return BoxSet(bmin, bmax)
+    def taskGoalSet(self, box_thickness=0.2):
+        wsbmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin,]
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        wsbmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
 
     def goalSet(self):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], self.x_range, self.x_range+self.offset), 
+        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
     
     def maneuverGoalSet(self, default_radius=1000):

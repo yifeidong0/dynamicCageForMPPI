@@ -244,6 +244,8 @@ class RRTstarMultiConfigurationSpace(MultiConfigurationSpace):
         self.dynamic.reset_states(x)
         return self.dynamic.check_collision()
 
+    def setObstacle(self, obstacle_borderline):
+        self.obstacle_borderline = obstacle_borderline
 
 class SingletonSubset(Set):
     """A single point, with a distance given by a ConfigurationSpace.
