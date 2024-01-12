@@ -16,7 +16,7 @@ import os
 plannername = 'ao-rrt' # 'ao-est', 'rrt*'
 prname = 'PlanePush' # 'PlanePushRrtstar', 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 1 # only used when vis=0
+maxTime = 60 # only used when vis=0
 
 if prname == 'CageEnergyLabeler':
     filenames = ''

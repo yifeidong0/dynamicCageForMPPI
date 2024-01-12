@@ -131,12 +131,9 @@ class CageEL:
         return self.start_state
 
     def goalSet(self, offset=2):
-        return BoxSet([-offset, -offset,
-                       -self.max_velocity, -self.max_velocity, 
-                       -2.5*self.x_range, -2.5*self.y_range, -math.pi],
-                      [self.x_range+offset, self.goal_state[1],
-                       self.max_velocity, self.max_velocity, 
-                       2.5*self.x_range, 2.5*self.y_range, math.pi])
+        return MultiSet(BoxSet([-offset, -offset,], [self.x_range+offset, self.goal_state[1],]), 
+                        BoxSet([-self.max_velocity, -self.max_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi],
+                               [self.max_velocity, self.max_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]))
 
 
 class CageELObjectiveFunction(ObjectiveFunction):

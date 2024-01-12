@@ -1297,7 +1297,7 @@ class CostSpaceEST:
         # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
         return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
     
-    def getMetric(self, a=-0.3):
+    def getMetric(self, a=-3):
         """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
