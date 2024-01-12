@@ -3,7 +3,7 @@ from pomp.example_problems.cageplanner import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.planepushrrtstar import *
-from pomp.example_problems.cageenergylabeler import *
+from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
 from pomp.planners import allplanners
@@ -13,13 +13,14 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-rrt' # 'ao-est', 'rrt*'
-prname = 'PlanePush' # 'PlanePushRrtstar', 'CageEnergyLabeler', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'ao-est' # 'ao-est', 'rrt*'
+prname = 'BalanceGrasp' # 'PlanePushRrtstar', 'BalanceGrasp', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 60 # only used when vis=0
 
-if prname == 'CageEnergyLabeler':
-    filenames = ''
+if prname == 'BalanceGrasp':
+    filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
+                 'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
         'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
@@ -61,9 +62,9 @@ for filename in filenames:
         del params['maxTime']
 
     for i, data_i in enumerate(rows):
-        if prname == 'CageEnergyLabeler':
-            dynamics_sim = forwardSimulationEL(gui=0)
-            problem = cageELTest(dynamics_sim, data_i)
+        if prname == 'BalanceGrasp':
+            dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
+            problem = BalanceGraspTest(dynamics_sim, data_i)
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
             problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)

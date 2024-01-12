@@ -26,6 +26,7 @@ class PlanePushRrtstar:
         self.gripper_vel_y = data[10]
         self.gripper_vel_theta = data[11]
         self.lateral_friction_coef = 0.2
+        self.cost_inv_coef = 3
 
         self.object_name = 'box' # 'box', 'cylinder'
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'

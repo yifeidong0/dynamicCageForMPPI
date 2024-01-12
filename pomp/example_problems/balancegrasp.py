@@ -11,14 +11,15 @@ from ..structures.toolfunc import *
 import math
 import csv
 
-class PlanePushControlSpace(ControlSpace):
+class BalanceGraspControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
         self.dynamics_sim = cage.dynamics_sim
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
-        self.is_plane_push = True
+        self.is_balance_grasp = True
+        self.cost_inv_coef = cage.cost_inv_coef
 
     def configurationSpace(self):
         return self.cage.configurationSpace()
@@ -51,31 +52,31 @@ class PlanePushControlSpace(ControlSpace):
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class PlanePush:
+class BalanceGrasp:
     def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.offset = 2.0 # extend the landscape
-        self.max_velocity = 10
-        self.max_ang_velocity = 2
-        self.max_acceleration = 1
-        self.max_ang_acceleration = .25
-        self.y_obstacle = 7 # the lower rim y_pos of the obstacle
-        self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
-        self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = 0.2
+        self.offset = 10.0 # extend the landscape
+        self.max_velocity = 30
+        self.max_ang_velocity = 5
+        self.max_acceleration = 1e-1
+        self.max_ang_acceleration = 0e-1
+        self.y_obstacle = -2 # the lower rim y_pos of the obstacle
+        self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
+        self.angle_slope = 1/3 * math.pi  # equivalent to on a slope
+        self.lateral_friction_coef = 0.3
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .7
-        self.maneuver_goal_tmax = 6.0
-        self.cost_inv_coef = -3e0
+        self.maneuver_goal_margin = .6
+        self.maneuver_goal_tmax = 1.0
+        self.cost_inv_coef = -1e0
 
-        self.object_name = 'box' # 'box', 'cylinder'
-        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'cylinder' # 'box', 'cylinder'
+        self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
-        self.mass_gripper = 4
-        self.moment_object = self.mass_gripper * 1e-1 # moment of inertia
-        self.moment_gripper = self.mass_object * 1e-3
+        self.mass_gripper = 1000 # bowl mass: 10
+        self.moment_object = self.mass_object * 1e-3 # moment of inertia
+        self.moment_gripper = self.mass_gripper * 1e-1
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
@@ -109,7 +110,7 @@ class PlanePush:
         if save_hyperparams:
             self.saveHyperparams()
 
-    def saveHyperparams(self, filename='push_press_hyperparams.csv'):
+    def saveHyperparams(self, filename='balance_grasp_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
             csv_writer = csv.writer(file)
             for header, data in zip(self.hyperparams_header, self.hyperparams):
@@ -121,7 +122,7 @@ class PlanePush:
 
     def controlSpace(self):
         # System dynamics
-        return PlanePushControlSpace(self)
+        return BalanceGraspControlSpace(self)
 
     def workspace(self):
         # For visualization
@@ -149,13 +150,12 @@ class PlanePush:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self, box_thickness=0.2):
-        wsbmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin,]
+    def taskGoalSet(self):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        wsbmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin,]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
-
+        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 0, 0.1), 
+                        BoxSet(bmin, bmax))
+    
     def goalSet(self):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
@@ -188,7 +188,7 @@ class PlanePush:
             arc_angle_range = [0.0, 2*np.pi-1e-9]
             return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))
-        
+
         # Calculate arc angle range
         angle_to_point = np.arctan2(self.start_state[7] - arc_center[1], self.start_state[6] - arc_center[0])
 
@@ -197,22 +197,22 @@ class PlanePush:
 
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
-            arc_angle_range = [(initial_pos_angle - self.maneuver_goal_margin/arc_radius) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle - 0.0) % (2*np.pi), 
                                (initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi)]
         elif self.gripper_vel_theta < 0:
             # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
             arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi), 
-                               (initial_pos_angle + self.maneuver_goal_margin/arc_radius) % (2*np.pi),]
+                               (initial_pos_angle + 0.0) % (2*np.pi),]
         else:
             # If the gripper is not rotating
-            arc_angle_range = [(initial_pos_angle-self.maneuver_goal_margin/default_radius) % (2*np.pi), 
-                               (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
+            arc_angle_range = [(initial_pos_angle - 0.0) % (2*np.pi), 
+                               (initial_pos_angle + gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
         return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
 
 
-class PlanePushObjectiveFunction(ObjectiveFunction):
+class BalanceGraspObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -244,19 +244,15 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         return max(c, 1e-5)
 
 
-def planePushTest(dynamics_sim, 
+def BalanceGraspTest(dynamics_sim, 
                 data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                        5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                        5.0, 4, 0.0, 0.0, 0.0, 0],
                 # data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                #         5.0, 4, 0.0, 0, 1, 0],
+                #         5.0, 4, 0.0, 0, 0, 0],
                 save_hyperparams=False,
                 ):
-    p = PlanePush(data, dynamics_sim, save_hyperparams)
-
-    # if p.checkStartFeasibility():
-    #     print('In collision!')
-    #     return False
-    objective = PlanePushObjectiveFunction(p)
+    p = BalanceGrasp(data, dynamics_sim, save_hyperparams)
+    objective = BalanceGraspObjectiveFunction(p)
     return PlanningProblem(objective.space,
                            p.startState(),
                            p.goalSet(),

@@ -52,13 +52,13 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'CageEnergyLabeler', 'PlanePush', 'PlanePushRrtstar', 
+all_problems = {'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 
                 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
 defaultParameters = {'maxTime':30}
 customParameters = {
-                    'CageEnergyLabeler':{'maxTime':12,'edgeCheckTolerance':.03},
                     'PlanePush':{'maxTime':20},
+                    'BalanceGrasp':{'maxTime':20},
                     'PlanePushRrtstar':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
@@ -145,9 +145,9 @@ if __name__=="__main__":
         planner_name = sys.argv[2]
         print("Testing problems", problem_name, "with planners", planner_name)
 
-    if problem_name == 'CageEnergyLabeler':
-        dynamics_sim = forwardSimulationEL(gui=0)
-        problem = cageenergylabeler.cageELTest(dynamics_sim)
+    if problem_name == 'BalanceGrasp':
+        dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
+        problem = balancegrasp.BalanceGraspTest(dynamics_sim)
     if problem_name == 'PlanePush':
         dynamics_sim = forwardSimulationPlanePush(gui=0)
         problem = planepush.planePushTest(dynamics_sim)

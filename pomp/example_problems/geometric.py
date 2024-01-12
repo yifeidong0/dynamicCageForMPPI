@@ -141,7 +141,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         #                     )
         #             if o.contains(x): return False
         #         return True
-        #     else: # len(self.obstacleParams[0])==5, tilting gripper, [CageEnergyLabeler]
+        #     else: # len(self.obstacleParams[0])==5, tilting gripper, [BalanceGrasp]
         #         gripperPose = obstaclePos # xc, yc, theta
         #         halfExtent = self.obstacleParams[0][3:]
         #         o = AxisNotAlignedBox(gripperPose, halfExtent)
@@ -268,7 +268,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glVertex2f(q[0],q[1])
             glEnd()
         else:
-            if example_name == "is_plane_push" or "is_plane_push_rrtstar":
+            if example_name in ["is_plane_push", "is_plane_push_rrtstar", "is_balance_grasp",]:
                 goal.components[0].drawGL(c) # erase set, union box set, ring set
             else:
                 glColor4f(0,1,0,0.5)

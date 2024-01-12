@@ -1137,8 +1137,8 @@ class CostSpaceRRT:
         (V,E) = self.rrt.getRoadmap()
         # return ([x[:-1] for x in V],E) # do not include cost dimension
         return (V,E) # include cost dimension
-        
-    def getMetric(self, a=-3):
+
+    def getMetric(self):
         """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
@@ -1147,7 +1147,7 @@ class CostSpaceRRT:
         count_success = 0
         count_maneuver = 0
         for v in V:
-            prob_density = np.exp(a * v[-1])
+            prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
             if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
                 count_success += 1
@@ -1156,9 +1156,15 @@ class CostSpaceRRT:
                 count_maneuver += 1
                 non_maneuverability_prob += prob_density
 
-        success_metric = success_prob / total_prob
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        if hasattr(self.baseControlSpace, "is_balance_grasp"):
+            success_metric = maneuver_metric
+            count_success = None
+        elif hasattr(self.baseControlSpace, "is_plane_push_rrtstar") or hasattr(self.baseControlSpace, "is_plane_push"):
+            success_metric = success_prob / total_prob
+
         print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        print("Count_success:", count_success, "Count_non_maneuver:", count_maneuver)
         return success_metric, maneuver_metric
     
     def getBestPath(self,obj,goal=None):
@@ -1296,8 +1302,8 @@ class CostSpaceEST:
         if self.est.pruner is not None: pruner = self.est.pruner
         # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
         return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
-    
-    def getMetric(self, a=-3):
+
+    def getMetric(self):
         """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
@@ -1306,18 +1312,24 @@ class CostSpaceEST:
         count_success = 0
         count_maneuver = 0
         for v in V:
-            prob_density = np.exp(a * v[-1])
+            prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
             if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
                 count_success += 1
                 success_prob += prob_density
-            if self.taskGoal is not None and self.maneuverGoal.contains(v[:-1]):
+            if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
                 count_maneuver += 1
                 non_maneuverability_prob += prob_density
 
-        success_metric = success_prob / total_prob
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
+        if hasattr(self.baseControlSpace, "is_balance_grasp"):
+            success_metric = maneuver_metric
+            count_success = None
+        elif hasattr(self.baseControlSpace, "is_plane_push_rrtstar") or hasattr(self.baseControlSpace, "is_plane_push"):
+            success_metric = success_prob / total_prob
+
         print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
+        print("Count_success:", count_success, "Count_non_maneuver:", count_maneuver)
         return success_metric, maneuver_metric
         
     def getBestPath(self,obj,goal=None):

@@ -1,4 +1,4 @@
-from pomp.example_problems.cageenergylabeler import *
+from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.boxpivot import *
@@ -7,7 +7,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePush" # "Shuffling"
+problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
 total_time = 2.4
 gui = 1
 num_via_points = 20
@@ -15,11 +15,17 @@ num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 
-# cage_planner = CagePlanner()
-# ubd = cage_planner.u_boundary
-
-if problem_name == 'CageEnergyLabeler':
-    dynamics_sim = forwardSimulationEL(gui=0)
+if problem_name == 'BalanceGrasp':
+    total_time = 2.5
+    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['shortest_distance', 'com_distance', 'max_contact_normal_force']
+    fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
+                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
+    cage = BalanceGrasp(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'PlanePush':
     total_time = 2.3
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
