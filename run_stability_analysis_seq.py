@@ -13,7 +13,7 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-est' # 'ao-est', 'rrt*'
+plannername = 'ao-rrt' # 'ao-est', 'rrt*'
 prname = 'BalanceGrasp' # 'PlanePushRrtstar', 'BalanceGrasp', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 60 # only used when vis=0
@@ -64,7 +64,7 @@ for filename in filenames:
     for i, data_i in enumerate(rows):
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
-            problem = BalanceGraspTest(dynamics_sim, data_i)
+            problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
             problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)
