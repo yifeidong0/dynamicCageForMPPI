@@ -175,6 +175,58 @@ class forwardSimulationPlanePush():
         p.disconnect()
 
 
+class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
+    def __init__(self, gui=False):
+        super().__init__(gui=gui)
+
+    def run_forward_sim(self, inputs, print_via_points=False):
+        t, ax, ay, omega = inputs
+        # interval = int(int(t*240)/num_via_points)
+        # interval = 3 if interval==0 else interval
+
+        # Step the simulation
+        # via_points = []
+        # force_on_object = [self.mass_object*ax, self.mass_object*ay, 0.0]
+        # torque_on_object = [0.0, 0.0, self.moment_object*omega]
+        force_on_gripper = [self.mass_gripper*ax, self.mass_gripper*ay, 0.0]
+        torque_on_gripper = [0.0, 0.0, self.moment_gripper*omega]
+        for _ in range(int(t*240)):
+            # Apply external force on object
+            self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            p.applyExternalForce(self.gripperUid, -1, 
+                                force_on_gripper, # gravity compensated 
+                                self.pos_gripper, 
+                                p.WORLD_FRAME)
+            p.applyExternalTorque(self.gripperUid, -1, 
+                                torque_on_gripper,
+                                p.WORLD_FRAME)
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            # if print_via_points and (i % interval == 0 or i == int(t*240)-1):
+            #     via_points.append([self.pos_object[0], self.pos_object[1]])
+
+            if self.gui:
+                time.sleep(10/240)
+
+        # Get the object and gripper states
+        self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+        self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+        self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
+        self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
+        self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
+
+        new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
+                      self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
+                      self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
+                      self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
+                      ]
+
+        # return new_states, via_points
+        return new_states, None
+
+
 class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
     def __init__(self, gui=False):
         super().__init__(gui=gui)

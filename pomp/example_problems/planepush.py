@@ -26,16 +26,16 @@ class PlanePushControlSpace(ControlSpace):
     def controlSet(self, x):
         return MultiSet(TimeBiasSet(self.cage.time_range,self.cage.controlSet()),self.cage.controlSet())
     
-    def nextState(self, x, u):
-        return self.eval(x, u, 1.0)
+    def nextState(self, x, u, is_planner=False):
+        return self.eval(x, u, 1.0, is_planner=is_planner)
     
-    def eval(self, x, u, amount, print_via_points=False):
+    def eval(self, x, u, amount, print_via_points=False, is_planner=False):
         # x_i, y_i, theta_i, vx_i, vy_i, alpha_i, xr_i, yr_i, thetar_i = x # state space, 9D (3+3: cage, 3: robot gripper)
         t, ax, ay, omega = u # control space
         tc = t * amount
         mu = [tc, ax, ay, omega]
 
-        xaug = x + self.cage.gripper_vel
+        xaug = x if is_planner else (x + self.cage.gripper_vel)
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
@@ -46,19 +46,24 @@ class PlanePushControlSpace(ControlSpace):
         if print_via_points: # TODO
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
 
-        return x_new[:9]
+        if is_planner:
+            return x_new
+        else:
+            return x_new[:9]
     
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
     def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
+        self.nx = 9 # state space dimension
+        self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
-        self.max_ang_velocity = 2
+        self.max_ang_velocity = 5 # 2
         self.max_acceleration = 1
         self.max_ang_acceleration = .25
         self.y_obstacle = 7 # the lower rim y_pos of the obstacle
@@ -79,7 +84,12 @@ class PlanePush:
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
-
+        self.c_space_boundary = [[0, self.x_range], [0, self.y_range], [-0.5*math.pi, 0.5*math.pi], 
+                                 [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
+                                 [-self.x_range, self.x_range], [-self.y_range, self.y_range], [-0.5*math.pi, 0.5*math.pi],
+                                 [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_ang_velocity, 0.5*self.max_ang_velocity], 
+                                 ] # shrink the c-space a bit for MPPI
+        
         # Gripper moving velocity (constant)
         if not quasistatic_motion:
             self.gripper_vel = data[9:]
@@ -105,7 +115,6 @@ class PlanePush:
                                    'cost_inv_coef',
                                    'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
                                    'object_name', 'gripper_name', 'lateral_friction_coef']
-        
         if save_hyperparams:
             self.saveHyperparams()
 
