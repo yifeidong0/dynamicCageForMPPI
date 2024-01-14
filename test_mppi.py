@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 (cage.y_range-2)*random.random() + 1, # yg_init
                 ]
         else:
-            params = [3,6,0,3,5.,]
+            params = [3,6,0,3,5.5,]
         mppi_gym._reset_start_goal(params)
 
         rollouts_hist, cutdown_hist, cutdown_iter = run_mppi(mppi_gym, iter=N_ITER, episode=e)

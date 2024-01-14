@@ -181,13 +181,8 @@ class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
 
     def run_forward_sim(self, inputs, print_via_points=False):
         t, ax, ay, omega = inputs
-        # interval = int(int(t*240)/num_via_points)
-        # interval = 3 if interval==0 else interval
 
         # Step the simulation
-        # via_points = []
-        # force_on_object = [self.mass_object*ax, self.mass_object*ay, 0.0]
-        # torque_on_object = [0.0, 0.0, self.moment_object*omega]
         force_on_gripper = [self.mass_gripper*ax, self.mass_gripper*ay, 0.0]
         torque_on_gripper = [0.0, 0.0, self.moment_gripper*omega]
         for _ in range(int(t*240)):
@@ -201,10 +196,6 @@ class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
                                 torque_on_gripper,
                                 p.WORLD_FRAME)
             p.stepSimulation()
-
-            # Print object via-points along the trajectory for visualization
-            # if print_via_points and (i % interval == 0 or i == int(t*240)-1):
-            #     via_points.append([self.pos_object[0], self.pos_object[1]])
 
             if self.gui:
                 time.sleep(10/240)

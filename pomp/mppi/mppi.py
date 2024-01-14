@@ -197,12 +197,9 @@ class MPPI():
     def _reset_start_goal(self, params):
         xo_init, yo_init, thetao_init, xg_init, yg_init = params
         self.state_start = torch.tensor([xo_init,yo_init,thetao_init,0,0,0,xg_init, yg_init,0,0,0,0], device=self.d) # dim=12
-        # self.state_goal = torch.tensor([xo_goal,yo_goal,0,0,0,0,0,0,0,0], device=self.d)
-        # self.obj_goal_pos = self.state_goal[:2].clone().detach()
 
     def _initialize_rollout_container(self):
         self.rollout_state = torch.zeros((self.K, self.T+1, self.nx), device=self.d)
-        # self.rollout_state_q = torch.zeros((self.num_vis_samples, self.T+1, self.nx), device=self.d)
         self.rollout_cutdown_id = torch.zeros((self.K), device=self.d).fill_(self.T+1)
 
     def _start_action_consideration(self):
@@ -216,9 +213,6 @@ class MPPI():
         vis_rollouts = False
         if k < self.num_vis_samples: vis_rollouts = True
         state = self.state.clone()
-        # if vis_rollouts: # initialize
-        #     state_q, _ = self.control_space.toBulletStateInput(state)
-        #     self.rollout_state_q[k,0,:] = torch.tensor(state_q) # (self.num_vis_samples, self.T+1, self.nx)
         self.rollout_state[k,0,:] = state.clone().detach() # save rollouts for dataset generation
 
         for t in range(self.T):
@@ -227,20 +221,17 @@ class MPPI():
             # Clamping each element in u to its respective boundary
             for i in range(len(perturbed_action_t)): 
                 perturbed_action_t[i] = torch.clamp(perturbed_action_t[i], min=self.u_boundary[i][0], max=self.u_boundary[i][1])
-            
-            # perturbed_action_t[0] = self.dt # fixed time step
 
             # Rollout
-            state = self.control_space.nextState(state.tolist(), [self.dt,]+perturbed_action_t.tolist(), is_planner=True) # TODO: dynamics take 95% of the runtime
+            state = self.control_space.nextState(state.tolist(), 
+                                                 [self.dt,]+perturbed_action_t.tolist(), 
+                                                 is_planner=True) # TODO: dynamics take 95% of the runtime
+            
             # State space boundary
             is_valid_state = is_within_boundaries(state, self.c_space_boundary)
             if not is_valid_state:
-                # print('is_valid_state NO')
                 self.cost_total[k] += 1e5
                 if vis_rollouts and t+1 <= self.T: 
-                    # state_q, _ = self.control_space.toBulletStateInput(state)
-                    # stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+1)+1, -1)
-                    # self.rollout_state_q[k,t+1:,:] = stacked_state_q # save rollouts for visualization
                     stacked_state = torch.tensor(state).unsqueeze(0).expand(self.T-(t+1)+1, -1)
                     self.rollout_state[k,t+1:,:] = stacked_state # save rollouts for visualization
                 self.rollout_cutdown_id[k] = t + 1
@@ -252,8 +243,6 @@ class MPPI():
             state = torch.tensor(state, device=self.d)
 
             cost_t = self.running_cost(state, perturbed_action_t).item()
-            # c_goal = increased_weight * c_dis_to_goal
-            # c_goal = c_dis_to_goal
             self.cost_total[k] += cost_t
 
             # Add action perturbation cost
@@ -261,17 +250,10 @@ class MPPI():
             # self.cost_total[k] += c_action
 
             self.rollout_state[k,t+1,:] = state.clone().detach().to(self.d) # save rollouts for dataset generation
-            # if vis_rollouts:
-            #     state_q, _ = self.control_space.toBulletStateInput(state)
-            #     self.rollout_state_q[k,t+1,:] = torch.tensor(state_q) # save rollouts for visualization
-            #     # self.rollout_state[k,t+1,:] = state.clone().detach() # save rollouts for dataset generation
 
             # Break the for loop if current state is in goal
-            # if math.sqrt(c_dis_to_goal) < self.goal_radius:
             if abs(cost_t) < self.goal_thres: # block already against the wall (PlanePush)
                 if vis_rollouts and t+2 <= self.T: 
-                    # stacked_state_q = torch.tensor(state_q).unsqueeze(0).expand(self.T-(t+2)+1, -1)
-                    # self.rollout_state_q[k,t+2:,:] = stacked_state_q # save rollouts for visualization
                     stacked_state = torch.tensor(state).unsqueeze(0).expand(self.T-(t+2)+1, -1)
                     self.rollout_state[k,t+2:,:] = stacked_state # save rollouts for visualization
                 if t+2 <= self.T: 
@@ -385,7 +367,7 @@ def run_mppi(mppi, iter=10, episode=0):
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
         if t % 1 == 0:
-            visualize_mppi(mppi, xhist, t, epi=episode)
+            visualize_mppi(mppi, xhist, uhist, t, epi=episode)
 
         # Check if goal is reached
         # curr = state[:2] # object position
@@ -401,11 +383,13 @@ def run_mppi(mppi, iter=10, episode=0):
             print('REACHED!')
             cutdown_iter = t
             reached_goal = True
-            visualize_mppi(mppi, xhist, t, reached_goal, epi=episode)
+            mppi.cage.dynamics_sim.finish_sim()
+            visualize_mppi(mppi, xhist, uhist, t, reached_goal, epi=episode)
             break
         if not is_within_boundaries(state, mppi.c_space_boundary):
             print('OUT OF LIMIT!')
             cutdown_iter = t
+            mppi.cage.dynamics_sim.finish_sim()
             break
 
         # Save rollouts and clean up the container
@@ -416,46 +400,44 @@ def run_mppi(mppi, iter=10, episode=0):
     return rollouts_hist, cutdown_hist, cutdown_iter
 
 
-def visualize_mppi(mppi, xhist, t, reached_goal=False, epi=0):
-    if reached_goal: t += 1
-    # starto = copy.deepcopy(mppi.state_start[:2])
-    # goalo = copy.deepcopy(mppi.state_goal[:2]) # opengl frame
-    # goalo[1] = 10-goalo[1]
-    # goalo = goalo.tolist() # bullet frame
-    # goal_rad = mppi.goal_radius
-    # Visualize the basic setup
-    fig, ax = plt.subplots()
+def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=1):
+    if reached_goal and do_bullet_vis:
+        xhist = xhist.cpu().tolist()
+        uhist = uhist.cpu().tolist()
+        dynamics_sim = forwardSimulationPlanePushPlanner(gui=do_bullet_vis)
+        dynamics_sim.set_params(mppi.cage.params)
+        dynamics_sim.create_shapes()
+        for i in range(t+1):
+            print('----------vis----------', i)
+            dynamics_sim.reset_states(xhist[i])
+            dynamics_sim.run_forward_sim([mppi.dt,]+uhist[i])
+        dynamics_sim.finish_sim()
 
-    if not reached_goal:
-        ax.plot(mppi.rollout_state[:mppi.num_vis_samples,:,0].T.cpu(), 
-                mppi.rollout_state[:mppi.num_vis_samples,:,1].T.cpu(), 
-                'k', alpha=0.2, zorder=3, linewidth=1) # rollout obj states
-        ax.plot(mppi.rollout_state[0,:,0].cpu(), mppi.rollout_state[0,:,1].cpu(), 'k', alpha=0.2, label="rollout")
+    else:
+        if reached_goal: t += 1
+        # Visualize the basic setup
+        fig, ax = plt.subplots()
 
-    # ax.plot([starto[0].cpu()], [10-starto[1].cpu()], 'bo', markersize=5, markerfacecolor='none', label="object")
-    # ax.plot([xhist[t, 0].cpu()], [xhist[t, 1].cpu()], 'bo', markersize=5, markerfacecolor='none', label="curr obj", zorder=5)
-    # c1 = plt.Circle(goalo, goal_rad, color='orange', linewidth=1, fill=False, label="goal", zorder=7)
-    # ax.add_patch(c1)
+        if not reached_goal:
+            ax.plot(mppi.rollout_state[:mppi.num_vis_samples,:,0].T.cpu(), 
+                    mppi.rollout_state[:mppi.num_vis_samples,:,1].T.cpu(), 
+                    'k', alpha=0.2, zorder=3, linewidth=1) # rollout obj states
+            ax.plot(mppi.rollout_state[0,:,0].cpu(), mppi.rollout_state[0,:,1].cpu(), 'k', alpha=0.2, label="rollout")
 
-    # rect = patches.Rectangle((100, 100), 2*0.7, 2*0.4, edgecolor='green', linewidth=1, facecolor='none', label='gripper')
-    # ax.add_patch(rect)
-    # for i in range(t+1):
-    #     label = True if i == 0 else False
-    #     draw_gripper(gripperhist[i].cpu(), ax, alpha=float((i+1)/(t+1)), label=label) # gripper past poses
-    ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'b-', linewidth=1) # obj past trajectory
-    ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='r', s=11, label="object") # obj past positions
-    ax.scatter(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', s=8, label="gripper") # gripper past positions
+        ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'b-', linewidth=1) # obj past trajectory
+        ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='r', s=11, label="object") # obj past positions
+        ax.scatter(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', s=8, label="gripper") # gripper past positions
 
-    # # # Show obstacles TODO: add obstacles.
-    # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):
-    # #   obs = plt.Circle(obs_pos, obs_r, color='k', fill=True, zorder=6)
-    # #   ax.add_patch(obs)
+        # # # Show obstacles TODO: add obstacles.
+        # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):
+        # #   obs = plt.Circle(obs_pos, obs_r, color='k', fill=True, zorder=6)
+        # #   ax.add_patch(obs)
 
-    ax.set_xlim([-1.,11.0])
-    ax.set_ylim([-1.,11.0])
-    ax.legend(loc="upper left")
-    ax.set_aspect("equal")
-    plt.tight_layout()
-    # plt.show()
-    fig.savefig('mppi-plot-{}-{}.png'.format(epi, t), dpi=100)
-    plt.close()
+        ax.set_xlim([-1.,11.0])
+        ax.set_ylim([-1.,11.0])
+        ax.legend(loc="upper left")
+        ax.set_aspect("equal")
+        plt.tight_layout()
+        # plt.show()
+        fig.savefig('mppi-plot-{}-{}.png'.format(epi, t), dpi=100)
+        plt.close()
