@@ -19,14 +19,14 @@ if __name__ == "__main__":
     elif problem_name == 'BalanceGrasp':
         pass
 
-    N_EPISODE = 5
+    N_EPISODE = 10
     N_ITER = 30 # max no. of iterations
     N_SAMPLE = 500 # 1000  # K
     N_HORIZON = 15  # T, MPPI horizon
     nx = len(fake_data)
     nu = cage.nu - 1 # expect time as the first element of action
     dt = .2 # 0.15 # fixed time step
-    num_vis_samples = 8
+    num_vis_samples = 1
     lambda_ = 1.
     gravity = 9.81
     d = "cuda"
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     torch.manual_seed(randseed)
     print("random seed %d", randseed)
 
-    def running_cost(state, action, w1=0.5, w2=.25, w3=0.15):
+    def running_cost(state, action, w1=0.2, w2=0.2, w3=0.1):
         '''state and state_goal: torch.tensor()'''
         # weight = 1.
         # cost = (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
@@ -64,8 +64,6 @@ if __name__ == "__main__":
         # cost_goal = weight * (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
         # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
         # cost_cage = 2.*weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
-        # print('TERM cost_goal',cost_goal)
-        # print('TERM cost_cage',cost_cage)
         # return cost_goal + cost_cage
         return cost_goal
     
@@ -98,7 +96,7 @@ if __name__ == "__main__":
         print('##############iter#############', e)
         data = []
         if randomize and problem_name == 'PlanePush':
-            thres = 2.5
+            thres = 2.8
             params = [
                 (cage.x_range-2*thres*1.5)*random.random() + thres*1.5, # xo_init
                 (cage.y_obstacle-2*thres)*random.random() + thres + 0.7, # yo_init

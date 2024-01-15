@@ -329,6 +329,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     xhist[0] = torch.tensor(state)
     # gripperhist[0] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
     for t in range(iter):
+        print('')
         print('----------iter----------', t)
         action = mppi.command(state)
         state = mppi.control_space.nextState(state.tolist(), [mppi.dt,]+action.tolist(), is_planner=True)
@@ -349,14 +350,13 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         # uhist[t] = torch.tensor(action_q, device=mppi.d)
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
-        if t % 1 == 0:
+        if t % 4 == 0:
             visualize_mppi(mppi, xhist, uhist, t, epi=episode)
 
         # Check if goal is reached
         curr = state[1] # object position
         dist_to_goal = abs(mppi.cage.y_obstacle - curr)
         print('dist_to_goal',dist_to_goal)
-        print('')
         print('!!!state',state)
         print('!!!mppi.c_space_boundary',mppi.c_space_boundary)
         print('!!!action',action)
