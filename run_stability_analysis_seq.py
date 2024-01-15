@@ -13,8 +13,8 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-rrt' # 'ao-est', 'rrt*'
-prname = 'BalanceGrasp' # 'PlanePushRrtstar', 'BalanceGrasp', 'PlanePush', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'ao-est' # 'ao-est', 'rrt*'
+prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 60 # only used when vis=0
 
@@ -23,9 +23,10 @@ if prname == 'BalanceGrasp':
                  'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
-        'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
-        'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
-        'data/evaluation/push_fixture/push_point_bias/biased0.3/scripted_movement_viapoints_PlanePush.csv',
+        'scripted_movement_viapoints_PlanePush.csv',
+        # 'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
+        # 'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
+        # 'data/evaluation/push_fixture/push_point_bias/biased0.3/scripted_movement_viapoints_PlanePush.csv',
         ]
 if prname == 'WaterSwing':
     filenames = [
@@ -54,7 +55,7 @@ for filename in filenames:
         csv_reader = csv.reader(file)
         header = next(csv_reader)
         for id, row in enumerate(csv_reader):
-            rows.append([float(d) for d in row[1:]])
+            rows.append([float(d) for d in row[2:]])
             ids.append(int(row[0]))
 
     params = {'maxTime':maxTime}

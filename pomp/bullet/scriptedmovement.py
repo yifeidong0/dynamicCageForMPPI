@@ -30,8 +30,25 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         super().__init__(gui=gui)
         self.set_params(cage.params)
         self.create_shapes()
+    
+    def sample_init_state(self):
+        # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
+        #                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+        xo = random.uniform(4,6)
+        yo = random.uniform(4.5,8)
+        thetao = random.uniform(-math.pi/15, math.pi/15)
+        vxo = random.uniform(-0.1, 0.1)
+        vyo = random.uniform(-0.1, 0.1)
+        omegao = random.uniform(-0.1, 0.1)
+        xg = xo + random.uniform(-0.3, 0.3)
+        yg = yo + random.uniform(-0.4, -0.36)
+        vxg = random.uniform(-0.1, 0.1)
+        vyg = random.uniform(0, 0.1)
+        init_state = [xo, yo, thetao, vxo, vyo, omegao,
+                      xg, yg, 0, vxg, vyg, 0]
+        return init_state
 
-    def run_forward_sim(self, total_time=10, num_via_points=20):
+    def run_forward_sim(self, total_time=10, num_via_points=20, do_cutdown_test=False):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -39,11 +56,14 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         # Step the simulation
         via_points = []
         self.heuristics_traj = []
+        self.task_success_label = 0
         for t in range(num_steps):
             # # Apply external force
+            self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            rand_force = [random.uniform(-0.1,0.1), random.uniform(3,10), 0]
             p.applyExternalForce(self.gripperUid, -1, 
-                                [0,8,0], 
+                                rand_force, 
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
 
@@ -57,22 +77,19 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
                 self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
 
+                # Get bodies closest points distance
+                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 10)
+                dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+                
+                # Get euclidean distance between gripper and object CoM
+                com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
+
                 # Get contact forces
                 res = p.getContactPoints(self.gripperUid, self.objectUid)
                 all_contact_normal_forces = [contact[9] for contact in res]
                 max_normal_force = max(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0
-                # print('contact max_normal_force: ', max_normal_force)
 
-                # Get bodies closest points distance
-                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 0.01)
-                dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
-                # print('dist: ', dist)
-                
-                # Get euclidean distance between gripper and object CoM
-                com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
-                # print('com_dist: ', com_dist)
                 self.heuristics_traj.append([dist, com_dist, max_normal_force,])
-
                 new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
                             self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
                             self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
@@ -81,9 +98,18 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 via_points.append(new_states)
 
             p.stepSimulation()
+
+            # Record cutoff time for the manual scripted movement dataset
+            object_reached = (abs(self.pos_object[1]-self.y_obstacle) < 0.2 + 0.01)
+            gripper_reached = (abs(self.pos_gripper[1]-self.y_obstacle) < (0.1+0.01))
+            if do_cutdown_test and (gripper_reached or object_reached):
+                self.cutoff_t = t
+                return via_points
+            if not do_cutdown_test and object_reached:
+                self.task_success_label = 1
             if self.gui:
                 time.sleep(2/240)
-
+        print('!!!self.task_success_label', self.task_success_label)
         return via_points
 
 

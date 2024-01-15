@@ -7,18 +7,19 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
 total_time = 2.4
-gui = 1
-num_via_points = 20
-num_trajs = 1
+gui = 0
+num_via_points = 10
+num_trajs = 50
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
+filename_label = "scripted_movement_labels_{}.csv".format(problem_name)
 
 if problem_name == 'BalanceGrasp':
     total_time = 2.5
-    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['shortest_distance', 'com_distance', 'max_contact_normal_force']
+    headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'com_distance', 'max_contact_normal_force']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
@@ -28,8 +29,8 @@ if problem_name == 'BalanceGrasp':
     sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'PlanePush':
     total_time = 2.3
-    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['shortest_distance', 'com_distance', 'max_contact_normal_force']
+    headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'com_distance', 'max_contact_normal_force']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.3, 4.0, 0.0, 0.0, 1.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -78,19 +79,24 @@ if problem_name == 'Shuffling':
     sim = scriptedMovementSimShuffling(cage, gui=gui)
 
 dataset = []
-k = 0
+heuriset = []
+labelset = []
 for i in range(num_trajs):
+    x_init = sim.sample_init_state()
     sim.reset_states(x_init)
-    time.sleep(2)
-    x_news = sim.run_forward_sim(total_time, num_via_points)
-    for x_new in x_news:
+    # time.sleep(2)
+    _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
+    sim.reset_states(x_init)
+    x_news = sim.run_forward_sim(3, num_via_points)
+    heuristics = sim.heuristics_traj
+    for k in range(len(x_news)):
         # Check if inside C-space boundaries
         # is_valid = check_bounds(x_new, cbd)
         # if is_valid:
-        data = [k,] + x_new # data_i
-        dataset.append(data)
+        dataset.append([i, k,] + x_news[k])
+        heuriset.append([i, k,] + heuristics[k])
         k += 1
-
+    labelset.append([i, sim.task_success_label])
 sim.finish_sim()
 
 # Save data to a CSV file with headers
@@ -103,4 +109,10 @@ with open(filename, mode='w', newline='') as file:
 with open(filename_metric, mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(headers_metric)
-    writer.writerows(sim.heuristics_traj)
+    writer.writerows(heuriset)
+
+# Save labels to a CSV file with headers
+with open(filename_label, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['num_traj', 'label'])
+    writer.writerows(labelset)

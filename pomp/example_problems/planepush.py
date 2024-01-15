@@ -19,6 +19,7 @@ class PlanePushControlSpace(ControlSpace):
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
         self.is_plane_push = True
+        self.cost_inv_coef = self.cage.cost_inv_coef = -3e0
 
     def configurationSpace(self):
         return self.cage.configurationSpace()
@@ -63,20 +64,20 @@ class PlanePush:
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 10
-        self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 3
-        self.max_ang_acceleration = 1
-        self.y_obstacle = 7 # the lower rim y_pos of the obstacle
+        self.max_ang_velocity = 2 # 2
+        self.max_acceleration = 1
+        self.max_ang_acceleration = 0.25
+        self.y_obstacle = 9 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = 0.2
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .7
-        self.maneuver_goal_tmax = 6.0
+        self.maneuver_goal_tmax = 3.0
         self.cost_inv_coef = -3e0
 
-        self.object_name = 'cylinder' # 'box', 'cylinder'
-        self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'box' # 'box', 'cylinder'
+        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
         self.mass_gripper = 4
         factor_object = 1e-1 if self.object_name == 'box' else 1e-3
@@ -85,7 +86,7 @@ class PlanePush:
         self.moment_gripper = self.mass_gripper * factor_gripper
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
-                       self.object_name, self.gripper_name, self.lateral_friction_coef]
+                       self.object_name, self.gripper_name, self.lateral_friction_coef,]
         self.c_space_boundary = [[0, self.x_range], [0, self.y_range], [-0.8*math.pi, 0.8*math.pi], 
                                  [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  [-self.x_range, self.x_range], [-self.y_range, self.y_range], [-0.8*math.pi, 0.8*math.pi],
