@@ -22,11 +22,11 @@ if __name__ == "__main__":
     N_EPISODE = 5
     N_ITER = 30 # max no. of iterations
     N_SAMPLE = 500 # 1000  # K
-    N_HORIZON = 25  # T, MPPI horizon
+    N_HORIZON = 15  # T, MPPI horizon
     nx = len(fake_data)
     nu = cage.nu - 1 # expect time as the first element of action
-    dt = .5 # 0.15 # fixed time step
-    num_vis_samples = 1
+    dt = .2 # 0.15 # fixed time step
+    num_vis_samples = 8
     lambda_ = 1.
     gravity = 9.81
     d = "cuda"
@@ -39,25 +39,28 @@ if __name__ == "__main__":
     # noise_sigma[2,2] = 0.5
 
     # For reproducibility
-    # randseed = 5
-    # if randseed is None:
-    #     randseed = random.randint(0, 1000000)
-    # random.seed(randseed)
-    # np.random.seed(randseed)
-    # torch.manual_seed(randseed)
-    # print("random seed %d", randseed)
+    randseed = 5
+    if randseed is None:
+        randseed = random.randint(0, 1000000)
+    random.seed(randseed)
+    np.random.seed(randseed)
+    torch.manual_seed(randseed)
+    print("random seed %d", randseed)
 
-    def running_cost(state, action, w=33.0):
+    def running_cost(state, action, w1=0.5, w2=.25, w3=0.15):
         '''state and state_goal: torch.tensor()'''
         # weight = 1.
         # cost = (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
-        cost = abs(state[1]-cage.y_obstacle) + w * (action[0]**2 + action[1]**2 + action[2]**2)
+        cost = ((state[1]-cage.y_obstacle)**2 
+                + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
+                + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
+                + w3 * (state[2]**2 + state[8]**2)) # orientation
         # cost = angle_normalize(theta) ** 2 + 0.1 * theta_dt ** 2 + 0.001 * action ** 2
         return cost
 
-    def terminal_state_cost(state, weight=3.):
+    def terminal_state_cost(state, weight=5.):
         '''state and state_goal: torch.tensor()'''
-        cost_goal = weight * abs(state[1]-cage.y_obstacle)
+        cost_goal = weight * (state[1]-cage.y_obstacle)**2
         # cost_goal = weight * (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
         # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
         # cost_cage = 2.*weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
@@ -98,10 +101,10 @@ if __name__ == "__main__":
             thres = 2.5
             params = [
                 (cage.x_range-2*thres*1.5)*random.random() + thres*1.5, # xo_init
-                (cage.y_obstacle-2*thres)*random.random() + thres + 1, # yo_init
-                0.8*math.pi*random.random() - 0.4*math.pi, # thetao_init
+                (cage.y_obstacle-2*thres)*random.random() + thres + 0.7, # yo_init
                 (cage.x_range-2*thres*1.5)*random.random() + thres*1.5, # xg_init
-                (cage.y_obstacle-2*thres)*random.random() + thres - 1, # yg_init
+                (cage.y_obstacle-2*thres)*random.random() + thres - 0.7, # yg_init
+                0.5*math.pi*random.random() - 0.25*math.pi, # thetag_init
                 ]
             print('params', params)
         else:

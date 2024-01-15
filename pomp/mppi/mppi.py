@@ -174,8 +174,8 @@ class MPPI():
         self.model.eval()
 
     def _reset_start_goal(self, params):
-        xo_init, yo_init, thetao_init, xg_init, yg_init = params
-        self.state_start = torch.tensor([xo_init,yo_init,thetao_init,0,0,0,xg_init, yg_init,0,0,0,0], device=self.d) # dim=12
+        xo_init, yo_init, xg_init, yg_init, thetag_init = params
+        self.state_start = torch.tensor([xo_init,yo_init,0,0,0,0,xg_init, yg_init,thetag_init,0,0,0], device=self.d) # dim=12
 
     def _check_collision(self):
         # Check if bodies are in collision
@@ -220,7 +220,7 @@ class MPPI():
             # State space boundary
             is_valid_state = is_within_boundaries(state, self.c_space_boundary)
             if not is_valid_state:
-                self.cost_total[k] += 1e5
+                self.cost_total[k] += 1e4
                 if vis_rollouts and t+1 <= self.T: 
                     stacked_state = torch.tensor(state).unsqueeze(0).expand(self.T-(t+1)+1, -1)
                     self.rollout_state[k,t+1:,:] = stacked_state # save rollouts for visualization
