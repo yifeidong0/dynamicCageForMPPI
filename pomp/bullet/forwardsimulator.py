@@ -179,6 +179,18 @@ class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
     def __init__(self, gui=False):
         super().__init__(gui=gui)
 
+    def check_collision(self, thres=-5e-3):
+        # Check for collisions  
+        p.stepSimulation()
+        contacts0 = p.getClosestPoints(self.objectUid, self.gripperUid, distance=thres)
+        contacts1 = p.getClosestPoints(self.objectUid, self.obstacleUid, distance=thres)
+        if len(contacts0)+len(contacts1) > 0:
+            # print("Bodies are in collision")
+            return True
+        else:
+            # print("Bodies are not in collision")
+            return False
+        
     def run_forward_sim(self, inputs, print_via_points=False):
         t, ax, ay, omega = inputs
 

@@ -87,7 +87,7 @@ class PlanePush:
         self.c_space_boundary = [[0, self.x_range], [0, self.y_range], [-0.5*math.pi, 0.5*math.pi], 
                                  [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  [-self.x_range, self.x_range], [-self.y_range, self.y_range], [-0.5*math.pi, 0.5*math.pi],
-                                 [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_ang_velocity, 0.5*self.max_ang_velocity], 
+                                 [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.5*self.max_velocity, 0.5*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  ] # shrink the c-space a bit for MPPI
         
         # Gripper moving velocity (constant)

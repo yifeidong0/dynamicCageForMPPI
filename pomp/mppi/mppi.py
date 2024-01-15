@@ -148,39 +148,18 @@ class MPPI():
         self.terminal_state_cost = terminal_state_cost
         self.state = None
         self.rollout_state = None
-        # self.rollout_state_q = None
         self.rollout_cutdown_id = None
 
         # self._prepare_nn()
 
-        # self.cage = CagePlanner()
         self.g = self.cage.gravity
-        # self.time_range = self.cage.time_range
         self.control_space = self.cage.controlSpace()
-        # self.state_start = torch.tensor(self.cage.start_state, device=self.d)
-        # self.state_goal = torch.tensor(self.cage.goal_state, device=self.d)
-        # self.obj_goal_pos = self.state_goal[:2].clone().detach().to(self.d)
-        # self.goal_radius = self.cage.goal_radius
         self.u_boundary = [
                            [-self.cage.max_acceleration, self.cage.max_acceleration],
                            [-self.cage.max_acceleration, self.cage.max_acceleration],
                            [-self.cage.max_ang_acceleration, self.cage.max_ang_acceleration],
                            ]
         self.c_space_boundary = self.cage.c_space_boundary
-        # self.c_space_boundary = [
-        #     [-self.offset, 10.0],
-        #     [0.0, 10.0],
-        #     [-10.0, 10.0],
-        #     [-10.0, 10.0],
-        #     [-20.0, 20.0],
-        #     [-20.0, 20.0],
-        #     [-math.pi/2, math.pi/2],
-        #     [-15.0, 15.0],
-        #     [-15.0, 15.0],
-        #     [-math.pi/2, math.pi/2],
-        #     ]
-        # self.radius_object = self.cage.radius_object
-        # self.half_extents_gripper = self.cage.half_extents_gripper
 
     def _prepare_nn(self):
         scaler = joblib.load('data/9kdataset-from-mppi/scaler_minmax.pkl')
@@ -197,6 +176,17 @@ class MPPI():
     def _reset_start_goal(self, params):
         xo_init, yo_init, thetao_init, xg_init, yg_init = params
         self.state_start = torch.tensor([xo_init,yo_init,thetao_init,0,0,0,xg_init, yg_init,0,0,0,0], device=self.d) # dim=12
+
+    def _check_collision(self):
+        # Check if bodies are in collision
+        self.cage.dynamics_sim.reset_states(self.state_start.cpu().tolist())
+        is_in_collision = self.cage.dynamics_sim.check_collision()
+        if is_in_collision:
+            print('!!!Collision at start state!!!')
+            # self.cage.dynamic_sim.finish_sim()
+            return True
+        print('!!!Not in Collision!!!')
+        return False
 
     def _initialize_rollout_container(self):
         self.rollout_state = torch.zeros((self.K, self.T+1, self.nx), device=self.d)
@@ -326,26 +316,21 @@ class MPPI():
         return action
 
 
-def run_mppi(mppi, iter=10, episode=0):
+def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     xhist = torch.zeros((iter+1, mppi.nx), device=mppi.d)
     uhist = torch.zeros((iter, mppi.nu), device=mppi.d)
-    # gripperhist = torch.zeros((iter+1, 4, 2), device=mppi.d) # 4 corners, 2d points
     rollouts_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx), device=mppi.d)
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
+    # gripperhist = torch.zeros((iter+1, 4, 2), device=mppi.d) # 4 corners, 2d points
 
     cutdown_iter = iter
     state = mppi.state_start
     mppi._initialize_rollout_container()
-    # state_q, _ = mppi.control_space.toBulletStateInput(state)
-    # xhist[0] = torch.tensor(state_q)
     xhist[0] = torch.tensor(state)
     # gripperhist[0] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
-    # goal = mppi.state_goal[:2].clone().detach().to(mppi.d)
     for t in range(iter):
         print('----------iter----------', t)
         action = mppi.command(state)
-        # action[0] = mppi.dt # fixed time step
-        # state = mppi.control_space.nextState(state, action, is_planner=True)
         state = mppi.control_space.nextState(state.tolist(), [mppi.dt,]+action.tolist(), is_planner=True)
 
         # Keep theta within [-pi/2,pi/2]
@@ -356,11 +341,9 @@ def run_mppi(mppi, iter=10, episode=0):
         state = torch.tensor(state, device=mppi.d)
 
         # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
-        # print('ITER stability_cage', stability_cage)
         # cost = 0. # TODO: print cost
 
         # Log and visualize
-        # state_q, action_q = mppi.control_space.toBulletStateInput(state, action)
         # xhist[t+1] = torch.tensor(state_q, device=mppi.d)
         # gripperhist[t+1] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
         # uhist[t] = torch.tensor(action_q, device=mppi.d)
@@ -370,8 +353,6 @@ def run_mppi(mppi, iter=10, episode=0):
             visualize_mppi(mppi, xhist, uhist, t, epi=episode)
 
         # Check if goal is reached
-        # curr = state[:2] # object position
-        # dist_to_goal = torch.norm(goal-curr, p=2)
         curr = state[1] # object position
         dist_to_goal = abs(mppi.cage.y_obstacle - curr)
         print('dist_to_goal',dist_to_goal)
@@ -383,13 +364,13 @@ def run_mppi(mppi, iter=10, episode=0):
             print('REACHED!')
             cutdown_iter = t
             reached_goal = True
-            mppi.cage.dynamics_sim.finish_sim()
-            visualize_mppi(mppi, xhist, uhist, t, reached_goal, epi=episode)
+            if do_bullet_vis:
+                mppi.cage.dynamics_sim.finish_sim()
+            visualize_mppi(mppi, xhist, uhist, t, reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
             break
         if not is_within_boundaries(state, mppi.c_space_boundary):
             print('OUT OF LIMIT!')
             cutdown_iter = t
-            mppi.cage.dynamics_sim.finish_sim()
             break
 
         # Save rollouts and clean up the container
@@ -400,7 +381,7 @@ def run_mppi(mppi, iter=10, episode=0):
     return rollouts_hist, cutdown_hist, cutdown_iter
 
 
-def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=1):
+def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=0):
     if reached_goal and do_bullet_vis:
         xhist = xhist.cpu().tolist()
         uhist = uhist.cpu().tolist()
@@ -412,7 +393,6 @@ def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_v
             dynamics_sim.reset_states(xhist[i])
             dynamics_sim.run_forward_sim([mppi.dt,]+uhist[i])
         dynamics_sim.finish_sim()
-
     else:
         if reached_goal: t += 1
         # Visualize the basic setup
