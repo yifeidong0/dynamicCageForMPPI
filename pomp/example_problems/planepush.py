@@ -56,7 +56,7 @@ class PlanePushControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=1):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
@@ -72,8 +72,8 @@ class PlanePush:
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = 0.2
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .7
-        self.maneuver_goal_tmax = 3.0
+        self.maneuver_goal_margin = .6
+        self.maneuver_goal_tmax = 0.5
         self.cost_inv_coef = -3e0
 
         self.object_name = 'box' # 'box', 'cylinder'

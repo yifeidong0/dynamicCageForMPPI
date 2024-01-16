@@ -89,8 +89,8 @@ for i in range(num_trajs):
     # time.sleep(2)
     _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
     sim.reset_states(x_init)
-    # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
-    x_news = sim.run_forward_sim(3, num_via_points) # 3 for the 50-traj planar push dataset
+    x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
+    # x_news = sim.run_forward_sim(3, num_via_points) # 3 for the 50-traj planar push dataset
     heuristics = sim.heuristics_traj
     for k in range(len(x_news)):
         dataset.append([i, k,] + x_news[k])

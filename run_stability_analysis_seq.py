@@ -14,7 +14,8 @@ from main import *
 import os
 
 # !!! Things remember to do BEFORE running: pruning, quasistatic, ...
- 
+# !!! More non-maneuverable states needed in the 50 trajs
+
 plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
@@ -77,7 +78,7 @@ for filename in filenames:
         # if k == 10:
         #     k = 0
             
-            problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)
+            problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1,)
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
