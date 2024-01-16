@@ -13,6 +13,8 @@ import csv
 from main import *
 import os
 
+# !!! Things remember to do BEFORE running: pruning, quasistatic, ...
+ 
 plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0

@@ -14,8 +14,8 @@ num_via_points = 10
 num_trajs = 50
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
-filename_suc_label = "scripted_success_labels_{}.csv".format(problem_name)
-filename_man_label = "scripted_maneuver_labels_{}.csv".format(problem_name)
+filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
+filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
 if problem_name == 'BalanceGrasp':
     total_time = 2.5
