@@ -613,7 +613,6 @@ class forwardSimulationBoxPivot():
         p.resetBaseVelocity(self.gripperUid2, self.vel_gripper2, self.vel_ang_gripper2)
 
     def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
-        # print('!!!run_forward_sim', inputs, p.getEulerFromQuaternion(self.quat_object))
         t, ax, omega = inputs
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
@@ -986,7 +985,6 @@ class forwardSimulationShuffling():
         self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
         joint_states = p.getJointStates(self.objectUid, list(range(self.num_joints)))
         self.pos_object_joints = [state[0] for state in joint_states]
-        # print("!!!pos_object_joints", self.pos_object_joints)
         self.vel_object_joints = [state[1] for state in joint_states]
         self.pos_gripper, _ = p.getBasePositionAndOrientation(self.gripperUid)
 

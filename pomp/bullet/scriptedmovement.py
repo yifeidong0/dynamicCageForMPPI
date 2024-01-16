@@ -103,13 +103,12 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
             object_reached = (abs(self.pos_object[1]-self.y_obstacle) < 0.2 + 0.01)
             gripper_reached = (abs(self.pos_gripper[1]-self.y_obstacle) < (0.1+0.01))
             if do_cutdown_test and (gripper_reached or object_reached):
-                self.cutoff_t = t
+                self.cutoff_t = t / 240.0 + 0.2
                 return via_points
             if not do_cutdown_test and object_reached:
                 self.task_success_label = 1
             if self.gui:
                 time.sleep(2/240)
-        print('!!!self.task_success_label', self.task_success_label)
         return via_points
 
 

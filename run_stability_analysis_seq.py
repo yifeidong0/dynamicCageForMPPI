@@ -13,17 +13,14 @@ import csv
 from main import *
 import os
 
-plannername = 'rrt*' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePushRrtstar' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
+prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 5 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
         'data/evaluation/push_fixture/rand_traj/dataset/scripted_movement_viapoints_PlanePush.csv',
-        # 'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
-        # 'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
-        # 'data/evaluation/push_fixture/push_point_bias/biased0.3/scripted_movement_viapoints_PlanePush.csv',
         ]
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
@@ -62,12 +59,22 @@ for filename in filenames:
     if 'maxTime' in params:
         del params['maxTime']
 
+    # maneuver_labelset = []
+    # k = 0
     for i, data_i in enumerate(rows):
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
             problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
+
+        #     cage = PlanePush(data_i, dynamics_sim)
+        #     man_label = 0 if cage.maneuverGoalSet().contains(data_i[:9]) else 1
+        #     maneuver_labelset.append([ids[i], k,] + [man_label,])
+        # k += 1
+        # if k == 10:
+        #     k = 0
+            
             problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
@@ -87,4 +94,12 @@ for filename in filenames:
             print(ids[i])
             testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
-        # time.sleep(3.0)
+        time.sleep(3.0)
+
+# # Save labels to a CSV file with headers
+# problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+# filename_man_label = "scripted_maneuver_labels_{}.csv".format(problem_name)
+# with open(filename_man_label, mode='w', newline='') as file:
+#     writer = csv.writer(file)
+#     writer.writerow(['num_traj', 'data_id', 'label'])
+#     writer.writerows(maneuver_labelset)

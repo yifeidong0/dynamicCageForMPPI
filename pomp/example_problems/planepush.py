@@ -171,7 +171,7 @@ class PlanePush:
     def goalSet(self):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), 
+        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
                         BoxSet(bmin, bmax))
     
     def maneuverGoalSet(self, default_radius=1000):
