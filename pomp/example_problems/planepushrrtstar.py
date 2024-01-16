@@ -17,7 +17,7 @@ class PlanePushRrtstar:
         self.x_range = 10
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
-        self.y_obstacle = 7
+        self.y_obstacle = 9
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.start_state = data[:3]
         self.gripper_pose = data[6:9]
@@ -32,13 +32,16 @@ class PlanePushRrtstar:
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
         self.mass_gripper = 4
-        self.moment_object = self.mass_gripper * 1e-1 # TODO: accurate values. moment of inertia
-        self.moment_gripper = self.mass_object * 1e-3
+        factor_object = 1e-1 if self.object_name == 'box' else 1e-3
+        factor_gripper = 1e-1 if (self.gripper_name == 'box' or self.gripper_name == 'bowl') else 1e-3
+        self.moment_object = self.mass_object * factor_object # moment of inertia
+        self.moment_gripper = self.mass_gripper * factor_gripper
+
         self.angle_slope = 0 * math.pi  # equivalent to on a slope
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
         self.maneuver_goal_margin = .7
-        self.maneuver_goal_tmax = 6.0
+        self.maneuver_goal_tmax = 3.0
         self.dynamics_sim.set_params(self.params)
         self.dynamics_sim.create_shapes()
         self.dynamics_sim.set_gripper_pos(self.gripper_pose)

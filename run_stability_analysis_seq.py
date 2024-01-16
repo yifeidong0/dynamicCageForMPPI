@@ -13,21 +13,21 @@ import csv
 from main import *
 import os
 
-plannername = 'ao-est' # 'ao-est', 'rrt*'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'rrt*' # 'ao-est', 'rrt*', 'ao-rrt'
+prname = 'PlanePushRrtstar' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 60 # only used when vis=0
+maxTime = 5 # only used when vis=0
 
-if prname == 'BalanceGrasp':
-    filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
-                 'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
-        'scripted_movement_viapoints_PlanePush.csv',
+        'data/evaluation/push_fixture/rand_traj/dataset/scripted_movement_viapoints_PlanePush.csv',
         # 'data/evaluation/push_fixture/push_point_bias/unbiased/scripted_movement_viapoints_PlanePush.csv',
         # 'data/evaluation/push_fixture/push_point_bias/biased0.1/scripted_movement_viapoints_PlanePush.csv',
         # 'data/evaluation/push_fixture/push_point_bias/biased0.3/scripted_movement_viapoints_PlanePush.csv',
         ]
+if prname == 'BalanceGrasp':
+    filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
+                 'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
 if prname == 'WaterSwing':
     filenames = [
                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
