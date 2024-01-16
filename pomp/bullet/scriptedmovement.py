@@ -117,8 +117,36 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         super().__init__(gui=gui)
         self.set_params(cage.params)
         self.create_shapes()
+    
+    def sample_init_state(self):
+        # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                        # 5.0, 4, 0.0, 0.0, 0.0, 0]
+        xo = random.uniform(4,6)
+        yo = random.uniform(4,6)
+        vxo = random.uniform(-0.1, 0.1)
+        vyo = random.uniform(-0.1, 0.1)
+        xg = xo + random.uniform(-0.5, 0.5)
+        yg = yo + random.uniform(-0.6, -0.4)
+        thetag = random.uniform(-math.pi/15, math.pi/15)
+        vxg = random.uniform(-0.1, 0.1)
+        vyg = random.uniform(-0.1, 0.1)
+        omegag = random.uniform(-0.1, 0.1)
+        # xo = random.uniform(4,6)
+        # yo = random.uniform(4,6)
+        # vxo = random.uniform(-0.3, 0.3)
+        # vyo = random.uniform(-0.3, 0.3)
+        # xg = xo + random.uniform(-0.6, 0.6)
+        # yg = yo + random.uniform(-0.8, -0.5)
+        # thetag = random.uniform(-math.pi/4, math.pi/4)
+        # vxg = random.uniform(-0.3, 0.3)
+        # vyg = random.uniform(-0.3, 0.3)
+        # omegag = random.uniform(-0.3, 0.3)
+        init_state = [xo, yo, 0, vxo, vyo, 0,
+                      xg, yg, thetag, vxg, vyg, omegag]
+        return init_state
 
-    def run_forward_sim(self, total_time=10, num_via_points=20, taulim=5):
+    def run_forward_sim(self, total_time=10, num_via_points=20, taulim=6):
+    # def run_forward_sim(self, total_time=10, num_via_points=20, taulim=15):
         # p.setGravity(0, 0, 0)
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
@@ -127,9 +155,10 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         # Step the simulation
         via_points = []
         self.heuristics_traj = []
+        self.task_success_label = 0
         for t in range(num_steps):
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
-            p.applyExternalForce(self.gripperUid, -1, 
+            p.applyExternalForce(self.gripperUid, -1, # gravity compensation
                                 [0, -self.g*self.mass_gripper*math.sin(self.angle_slope), 0], 
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
@@ -154,7 +183,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                 # print('contact max_normal_force: ', max_normal_force)
 
                 # Get bodies closest points distance
-                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 0.01)
+                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
                 dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
                 # print('dist: ', dist)
                 
@@ -174,6 +203,18 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
             if self.gui:
                 time.sleep(2/240)
 
+        # Record cutoff time for the manual scripted movement dataset
+        dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
+        dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+        object_balanced = (dist < 1e-1)
+        # gripper_reached = (abs(self.pos_gripper[1]-self.y_obstacle) < (0.1+0.01))
+        # if do_cutdown_test and (gripper_reached or object_reached):
+        #     self.cutoff_t = t / 240.0 + 0.2
+        #     return via_points
+        # if not do_cutdown_test and object_reached:
+        if object_balanced:
+            self.task_success_label = 1
+        
         return via_points
 
 

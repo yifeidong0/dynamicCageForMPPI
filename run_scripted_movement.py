@@ -7,18 +7,17 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
-total_time = 2.4
-gui = 1
+problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+gui = 0
 num_via_points = 10
-num_trajs = 50
+num_trajs = 10
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
 filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
 if problem_name == 'BalanceGrasp':
-    total_time = 2.5
+    total_time = 3
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'com_distance', 'max_contact_normal_force']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
@@ -83,21 +82,24 @@ dataset = []
 heuriset = []
 success_labelset = []
 maneuver_labelset = []
-for i in range(num_trajs):
+for i in range(20,20+num_trajs):
     x_init = sim.sample_init_state()
     sim.reset_states(x_init)
     # time.sleep(2)
-    _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
-    sim.reset_states(x_init)
-    x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
+    # _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
+    # sim.reset_states(x_init)
+    # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
     # x_news = sim.run_forward_sim(3, num_via_points) # 3 for the 50-traj planar push dataset
+    x_news = sim.run_forward_sim(total_time, num_via_points) # 3 for the 50-traj planar push dataset
     heuristics = sim.heuristics_traj
     for k in range(len(x_news)):
         dataset.append([i, k,] + x_news[k])
         heuriset.append([i, k,] + heuristics[k])
         if problem_name == 'PlanePush':
             cage = PlanePush(x_news[k], dynamics_sim)
-            man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:9]) else 1
+        elif problem_name == 'BalanceGrasp':
+            cage = BalanceGrasp(x_news[k], dynamics_sim)
+        man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:9]) else 1
         maneuver_labelset.append([i, k,] + [man_label,])
     success_labelset.append([i, sim.task_success_label])
 sim.finish_sim()

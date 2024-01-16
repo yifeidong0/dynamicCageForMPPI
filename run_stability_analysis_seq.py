@@ -17,35 +17,38 @@ import os
 # !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
-maxTime = 5 # only used when vis=0
+maxTime = 60 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
         'data/evaluation/push_fixture/rand_traj/dataset/scripted_movement_viapoints_PlanePush.csv',
         ]
 if prname == 'BalanceGrasp':
-    filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
-                 'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
-if prname == 'WaterSwing':
     filenames = [
-                # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
-                # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
-                # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
-                #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
-                'scripted_movement_viapoints_WaterSwing_t3.5.csv',
-                 ]
-if prname == 'BoxPivot':
-    filenames = [
-                # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
-                # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction0.4.csv',
-                'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
-                 ]
-if prname == 'Shuffling':
-    filenames = [
-                'data/shuffling/scripted_movement_viapoints_Shuffling.csv',
-                 ]
+        'data/evaluation/balance_grasp/rand_traj/dataset/scripted_movement_viapoints_BalanceGrasp.csv',
+        # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
+        # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv'
+        ]
+# if prname == 'WaterSwing':
+#     filenames = [
+#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
+#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
+#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
+#                 #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
+#                 'scripted_movement_viapoints_WaterSwing_t3.5.csv',
+#                  ]
+# if prname == 'BoxPivot':
+#     filenames = [
+#                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
+#                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction0.4.csv',
+#                 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
+#                  ]
+# if prname == 'Shuffling':
+#     filenames = [
+#                 'data/shuffling/scripted_movement_viapoints_Shuffling.csv',
+#                  ]
     
 for filename in filenames:
     # Read from the CSV file
@@ -64,6 +67,7 @@ for filename in filenames:
 
     # maneuver_labelset = []
     # k = 0
+    
     for i, data_i in enumerate(rows):
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
