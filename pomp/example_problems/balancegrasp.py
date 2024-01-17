@@ -53,7 +53,7 @@ class BalanceGraspControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class BalanceGrasp:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=1):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10

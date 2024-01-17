@@ -3,6 +3,7 @@ import time
 import csv
 # from main import *
 import os
+import numpy as np
 
 plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
@@ -17,13 +18,10 @@ if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     f_aoest_metrics = 'data/evaluation/push_fixture/rand_traj/approaches/ao-est-metrics/ao_est.csv'
     f_heuristics = 'data/evaluation/push_fixture/rand_traj/approaches/heuristics/scripted_movement_heuristics_PlanePush.csv'
     f_soft_fixture = 'data/evaluation/push_fixture/rand_traj/approaches/rrtstar-softfixture/rrtstar.csv'
+    f_quasistatic = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
 # if prname == 'BalanceGrasp':
 #     filenames = ['data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
 #                  'data/evaluation/balance_grasp/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv']
-# if prname == 'WaterSwing':
-#     filenames = [
-#                 'scripted_movement_viapoints_WaterSwing_t3.5.csv',
-#                  ]
 # if prname == 'BoxPivot':
 #     filenames = [
 #                 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
@@ -59,23 +57,40 @@ with open(f_maneuver_labels, 'r') as file:
     for id, row in enumerate(csv_reader):
         maneuver_labels.append(int(row[2]))
 
-success_metrics = [] # 500
-maneuverability_metrics = [] # 500
+success_metrics_aorrt = []
+maneuverability_metric_aorrt = []
 with open(f_aorrt_metrics, 'r') as file:
-# with open(f_aoest_metrics, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        success_metrics.append(float(row[5]))
-        maneuverability_metrics.append(float(row[6]))
+        success_metrics_aorrt.append(float(row[5]))
+        maneuverability_metric_aorrt.append(float(row[6]))
 
-soft_fixture_metrics = [] # 500
+success_metrics_aoest = []
+maneuverability_metric_aoest = []
+with open(f_aoest_metrics, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        success_metrics_aoest.append(float(row[5]))
+        maneuverability_metric_aoest.append(float(row[6]))
+
+soft_fixture_metrics = []
 with open(f_soft_fixture, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
         d = 100.0 if row[4] == 'inf' else float(row[4])
         soft_fixture_metrics.append(d)
+
+success_metrics_quasistatic = []
+maneuverability_metrics_quasistatic = []
+with open(f_quasistatic, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        success_metrics_quasistatic.append(float(row[5]))
+        maneuverability_metrics_quasistatic.append(float(row[6]))
 
 contact_force_metrics = [] # 500
 closeset_distance_metrics = [] # 500
@@ -87,149 +102,122 @@ with open(f_heuristics, 'r') as file:
         closeset_distance_metrics.append(float(row[2]))
 
 ##################################
-# Get predictions - maneuverability metric
-print('###########################')
-print('######maneuverability metrics######')
-thres = 0.4
-maneuver_pred = [m>thres for m in maneuverability_metrics]
-tp = sum([(i==1 and j==1) for i,j in zip(maneuver_labels, maneuver_pred)])
-tn = sum([(i==0 and j==0) for i,j in zip(maneuver_labels, maneuver_pred)])
-fp = sum([(i==0 and j==1) for i,j in zip(maneuver_labels, maneuver_pred)])
-fn = sum([(i==1 and j==0) for i,j in zip(maneuver_labels, maneuver_pred)])
-print("True positive: {}".format(tp))
-print("True negative: {}".format(tn))
-print("False positive: {}".format(fp))
-print("False negative: {}".format(fn))
+def get_m_metric(minval, maxval, thres, metric_original):
+    """ maneuverability metric
+        metric_original: list of floats, len=num_traj*num_via_points
+    """
+    metric = [(v-minval) / maxval for v in metric_original]
+    maneuver_pred = [m>thres for m in metric]
+    tp = sum([(i==1 and j==1) for i,j in zip(maneuver_labels, maneuver_pred)])
+    tn = sum([(i==0 and j==0) for i,j in zip(maneuver_labels, maneuver_pred)])
+    fp = sum([(i==0 and j==1) for i,j in zip(maneuver_labels, maneuver_pred)])
+    fn = sum([(i==1 and j==0) for i,j in zip(maneuver_labels, maneuver_pred)])
+    print("True positive: {}".format(tp))
+    print("True negative: {}".format(tn))
+    print("False positive: {}".format(fp))
+    print("False negative: {}".format(fn))
 
-# Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
-tptn = [i==j for i,j in zip(maneuver_labels, maneuver_pred)]
-accuracy = (tp+tn) / (tp+tn+fp+fn)
-print("Accuracy: {}".format(accuracy))
+    # Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
+    accuracy = (tp+tn) / (tp+tn+fp+fn)
+    print("Accuracy: {}".format(accuracy))
 
-# True positive rate (TPR): TP / P
-tpr = tp / (tp+fp)
-print("True positive rate: {}".format(tpr))
+    # True positive rate (TPR): TP / P
+    tpr = tp / (tp+fp)
+    print("True positive rate: {}".format(tpr))
 
-# True negative rate (TNR): TN / N
-tnr = tn / (tn+fn)
-print("True negative rate: {}".format(tnr))
+    # True negative rate (TNR): TN / N
+    tnr = tn / (tn+fn)
+    print("True negative rate: {}".format(tnr))
 
-# Success rate (SR): TPR / (TPR-TNR+1)
-sr = tpr / (tpr-tnr+1)
-print("Success rate: {}".format(sr))
+    # Success rate (SR): TPR / (TPR-TNR+1)
+    sr = tpr / (tpr-tnr+1)
+    print("Success rate: {}".format(sr))
 
-##################################
-# Get predictions - success metric
-print('###########################')
-print('######success metrics######')
-thres = 0.5
-success_metrics_traj = []
-# list of weights of length 10 that add up to 1 and exponentially increase
-weights = [1.5**i for i in range(num_via_points)]
-weights = [w/sum(weights) for w in weights]
-for i in range(num_trajs):
-    m = success_metrics[i*num_via_points:(i+1)*num_via_points]
-    success_metrics_traj.append(sum([w*m for w,m in zip(weights,m)]))
+def get_s_metric(minval, maxval, thres, metric_original):
+    """ success metric
+        metric_original: list of floats, len=num_traj*num_via_points
+    """
+    metric = [(v-minval) / maxval for v in metric_original]
+    metrics_traj = []
+    # list of weights of length 10 that add up to 1 and exponentially increase
+    weights = [1.5**i for i in range(num_via_points)]
+    weights = [w/sum(weights) for w in weights]
+    for i in range(num_trajs):
+        m = metric[i*num_via_points:(i+1)*num_via_points]
+        metrics_traj.append(sum([w*m for w,m in zip(weights,m)]))
 
-success_pred = [m>thres for m in success_metrics_traj]
-tp = sum([(i==1 and j==1) for i,j in zip(success_labels, success_pred)])
-tn = sum([(i==0 and j==0) for i,j in zip(success_labels, success_pred)])
-fp = sum([(i==0 and j==1) for i,j in zip(success_labels, success_pred)])
-fn = sum([(i==1 and j==0) for i,j in zip(success_labels, success_pred)])
-print("True positive: {}".format(tp))
-print("True negative: {}".format(tn))
-print("False positive: {}".format(fp))
-print("False negative: {}".format(fn))
+    success_pred = [m>thres for m in metrics_traj]
+    tp = sum([(i==1 and j==1) for i,j in zip(success_labels, success_pred)])
+    tn = sum([(i==0 and j==0) for i,j in zip(success_labels, success_pred)])
+    fp = sum([(i==0 and j==1) for i,j in zip(success_labels, success_pred)])
+    fn = sum([(i==1 and j==0) for i,j in zip(success_labels, success_pred)])
+    print("True positive: {}".format(tp))
+    print("True negative: {}".format(tn))
+    print("False positive: {}".format(fp))
+    print("False negative: {}".format(fn))
 
-# Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
-tptn = [i==j for i,j in zip(success_labels, success_pred)]
-accuracy = (tp+tn) / (tp+tn+fp+fn)
-print("Accuracy: {}".format(accuracy))
+    # Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
+    accuracy = (tp+tn) / (tp+tn+fp+fn)
+    print("Accuracy: {}".format(accuracy))
 
-# True positive rate (TPR): TP / P
-tpr = tp / (tp+fp)
-print("True positive rate: {}".format(tpr))
+    # True positive rate (TPR): TP / P
+    tpr = tp / (tp+fp)
+    print("True positive rate: {}".format(tpr))
 
-# True negative rate (TNR): TN / N
-tnr = tn / (tn+fn)
-print("True negative rate: {}".format(tnr))
+    # True negative rate (TNR): TN / N
+    tnr = tn / (tn+fn)
+    print("True negative rate: {}".format(tnr))
 
-# Success rate (SR): TPR / (TPR-TNR+1)
-sr = tpr / (tpr-tnr+1)
-print("Success rate: {}".format(sr))
-
-##################################
-# Soft Fixture - maneuverability metric
-print('###########################')
-print('######Soft Fixture maneuverability metrics######')
-minval = 0.09
-maxval = 3.01
-thres = 0.4
-soft_fixture_metrics = [(v-minval) / maxval for v in soft_fixture_metrics]
-soft_fixture_pred = [m>thres for m in soft_fixture_metrics]
-tp = sum([(i==1 and j==1) for i,j in zip(maneuver_labels, soft_fixture_pred)])
-tn = sum([(i==0 and j==0) for i,j in zip(maneuver_labels, soft_fixture_pred)])
-fp = sum([(i==0 and j==1) for i,j in zip(maneuver_labels, soft_fixture_pred)])
-fn = sum([(i==1 and j==0) for i,j in zip(maneuver_labels, soft_fixture_pred)])
-print("True positive: {}".format(tp))
-print("True negative: {}".format(tn))
-print("False positive: {}".format(fp))
-print("False negative: {}".format(fn))
-
-# Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
-tptn = [i==j for i,j in zip(maneuver_labels, soft_fixture_pred)]
-accuracy = (tp+tn) / (tp+tn+fp+fn)
-print("Accuracy: {}".format(accuracy))
-
-# True positive rate (TPR): TP / P
-tpr = tp / (tp+fp)
-print("True positive rate: {}".format(tpr))
-
-# True negative rate (TNR): TN / N
-tnr = tn / (tn+fn)
-print("True negative rate: {}".format(tnr))
-
-# Success rate (SR): TPR / (TPR-TNR+1)
-sr = tpr / (tpr-tnr+1)
-print("Success rate: {}".format(sr))
-
+    # Success rate (SR): TPR / (TPR-TNR+1)
+    sr = tpr / (tpr-tnr+1)
+    print("Success rate: {}".format(sr))
 
 ##################################
-# Get predictions - success metric
-print('###########################')
-print('######Soft Fixture success metrics######')
-thres = 0.5
-success_metrics_traj = []
-# list of weights of length 10 that add up to 1 and exponentially increase
-weights = [1.5**i for i in range(num_via_points)]
-weights = [w/sum(weights) for w in weights]
-for i in range(num_trajs):
-    m = soft_fixture_metrics[i*num_via_points:(i+1)*num_via_points]
-    success_metrics_traj.append(sum([w*m for w,m in zip(weights,m)]))
+print('######1. AO-RRT Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0.0, 1.0, 0.4, maneuverability_metric_aorrt
+get_m_metric(minval, maxval, thres, metric_original)
 
-success_pred = [m>thres for m in success_metrics_traj]
-tp = sum([(i==1 and j==1) for i,j in zip(success_labels, success_pred)])
-tn = sum([(i==0 and j==0) for i,j in zip(success_labels, success_pred)])
-fp = sum([(i==0 and j==1) for i,j in zip(success_labels, success_pred)])
-fn = sum([(i==1 and j==0) for i,j in zip(success_labels, success_pred)])
-print("True positive: {}".format(tp))
-print("True negative: {}".format(tn))
-print("False positive: {}".format(fp))
-print("False negative: {}".format(fn))
+print('######AO-RRT Success Metric######')
+minval, maxval, thres, metric_original = 0.0, 1.0, 0.5, success_metrics_aorrt
+get_s_metric(minval, maxval, thres, metric_original)
 
-# Accuracy (ACC): (TP + TN) / (TP + FP + FN +TN)
-tptn = [i==j for i,j in zip(success_labels, success_pred)]
-accuracy = (tp+tn) / (tp+tn+fp+fn)
-print("Accuracy: {}".format(accuracy))
+print('######2. AO-EST Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0.0, 1.0, 0.4, maneuverability_metric_aoest
+get_m_metric(minval, maxval, thres, metric_original)
 
-# True positive rate (TPR): TP / P
-tpr = tp / (tp+fp)
-print("True positive rate: {}".format(tpr))
+print('######AO-EST Success Metric######')
+minval, maxval, thres, metric_original = 0.0, 1.0, 0.5, success_metrics_aoest
+get_s_metric(minval, maxval, thres, metric_original)
 
-# True negative rate (TNR): TN / N
-tnr = tn / (tn+fn)
-print("True negative rate: {}".format(tnr))
+print('######3. RRT* Soft Fixture Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0.09, 3.01, 0.4, soft_fixture_metrics
+get_m_metric(minval, maxval, thres, metric_original)
 
-# Success rate (SR): TPR / (TPR-TNR+1)
-sr = tpr / (tpr-tnr+1)
-print("Success rate: {}".format(sr))
+print('######RRT* Soft Fixture Success Metric######')
+minval, maxval, thres, metric_original = 0.09, 3.01, 0.5, soft_fixture_metrics
+get_s_metric(minval, maxval, thres, metric_original)
+
+print('######4. AO-RRT Quasistatic Motion Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0., 1.0, 0.4, maneuverability_metrics_quasistatic
+get_m_metric(minval, maxval, thres, metric_original)
+
+print('######AO-RRT Quasistatic Motion Success Metric######')
+minval, maxval, thres, metric_original = 0., 1.0, 0.5, success_metrics_quasistatic
+get_s_metric(minval, maxval, thres, metric_original)
+
+# 5,6 are good metrics but hard to determine the threshold
+print('######5. Heuristic - Closest Distance - Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0., -1.0, -1e-1, closeset_distance_metrics
+get_m_metric(minval, maxval, thres, metric_original)
+
+print('######Heuristic - Closest Distance - Success Metric######')
+minval, maxval, thres, metric_original = 0., -1.0, -1e-1, closeset_distance_metrics
+get_s_metric(minval, maxval, thres, metric_original)
+
+print('######6. Heuristic - Contact Force - Maneuverability Metric######')
+minval, maxval, thres, metric_original = 0., 1.0, 1.0, contact_force_metrics
+get_m_metric(minval, maxval, thres, metric_original)
+
+print('######Heuristic - Contact Force - Success Metric######')
+minval, maxval, thres, metric_original = 0., 1.0, 1.0, contact_force_metrics
+get_s_metric(minval, maxval, thres, metric_original)
