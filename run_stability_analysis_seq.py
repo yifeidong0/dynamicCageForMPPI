@@ -16,7 +16,7 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, goal sets, costs...
 # !!! More non-maneuverable states needed in the 50 trajs
 
-plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
+plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 20 # only used when vis=0
