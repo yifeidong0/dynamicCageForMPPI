@@ -8,9 +8,9 @@ import time
 import csv
 
 problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
-gui = 0
+gui = 1
 num_via_points = 10
-num_trajs = 10
+num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -83,9 +83,9 @@ heuriset = []
 success_labelset = []
 maneuver_labelset = []
 for i in range(20,20+num_trajs):
-    x_init = sim.sample_init_state()
+    # x_init = sim.sample_init_state()
     sim.reset_states(x_init)
-    # time.sleep(2)
+    time.sleep(2)
     # _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
     # sim.reset_states(x_init)
     # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)

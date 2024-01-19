@@ -163,7 +163,8 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
             p.applyExternalTorque(self.gripperUid, -1, 
-                                [0,0,np.random.uniform(-taulim*self.mass_gripper,taulim*self.mass_gripper)],
+                                # [0,0,np.random.uniform(-taulim*self.mass_gripper,taulim*self.mass_gripper)],
+                                [0,0,800],
                                 p.WORLD_FRAME)
             
             # Print object via-points along the trajectory for visualization
@@ -179,6 +180,19 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                 # Get contact forces
                 res = p.getContactPoints(self.gripperUid, self.objectUid)
                 all_contact_normal_forces = [contact[9] for contact in res]
+                posgrip = [contact[5] for contact in res]
+                fri1 = [contact[10] for contact in res]
+                fri1dir = [contact[11] for contact in res]
+                fri2 = [contact[12] for contact in res]
+                fri2dir = [contact[13] for contact in res]
+                print('!!!posgrip: ', posgrip)
+                print('!!!res: ', len(res))
+                print('!!!contact normal forces: ', all_contact_normal_forces)
+                print('!!!fri1: ', fri1)
+                print('!!!fri1dir: ', fri1dir)
+                print('!!!fri2: ', fri2)
+                print('!!!fri2dir: ', fri2dir)
+                print('')
                 max_normal_force = max(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0
                 # print('contact max_normal_force: ', max_normal_force)
 
