@@ -27,7 +27,7 @@ estHierarchyLevels = 2
 #OK value for no cache
 #estNumExtensionSamples = 10
 #small cache
-estNumExtensionSamples = 5 # 50
+estNumExtensionSamples = 1 # 50
 #large cache
 #estNumExtensionSamples = 1000
 #Tests seem to indicate that cached extensions aren't very useful
@@ -39,11 +39,11 @@ estUseCachedExtensions = True
 estPrecheckExtensions = True
 #estPrecheckExtensions = False
 estCacheReweightFrequency = 1 # 10
-estNumCachedExtensionDrops = 2
+estNumCachedExtensionDrops = 1
 #TEST: add a "bonus extension" to cache after a successful extension
 #this might help wiggle into narrow passages
-estLetItRoll = True
-estNumLetItRollSamples = 5 # 50
+estLetItRoll = False
+estNumLetItRollSamples = 1 # 50
 
 
 
@@ -540,7 +540,7 @@ class EST(TreePlanner):
         #control sampling method
         global estNumExtensionSamples
         numNodeSamples = min(10+len(self.nodes),estNumExtensionSamples)
-        numControlSamplesPerNode = 10
+        numControlSamplesPerNode = 1
         #numNodeSamples = 1
         #Temp: test some probability of rejection?
         #extensions = [None]

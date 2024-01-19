@@ -53,16 +53,16 @@ class BalanceGraspControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class BalanceGrasp:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=1):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
         self.dynamics_sim = dynamics_sim
         self.x_range = 10
         self.y_range = 10
-        self.offset = 10.0 # extend the landscape
+        self.offset = 5.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10
         self.max_acceleration = 1e0
         self.max_ang_acceleration = 0e-1
-        self.y_obstacle = -2 # the lower rim y_pos of the obstacle
+        self.y_obstacle = 0 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 5/12 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = .5

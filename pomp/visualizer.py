@@ -205,7 +205,7 @@ class PlanVisualizationProgram(GLProgram):
                     self.problem.visualizer.drawObjectGL(n.x)
         """
 
-    def draw_graph(self, draw_edge=False):
+    def draw_graph(self, draw_edge=1):
         """Draw the roadmap."""
         if self.G:
             V,E = self.G

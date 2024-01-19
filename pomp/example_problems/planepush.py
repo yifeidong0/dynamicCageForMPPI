@@ -63,17 +63,17 @@ class PlanePush:
         self.x_range = 10
         self.y_range = 10
         self.offset = 2.0 # extend the landscape
-        self.max_velocity = 10
-        self.max_ang_velocity = 2 # 2
-        self.max_acceleration = 1
-        self.max_ang_acceleration = 0.25
+        self.max_velocity = 100
+        self.max_ang_velocity = 10 # 2
+        self.max_acceleration = 2.5
+        self.max_ang_acceleration = 0.1
         self.y_obstacle = 9 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = 0.2
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .6
-        self.maneuver_goal_tmax = 0.5
+        self.maneuver_goal_margin = .57
+        self.maneuver_goal_tmax = 1
         self.cost_inv_coef = -3e0
 
         self.object_name = 'box' # 'box', 'cylinder'
@@ -209,15 +209,15 @@ class PlanePush:
 
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
-            arc_angle_range = [(initial_pos_angle - self.maneuver_goal_margin/arc_radius) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle - 0.25*self.maneuver_goal_margin/arc_radius) % (2*np.pi), 
                                (initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi)]
         elif self.gripper_vel_theta < 0:
             # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
             arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi), 
-                               (initial_pos_angle + self.maneuver_goal_margin/arc_radius) % (2*np.pi),]
+                               (initial_pos_angle + 0.25*self.maneuver_goal_margin/arc_radius) % (2*np.pi),]
         else:
             # If the gripper is not rotating
-            arc_angle_range = [(initial_pos_angle-self.maneuver_goal_margin/default_radius) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle-0.25*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
         return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
