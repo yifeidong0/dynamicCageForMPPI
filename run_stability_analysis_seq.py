@@ -13,12 +13,12 @@ import csv
 from main import *
 import os
 
-# !!! Things remember to do BEFORE running: pruning, quasistatic, goal sets, costs...
+# !!! Things remember to do BEFORE running: pruning, quasistatic_motion, goal sets, costs...
 # !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
-vis = 1
+prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+vis = 0
 maxTime = 20 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
