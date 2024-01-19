@@ -65,7 +65,7 @@ class BalanceGrasp:
         self.y_obstacle = -2 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 1/3 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = 0.5
+        self.lateral_friction_coef = .5
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .6
         self.maneuver_goal_tmax = 1.0
@@ -79,8 +79,6 @@ class BalanceGrasp:
         factor_gripper = 1e-1 if (self.gripper_name == 'box' or self.gripper_name == 'bowl') else 1e-3
         self.moment_object = self.mass_object * factor_object # moment of inertia
         self.moment_gripper = self.mass_gripper * factor_gripper
-
-
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef]
 
@@ -100,7 +98,6 @@ class BalanceGrasp:
         self.time_range = 1
         self.obstacles = []
         self.gravity = -9.81
-
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
                             self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
                             self.maneuver_goal_tmax, self.cost_inv_coef] + self.params
@@ -109,7 +106,6 @@ class BalanceGrasp:
                                    'cost_inv_coef',
                                    'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
                                    'object_name', 'gripper_name', 'lateral_friction_coef']
-        
         if save_hyperparams:
             self.saveHyperparams()
 

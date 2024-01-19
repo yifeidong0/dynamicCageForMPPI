@@ -163,8 +163,8 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
             p.applyExternalTorque(self.gripperUid, -1, 
-                                # [0,0,np.random.uniform(-taulim*self.mass_gripper,taulim*self.mass_gripper)],
-                                [0,0,800],
+                                [0,0,np.random.uniform(-taulim*self.mass_gripper,taulim*self.mass_gripper)],
+                                # [0,0,800],
                                 p.WORLD_FRAME)
             
             # Print object via-points along the trajectory for visualization
@@ -180,32 +180,35 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                 # Get contact forces
                 res = p.getContactPoints(self.gripperUid, self.objectUid)
                 all_contact_normal_forces = [contact[9] for contact in res]
-                posgrip = [contact[5] for contact in res]
-                fri1 = [contact[10] for contact in res]
-                fri1dir = [contact[11] for contact in res]
-                fri2 = [contact[12] for contact in res]
-                fri2dir = [contact[13] for contact in res]
-                print('!!!posgrip: ', posgrip)
-                print('!!!res: ', len(res))
-                print('!!!contact normal forces: ', all_contact_normal_forces)
-                print('!!!fri1: ', fri1)
-                print('!!!fri1dir: ', fri1dir)
-                print('!!!fri2: ', fri2)
-                print('!!!fri2dir: ', fri2dir)
-                print('')
-                max_normal_force = max(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0
-                # print('contact max_normal_force: ', max_normal_force)
+                contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+                s_engage = contact_normal_force
+                contact_friction_force_xy = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
+                # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+                s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
+                # posgrip = [contact[5] for contact in res]
+                # normal = [contact[7] for contact in res]
+                # fri1 = [contact[10] for contact in res] # in xy plane
+                # fri1dir = [contact[11] for contact in res]
+                # fri2 = [contact[12] for contact in res] # along z
+                # fri2dir = [contact[13] for contact in res]
+                # print('!!!s_stick: ', s_stick)
+                # print('!!!contact_friction_force_xy: ', contact_friction_force_xy)
+                # print('!!!contact_normal_force: ', contact_normal_force)
+                # print('!!!contact pos on grip: ', posgrip)
+                # print('!!!normal: ', normal)
+                # print('!!!res: ', len(res))
+                # print('!!!contact normal forces: ', all_contact_normal_forces)
+                # print('!!!fri1: ', fri1)
+                # print('!!!fri1dir: ', fri1dir)
+                # print('!!!fri2: ', fri2)
+                # print('!!!fri2dir: ', fri2dir)
 
                 # Get bodies closest points distance
+                # com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
                 dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
                 dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
-                # print('dist: ', dist)
                 
-                # Get euclidean distance between gripper and object CoM
-                com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 
-                # print('com_dist: ', com_dist)
-                self.heuristics_traj.append([dist, com_dist, max_normal_force,])
-
+                self.heuristics_traj.append([dist, s_stick, s_engage,])
                 new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
                             self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
                             self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 

@@ -19,7 +19,7 @@ filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_n
 if problem_name == 'BalanceGrasp':
     total_time = 3
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'com_distance', 'max_contact_normal_force']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
@@ -30,7 +30,7 @@ if problem_name == 'BalanceGrasp':
 if problem_name == 'PlanePush':
     total_time = 2.3
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'com_distance', 'max_contact_normal_force']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.3, 4.0, 0.0, 0.0, 1.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -82,7 +82,7 @@ dataset = []
 heuriset = []
 success_labelset = []
 maneuver_labelset = []
-for i in range(20,20+num_trajs):
+for i in range(num_trajs):
     # x_init = sim.sample_init_state()
     sim.reset_states(x_init)
     time.sleep(2)

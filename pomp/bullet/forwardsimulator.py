@@ -50,6 +50,7 @@ class forwardSimulationPlanePush():
 
     def create_shapes(self):
         # Create a plane
+        #  The default frictional coefficients used by PyBullet are 0.5 for the lateral friction and 0 for both the rolling and spinning.
         self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
         p.changeDynamics(self.planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
@@ -237,7 +238,7 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
     def create_shapes(self):
         # Create a plane
         self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
-        p.changeDynamics(self.planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, # no friction
+        p.changeDynamics(self.planeId, -1, lateralFriction=0.5, spinningFriction=0, # no friction
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object
@@ -275,7 +276,7 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
                                                 self.quat_gripper)
         elif self.gripper_name == 'bowl':
             self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
-        p.changeDynamics(self.gripperUid, -1, lateralFriction=.5, spinningFriction=0, 
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
 
         # Create a static obstacle to catch the falling object
