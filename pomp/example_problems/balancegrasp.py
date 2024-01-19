@@ -60,14 +60,14 @@ class BalanceGrasp:
         self.offset = 10.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10
-        self.max_acceleration = 1e-1
+        self.max_acceleration = 1e0
         self.max_ang_acceleration = 0e-1
         self.y_obstacle = -2 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
-        self.angle_slope = 1/3 * math.pi  # equivalent to on a slope
+        self.angle_slope = 5/12 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = .5
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .6
+        self.maneuver_goal_margin = .55
         self.maneuver_goal_tmax = 1.0
         self.cost_inv_coef = -3e0
 

@@ -121,33 +121,21 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
     def sample_init_state(self):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                         # 5.0, 4, 0.0, 0.0, 0.0, 0]
-        xo = random.uniform(4,6)
-        yo = random.uniform(4,6)
-        vxo = random.uniform(-0.1, 0.1)
-        vyo = random.uniform(-0.1, 0.1)
-        xg = xo + random.uniform(-0.5, 0.5)
-        yg = yo + random.uniform(-0.6, -0.4)
-        thetag = random.uniform(-math.pi/15, math.pi/15)
-        vxg = random.uniform(-0.1, 0.1)
-        vyg = random.uniform(-0.1, 0.1)
-        omegag = random.uniform(-0.1, 0.1)
-        # xo = random.uniform(4,6)
-        # yo = random.uniform(4,6)
-        # vxo = random.uniform(-0.3, 0.3)
-        # vyo = random.uniform(-0.3, 0.3)
-        # xg = xo + random.uniform(-0.6, 0.6)
-        # yg = yo + random.uniform(-0.8, -0.5)
-        # thetag = random.uniform(-math.pi/4, math.pi/4)
-        # vxg = random.uniform(-0.3, 0.3)
-        # vyg = random.uniform(-0.3, 0.3)
-        # omegag = random.uniform(-0.3, 0.3)
+        xo = 5
+        yo = 5
+        vxo = random.uniform(-0.01, 0.01)
+        vyo = random.uniform(-0.01, 0.01)
+        xg = xo + random.uniform(-0.58, 0.58)
+        yg = yo - 0.3
+        # thetag = random.uniform(-math.pi/15, math.pi/15)
+        vxg = random.uniform(-0.01, 0.01)
+        vyg = random.uniform(-0.01, 0.01)
+        # omegag = random.uniform(-0.01, 0.01)
         init_state = [xo, yo, 0, vxo, vyo, 0,
-                      xg, yg, thetag, vxg, vyg, omegag]
+                      xg, yg, 0, vxg, vyg, 0]
         return init_state
 
     def run_forward_sim(self, total_time=10, num_via_points=20, taulim=6):
-    # def run_forward_sim(self, total_time=10, num_via_points=20, taulim=15):
-        # p.setGravity(0, 0, 0)
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -168,7 +156,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                                 p.WORLD_FRAME)
             
             # Print object via-points along the trajectory for visualization
-            if t % interval == 0 or t == int(t*240)-1:
+            if (t+1) % interval == 0:
                 # Get the object and gripper states
                 self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
                 self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
@@ -185,23 +173,6 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                 contact_friction_force_xy = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
                 # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
                 s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
-                # posgrip = [contact[5] for contact in res]
-                # normal = [contact[7] for contact in res]
-                # fri1 = [contact[10] for contact in res] # in xy plane
-                # fri1dir = [contact[11] for contact in res]
-                # fri2 = [contact[12] for contact in res] # along z
-                # fri2dir = [contact[13] for contact in res]
-                # print('!!!s_stick: ', s_stick)
-                # print('!!!contact_friction_force_xy: ', contact_friction_force_xy)
-                # print('!!!contact_normal_force: ', contact_normal_force)
-                # print('!!!contact pos on grip: ', posgrip)
-                # print('!!!normal: ', normal)
-                # print('!!!res: ', len(res))
-                # print('!!!contact normal forces: ', all_contact_normal_forces)
-                # print('!!!fri1: ', fri1)
-                # print('!!!fri1dir: ', fri1dir)
-                # print('!!!fri2: ', fri2)
-                # print('!!!fri2dir: ', fri2dir)
 
                 # Get bodies closest points distance
                 # com_dist = np.linalg.norm(np.array(self.pos_gripper) - np.array(self.pos_object)) 

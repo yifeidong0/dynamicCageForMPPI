@@ -8,16 +8,16 @@ import time
 import csv
 
 problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
-gui = 1
+gui = 0
 num_via_points = 10
-num_trajs = 1
+num_trajs = 20
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
 filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
 if problem_name == 'BalanceGrasp':
-    total_time = 3
+    total_time = 2.5
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
@@ -83,9 +83,9 @@ heuriset = []
 success_labelset = []
 maneuver_labelset = []
 for i in range(num_trajs):
-    # x_init = sim.sample_init_state()
+    x_init = sim.sample_init_state()
     sim.reset_states(x_init)
-    time.sleep(2)
+    # time.sleep(2)
     # _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
     # sim.reset_states(x_init)
     # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
