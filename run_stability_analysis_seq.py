@@ -23,7 +23,7 @@ maxTime = 10 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
-        'data/evaluation/push_fixture/rand_traj_2/dataset/scripted_movement_viapoints_PlanePush.csv',
+        'data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',
         ]
 if prname == 'BalanceGrasp':
     filenames = [

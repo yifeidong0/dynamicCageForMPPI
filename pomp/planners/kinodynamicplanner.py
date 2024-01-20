@@ -1081,7 +1081,7 @@ class CostSpaceRRT:
         else:
             self.metric.costWeight = 0.0
     
-    def planMore(self, iters, do_pruning=0):
+    def planMore(self, iters, do_pruning=1):
         didreset = False
         foundNewPath = False
         for n in range(iters):
@@ -1245,7 +1245,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self, iters, do_pruning=False):
+    def planMore(self, iters, do_pruning=1):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)

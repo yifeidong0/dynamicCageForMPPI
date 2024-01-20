@@ -61,7 +61,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
             # Apply external force
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
-            rand_force = [random.uniform(-0.4,0.4), random.uniform(12,20), 0]
+            rand_force = [random.uniform(-0.4,0.4), random.uniform(8,13), 0]
             p.applyExternalForce(self.gripperUid, -1, 
                                 rand_force,
                                 #  [0,10,0] ,

@@ -65,16 +65,16 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 4
-        self.max_ang_acceleration = 1
+        self.max_acceleration = 2
+        self.max_ang_acceleration = .5
         self.y_obstacle = 9 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = 0.5
+        self.lateral_friction_coef = 0.3
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .57
-        self.maneuver_goal_tmax = 1
-        self.cost_inv_coef = -1e0
+        self.maneuver_goal_tmax = 1.5
+        self.cost_inv_coef = -3e0
 
         self.object_name = 'box' # 'box', 'cylinder'
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
@@ -169,10 +169,11 @@ class PlanePush:
         return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
 
     def goalSet(self):
-        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
-                        BoxSet(bmin, bmax))
+        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        # return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
+        #                 BoxSet(bmin, bmax))
+        return self.maneuverGoalSet()
     
     def maneuverGoalSet(self, default_radius=1000):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
@@ -196,7 +197,7 @@ class PlanePush:
         else:
             # Handle linear motion case or set a default large radius
             arc_center = self.start_state[6:8]
-            arc_radius = self.maneuver_goal_margin
+            arc_radius = 0.5 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
             return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))

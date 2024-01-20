@@ -185,7 +185,7 @@ class BalanceGrasp:
         else:
             # Handle linear motion case or set a default large radius
             arc_center = self.start_state[6:8]
-            arc_radius = self.maneuver_goal_margin
+            arc_radius = 0.5 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
             return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))
