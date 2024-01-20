@@ -7,10 +7,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
 gui = 0
 num_via_points = 10
-num_trajs = 20
+num_trajs = 30
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -28,11 +28,11 @@ if problem_name == 'BalanceGrasp':
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'PlanePush':
-    total_time = 2.3
+    total_time = 3
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
-    fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
-                 5.3, 4.0, 0.0, 0.0, 1.0, 0.0]
+    fake_data = [5.0, 6.3, 0.0, 0.0, 0.0, 0.0, 
+                 5.0, 6.0, 0.0, 0.0, 2.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
     cage = PlanePush(fake_data, dynamics_sim)
     x_init = fake_data
