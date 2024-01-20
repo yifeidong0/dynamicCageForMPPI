@@ -35,14 +35,14 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
         #                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
         xo = random.uniform(4,6)
-        yo = random.uniform(6,8)
-        thetao = random.uniform(-math.pi/15, math.pi/15)
-        vxo = random.uniform(-0.1, 0.1)
-        vyo = random.uniform(-0.1, 0.1)
-        omegao = random.uniform(-0.1, 0.1)
+        yo = random.uniform(6.2,8.2)
+        thetao = random.uniform(-math.pi/18, math.pi/18)
+        vxo = random.uniform(-0.0, 0.0)
+        vyo = random.uniform(-0.0, 0.0)
+        omegao = random.uniform(-0.0, 0.0)
         xg = xo + random.uniform(-0.3, 0.3)
-        yg = yo + random.uniform(-0.4, -0.36)
-        vxg = random.uniform(-0.1, 0.1)
+        yg = yo + random.uniform(-0.37, -0.35)
+        vxg = random.uniform(-0.0, 0.0)
         vyg = random.uniform(0, 0.2)
         init_state = [xo, yo, thetao, vxo, vyo, omegao,
                       xg, yg, 0, vxg, vyg, 0]
@@ -61,7 +61,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
             # Apply external force
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
-            rand_force = [random.uniform(-0.1,0.1), random.uniform(5,12), 0]
+            rand_force = [random.uniform(-0.4,0.4), random.uniform(12,20), 0]
             p.applyExternalForce(self.gripperUid, -1, 
                                 rand_force,
                                 #  [0,10,0] ,
