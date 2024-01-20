@@ -65,16 +65,16 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 2
-        self.max_ang_acceleration = 0.5
+        self.max_acceleration = 4
+        self.max_ang_acceleration = 1
         self.y_obstacle = 9 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = 0.5
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .57
-        self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -3e0
+        self.maneuver_goal_tmax = 1
+        self.cost_inv_coef = -1e0
 
         self.object_name = 'box' # 'box', 'cylinder'
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
@@ -207,7 +207,7 @@ class PlanePush:
         # Normalize the angle_to_point within the range [0, 2π)
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
-        offset = 0.25*self.maneuver_goal_margin/arc_radius
+        offset = 0.1*self.maneuver_goal_margin/arc_radius
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
             arc_angle_range = [(initial_pos_angle - offset) % (2*np.pi), 
