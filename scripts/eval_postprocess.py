@@ -86,6 +86,7 @@ if prname == 'PlanePush':
     # f_aorrt_metrics = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-metrics/ao_rrt.csv'
     f_aoest_metrics = 'data/evaluation/push_fixture/rand_traj_3/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/push_fixture/rand_traj_3/approaches/heuristics/scripted_movement_heuristics_PlanePush.csv'
+    f_effort_aorrt = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aorrt/ao_rrt.csv'
     # f_effort_aoest = 'data/evaluation/push_fixture/rand_traj_1/approaches/effort-aoest/ao_est.csv'
     # f_soft_fixture = 'data/evaluation/push_fixture/rand_traj/approaches/rrtstar-softfixture/rrtstar.csv'
     # f_quasistatic = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
@@ -147,7 +148,14 @@ with open(f_aoest_metrics, 'r') as file:
 #     header = next(csv_reader)
 #     for id, row in enumerate(csv_reader):
 #         effort_aoest_metrics.append(float(row[4]))
-        
+      
+effort_aorrt_metrics = []
+with open(f_effort_aorrt, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        effort_aorrt_metrics.append(float(row[4]))
+          
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
 #     csv_reader = csv.reader(file)
@@ -229,5 +237,12 @@ get_s_metric(success_labels, hybrid_score)
 
 # print('###### Escape Effort AO-EST - Success Metric######')
 # get_s_metric(success_labels, effort_aoest_metrics)
+
+print('######8. Escape Effort AO-RRT - Maneuverability Metric######')
+get_m_metric(maneuver_labels, effort_aorrt_metrics)
+
+print('###### Escape Effort AO-RRT - Success Metric######')
+get_s_metric(success_labels, effort_aorrt_metrics)
+
 
 
