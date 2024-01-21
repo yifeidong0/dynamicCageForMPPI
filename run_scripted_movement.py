@@ -7,7 +7,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
 gui = 0
 num_via_points = 10
 num_trajs = 50
@@ -17,7 +17,7 @@ filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_na
 filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
 if problem_name == 'BalanceGrasp':
-    total_time = 2.5
+    total_time = 3
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 

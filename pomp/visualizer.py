@@ -163,6 +163,7 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_balance_grasp", color='escapeGoal')
             self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_balance_grasp", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_balance_grasp", color='taskGoal')
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)

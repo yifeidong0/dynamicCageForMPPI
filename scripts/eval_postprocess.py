@@ -75,7 +75,7 @@ def get_s_metric(labels, predictions):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
@@ -91,14 +91,14 @@ if prname == 'PlanePush':
     # f_soft_fixture = 'data/evaluation/push_fixture/rand_traj/approaches/rrtstar-softfixture/rrtstar.csv'
     # f_quasistatic = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
 if prname == 'BalanceGrasp':
-    f_success_labels = 'data/evaluation/balance_grasp/comp_contact_score/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
-    f_maneuver_labels = 'data/evaluation/balance_grasp/comp_contact_score/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
-    f_aorrt_metrics = 'data/evaluation/balance_grasp/comp_contact_score/approaches/prob-aorrt/ao_rrt.csv'
-    f_aoest_metrics = 'data/evaluation/balance_grasp/comp_contact_score/approaches/prob-aoest/ao_est.csv'
-    f_effort_aorrt = 'data/evaluation/balance_grasp/comp_contact_score/approaches/effort-aorrt/ao_rrt.csv'
-    f_soft_fixture = ''
+    f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
+    f_maneuver_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
+    # f_aorrt_metrics = 'data/evaluation/balance_grasp/comp_contact_score/approaches/prob-aorrt/ao_rrt.csv'
+    f_aoest_metrics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/prob-aoest/ao_est.csv'
+    # f_effort_aorrt = 'data/evaluation/balance_grasp/comp_contact_score/approaches/effort-aorrt/ao_rrt.csv'
+    # f_soft_fixture = ''
     # f_quasistatic = 'data/evaluation/balance_grasp/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
-    f_heuristics = 'data/evaluation/balance_grasp/comp_contact_score/dataset/scripted_movement_heuristics_BalanceGrasp.csv'
+    f_heuristics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/heuristics/scripted_movement_heuristics_BalanceGrasp.csv'
 # if prname == 'BoxPivot':
 # if prname == 'Shuffling':
 
@@ -142,19 +142,19 @@ with open(f_aoest_metrics, 'r') as file:
 #     for id, row in enumerate(csv_reader):
 #         effort_aorrt_metrics.append(float(row[4]))
 
-effort_aoest_metrics = []
-with open(f_effort_aoest, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        effort_aoest_metrics.append(float(row[4]))
+# effort_aoest_metrics = []
+# with open(f_effort_aoest, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         effort_aoest_metrics.append(float(row[4]))
       
-effort_aorrt_metrics = []
-with open(f_effort_aorrt, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        effort_aorrt_metrics.append(float(row[4]))
+# effort_aorrt_metrics = []
+# with open(f_effort_aorrt, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         effort_aorrt_metrics.append(float(row[4]))
           
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
@@ -232,17 +232,17 @@ get_s_metric(success_labels, hybrid_score)
 # print('###### Escape Effort AO-RRT - Success Metric######')
 # get_s_metric(success_labels, effort_aorrt_metrics)
 
-print('######8. Escape Effort AO-EST - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aoest_metrics)
+# print('######8. Escape Effort AO-EST - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aoest_metrics)
 
-print('###### Escape Effort AO-EST - Success Metric######')
-get_s_metric(success_labels, effort_aoest_metrics)
+# print('###### Escape Effort AO-EST - Success Metric######')
+# get_s_metric(success_labels, effort_aoest_metrics)
 
-print('######9. Escape Effort AO-RRT - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aorrt_metrics)
+# print('######9. Escape Effort AO-RRT - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aorrt_metrics)
 
-print('###### Escape Effort AO-RRT - Success Metric######')
-get_s_metric(success_labels, effort_aorrt_metrics)
+# print('###### Escape Effort AO-RRT - Success Metric######')
+# get_s_metric(success_labels, effort_aorrt_metrics)
 
 
 

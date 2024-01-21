@@ -16,8 +16,8 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, goal sets, costs...
 # !!! More non-maneuverable states needed in the 50 trajs
 
-plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
+prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 vis = 0
 maxTime = 10 # only used when vis=0
 
@@ -27,7 +27,7 @@ if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
         ]
 if prname == 'BalanceGrasp':
     filenames = [
-        'data/evaluation/balance_grasp/comp_contact_score/dataset/scripted_movement_viapoints_BalanceGrasp.csv',
+        'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',
         # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
         # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv'
         ]

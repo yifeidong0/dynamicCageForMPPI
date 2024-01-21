@@ -60,18 +60,19 @@ class BalanceGrasp:
         self.offset = 5.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10
-        self.max_acceleration = 1e0
+        self.max_acceleration = 5e0
         self.max_ang_acceleration = 0e-1
         self.y_obstacle = 0 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
-        self.angle_slope = 5/12 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = .5
+        self.angle_slope = 6/12 * math.pi  # equivalent to on a slope
+        self.lateral_friction_coef = .8
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .55
-        self.maneuver_goal_tmax = 1.0
-        self.cost_inv_coef = -3e0
+        self.maneuver_goal_margin = .6
+        self.maneuver_goal_tmax = 1.5
+        self.cost_inv_coef = -5e-1
+        self.goal_height = 6.5
 
-        self.object_name = 'cylinder' # 'box', 'cylinder'
+        self.object_name = 'square' # 'box', 'cylinder', 'square'
         self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
         self.mass_gripper = 1000 # bowl mass: 10
@@ -95,7 +96,7 @@ class BalanceGrasp:
             self.gripper_vel_theta = 0
 
         self.start_state = data[:9]
-        self.time_range = 1
+        self.time_range = .5
         self.obstacles = []
         self.gravity = -9.81
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
@@ -150,18 +151,19 @@ class BalanceGrasp:
         return self.start_state
 
     def taskGoalSet(self):
-        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        # return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 0, 0.1), 
-        #                 BoxSet(bmin, bmax))
-        return self.maneuverGoalSet()
+        wsbmin = [-self.offset, self.goal_height,]
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        wsbmax = [self.x_range+self.offset, self.goal_height+8,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
+        # return self.maneuverGoalSet()
     
     def goalSet(self):
-        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        # return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), 
-        #                 BoxSet(bmin, bmax))
-        return self.maneuverGoalSet()
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), 
+                        BoxSet(bmin, bmax))
+        # return self.maneuverGoalSet()
     
     def maneuverGoalSet(self, default_radius=1000):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
@@ -172,7 +174,7 @@ class BalanceGrasp:
         # Calculate arc center and radius
         gripper_velocity = np.linalg.norm(np.array([self.gripper_vel_x, self.gripper_vel_y]))
         arc_radius = gripper_velocity / abs(self.gripper_vel_theta) if self.gripper_vel_theta != 0 else default_radius
-        if gripper_velocity >= 3e-1:
+        if gripper_velocity >= 3e-2:
             # Calculate perpendicular direction to velocity
             perp_direction = [-self.gripper_vel_y, self.gripper_vel_x]
             perp_direction = perp_direction / np.linalg.norm(perp_direction)
@@ -196,17 +198,18 @@ class BalanceGrasp:
         # Normalize the angle_to_point within the range [0, 2π)
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
+        offset = 1*self.maneuver_goal_margin/arc_radius
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
-            arc_angle_range = [(initial_pos_angle - 0.0) % (2*np.pi), 
-                               (initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi)]
+            arc_angle_range = [(initial_pos_angle - offset) % (2*np.pi), 
+                               (initial_pos_angle + offset + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi)]
         elif self.gripper_vel_theta < 0:
             # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
-            arc_angle_range = [(initial_pos_angle + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi), 
-                               (initial_pos_angle + 0.0) % (2*np.pi),]
+            arc_angle_range = [(initial_pos_angle - offset + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi), 
+                               (initial_pos_angle + offset) % (2*np.pi),]
         else:
             # If the gripper is not rotating
-            arc_angle_range = [(initial_pos_angle - 0.0) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle - 0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle + gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
         return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),

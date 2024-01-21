@@ -1081,7 +1081,7 @@ class CostSpaceRRT:
         else:
             self.metric.costWeight = 0.0
     
-    def planMore(self, iters, do_pruning=1):
+    def planMore(self, iters, do_pruning=0):
         didreset = False
         foundNewPath = False
         for n in range(iters):
@@ -1158,8 +1158,9 @@ class CostSpaceRRT:
 
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
         if hasattr(self.baseControlSpace, "is_balance_grasp"):
-            success_metric = maneuver_metric
-            count_success = None
+            # success_metric = maneuver_metric
+            # count_success = None
+            success_metric = success_prob / total_prob
         elif hasattr(self.baseControlSpace, "is_plane_push_rrtstar") or hasattr(self.baseControlSpace, "is_plane_push"):
             success_metric = success_prob / total_prob
 
@@ -1245,7 +1246,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self, iters, do_pruning=1):
+    def planMore(self, iters, do_pruning=0):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)
@@ -1323,8 +1324,9 @@ class CostSpaceEST:
 
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
         if hasattr(self.baseControlSpace, "is_balance_grasp"):
-            success_metric = maneuver_metric
-            count_success = None
+            # success_metric = maneuver_metric
+            # count_success = None
+            success_metric = success_prob / total_prob
         elif hasattr(self.baseControlSpace, "is_plane_push_rrtstar") or hasattr(self.baseControlSpace, "is_plane_push"):
             success_metric = success_prob / total_prob
 

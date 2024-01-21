@@ -249,6 +249,13 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
                                                self.visualShapeId, 
                                                self.pos_object,
                                                self.quat_object)
+        if self.object_name == 'square':
+            objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.2, .2, self.z_bodies])
+            self.objectUid = p.createMultiBody(self.mass_object, 
+                                               objectId, 
+                                               self.visualShapeId, 
+                                               self.pos_object,
+                                               self.quat_object)
         elif self.object_name == 'cylinder':
             objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
             self.objectUid = p.createMultiBody(self.mass_object, 

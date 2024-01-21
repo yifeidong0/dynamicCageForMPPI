@@ -134,7 +134,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         yo = 5
         vxo = random.uniform(-0.01, 0.01)
         vyo = random.uniform(-0.01, 0.01)
-        xg = xo + random.uniform(-0.58, 0.58)
+        xg = xo + random.uniform(-0.6, 0.6)
         yg = yo - 0.3
         # thetag = random.uniform(-math.pi/15, math.pi/15)
         vxg = random.uniform(-0.01, 0.01)
@@ -144,7 +144,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                       xg, yg, 0, vxg, vyg, 0]
         return init_state
 
-    def run_forward_sim(self, total_time=10, num_via_points=20, taulim=6):
+    def run_forward_sim(self, total_time=10, num_via_points=20, taulim=1):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -157,6 +157,10 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
             p.applyExternalForce(self.gripperUid, -1, # gravity compensation
                                 [0, -self.g*self.mass_gripper*math.sin(self.angle_slope), 0], 
+                                self.pos_gripper, 
+                                p.WORLD_FRAME)
+            p.applyExternalForce(self.gripperUid, -1, # gravity compensation
+                                [0, np.random.uniform(0,1)*self.mass_gripper*math.sin(self.angle_slope), 0], 
                                 self.pos_gripper, 
                                 p.WORLD_FRAME)
             p.applyExternalTorque(self.gripperUid, -1, 
