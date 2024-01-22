@@ -103,6 +103,7 @@ if prname == 'BoxPivot':
     f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
     f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
+    f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aoest/ao_est.csv'
 # if prname == 'Shuffling':
 
 # # Read from the CSV file
@@ -145,12 +146,12 @@ with open(f_aoest_metrics, 'r') as file:
 #     for id, row in enumerate(csv_reader):
 #         effort_aorrt_metrics.append(float(row[4]))
 
-# effort_aoest_metrics = []
-# with open(f_effort_aoest, 'r') as file:
-#     csv_reader = csv.reader(file)
-#     header = next(csv_reader)
-#     for id, row in enumerate(csv_reader):
-#         effort_aoest_metrics.append(float(row[4]))
+effort_aoest_metrics = []
+with open(f_effort_aoest, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        effort_aoest_metrics.append(float(row[4]))
           
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
@@ -233,11 +234,11 @@ get_s_metric(success_labels, hybrid_score)
 # print('###### Escape Effort AO-RRT - Success Metric######')
 # get_s_metric(success_labels, effort_aorrt_metrics)
 
-# print('######8. Escape Effort AO-EST - Maneuverability Metric######')
-# get_m_metric(maneuver_labels, effort_aoest_metrics)
+print('######8. Escape Effort AO-EST - Maneuverability Metric######')
+get_m_metric(maneuver_labels, effort_aoest_metrics)
 
-# print('###### Escape Effort AO-EST - Success Metric######')
-# get_s_metric(success_labels, effort_aoest_metrics)
+print('###### Escape Effort AO-EST - Success Metric######')
+get_s_metric(success_labels, effort_aoest_metrics)
 
 
 

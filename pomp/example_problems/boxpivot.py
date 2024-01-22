@@ -98,7 +98,7 @@ class BoxPivot:
         if save_hyperparams:
             self.saveHyperparams()
 
-    def saveHyperparams(self, filename='balance_grasp_hyperparams.csv'):
+    def saveHyperparams(self, filename='box_pivot_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
             csv_writer = csv.writer(file)
             for header, data in zip(self.hyperparams_header, self.hyperparams):
@@ -138,18 +138,12 @@ class BoxPivot:
         return self.start_state
 
     def goalSet(self):
-        workspaceset = BoxSet([-self.offset, -self.offset], [self.x_range+self.offset, self.y_range+self.offset])
-        thetaset = UnionBoxSet([[-math.pi,],[math.pi-0.1]],[[-math.pi+0.1,],[math.pi]])
-        restset = BoxSet([-self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.x_range],
-                         [self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.x_range])
-        return MultiSet(workspaceset, thetaset, restset)
-        # return BoxSet([-self.offset, -self.offset, -self.task_goal_margin,
-        #                -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
-        #                -2.5*self.x_range, -2.5*self.x_range],
-        #               [self.x_range+self.offset, self.y_range+self.offset, self.task_goal_margin,
-        #                self.max_velocity, self.max_velocity, self.max_ang_velocity,
-        #                2.5*self.x_range, 2.5*self.x_range])
-        # return self.maneuverGoalSet()
+        # workspaceset = BoxSet([-self.offset, -self.offset], [self.x_range+self.offset, self.y_range+self.offset])
+        # thetaset = UnionBoxSet([[-math.pi,],[math.pi-0.1]],[[-math.pi+0.1,],[math.pi]])
+        # restset = BoxSet([-self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.x_range],
+        #                  [self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.x_range])
+        # return MultiSet(workspaceset, thetaset, restset)
+        return self.maneuverGoalSet()
     
     def taskGoalSet(self):
         return BoxSet([-self.offset, -self.offset, math.pi/2-self.task_goal_margin,

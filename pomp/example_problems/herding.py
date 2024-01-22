@@ -8,6 +8,7 @@ from ..spaces.metric import *
 from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 from ..structures.toolfunc import *
+import csv
 
 class HerdingControlSpace(ControlSpace):
     def __init__(self, cage):
@@ -47,7 +48,7 @@ class HerdingControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class Herding:
-    def __init__(self, data, dynamics_sim, num_robots=5):
+    def __init__(self, data, dynamics_sim, num_robots=5, save_hyperparams=False):
         self.dynamics_sim = dynamics_sim
         self.num_robot = num_robots
         self.dim_workspace = 2
@@ -57,7 +58,7 @@ class Herding:
         self.y_range = 10
         self.offset = 4.0 # extend the landscape
         self.max_velocity = 10
-        self.max_acceleration = 10
+        self.max_acceleration = 1
         self.mass_object = 1
         self.mass_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
         self.params = [self.mass_object, self.mass_gripper, self.num_robot]
@@ -71,6 +72,33 @@ class Herding:
 
         self.obstacles = []
         self.gravity = -9.81
+
+        self.task_goal_margin = 0.1
+        self.maneuver_goal_margin = 1/3
+        self.maneuver_goal_tmax = 1.5
+        self.cost_inv_coef = -3e0
+        self.quasistatic_motion = False
+        self.task_goal_center = [8, 8]
+        self.task_goal_radius = 1
+        if self.quasistatic_motion:
+            self.gripper_vel = [0, 0]
+        self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_acceleration, 
+                            self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
+                            self.maneuver_goal_tmax, self.cost_inv_coef, self.task_goal_center, self.task_goal_radius,
+                            self.quasistatic_motion] + self.params
+        self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_acceleration',
+                                   'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 
+                                   'maneuver_goal_tmax', 'cost_inv_coef', 'task_goal_center', 'task_goal_radius', 
+                                   'quasistatic_motion',
+                                   'mass_object', 'moment_object', 'num_robot']
+        if save_hyperparams:
+            self.saveHyperparams()
+
+    def saveHyperparams(self, filename='herding_hyperparams.csv'):
+        with open(filename, 'w', newline='') as file:
+            csv_writer = csv.writer(file)
+            for header, data in zip(self.hyperparams_header, self.hyperparams):
+                csv_writer.writerow([header, data])
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -self.max_acceleration], 
@@ -103,12 +131,27 @@ class Herding:
     def startState(self):
         return self.start_state
 
-    def goalSet(self): # TODO: implement a ring set
+    def goalSet(self):
         bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
-
         return MultiSet(RingSet([0.5*self.x_range, 0.5*self.y_range], 0.5*(self.x_range+self.offset), 0.5*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
+    
+    def taskGoalSet(self):
+        bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
+        bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
+        return MultiSet(BoxSet([-self.offset, 8], [self.x_range+self.offset, self.y_range+self.offset]), 
+                        BoxSet(bmin, bmax))
+    
+    def maneuverGoalSet(self):
+        """The object is maneuverable if the pivot point velocity is not too large."""
+        return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
+                       -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
+                       -2.5*self.x_range, -2.5*self.x_range],
+                      [self.x_range+self.offset, self.y_range+self.offset, math.pi/2,
+                       self.max_velocity, self.max_velocity, self.max_ang_velocity,
+                       2.5*self.x_range, 2.5*self.x_range])
+    
 
 class HerdingObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
@@ -126,12 +169,6 @@ class HerdingObjectiveFunction(ObjectiveFunction):
         # Roll out
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
-
-        # Energy
-        # E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
-        # Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
-        # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        # c = max((Enext-E), 1e-5)
 
         # Work (applied force, torque and friction)
         W = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[1]-x[1])
