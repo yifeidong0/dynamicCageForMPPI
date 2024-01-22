@@ -285,7 +285,7 @@ class RRT(TreePlanner):
         self.edgeChecker = edgeChecker
         self.goal = None
         self.goalSampler = None
-        self.pChooseGoal = popdefault(params,'pChooseGoal',0.1)
+        self.pChooseGoal = popdefault(params,'pChooseGoal',0)
         self.goalNodes = []
         self.configurationSampler = Sampler(self.cspace)
         numControlSamples = popdefault(params,'numControlSamples',rrtNumControlSampleIters)   
@@ -492,7 +492,7 @@ class EST(TreePlanner):
         self.stats = Profiler()
         self.numIters = self.stats.count('numIters')
         self.pruner = None
-        self.radius = popdefault(params,'densityEstimationRadius',0.1)
+        self.radius = popdefault(params,'densityEstimationRadius',1)
         self.nearestNeighbors = NearestNeighbors(self.cspace.distance,popdefault(params,'nearestNeighborMethod','kdtree'))
         if len(params) != 0:
             print("Warning, unused params",params)
@@ -1081,7 +1081,7 @@ class CostSpaceRRT:
         else:
             self.metric.costWeight = 0.0
     
-    def planMore(self, iters, do_pruning=0):
+    def planMore(self, iters, do_pruning=1):
         didreset = False
         foundNewPath = False
         for n in range(iters):

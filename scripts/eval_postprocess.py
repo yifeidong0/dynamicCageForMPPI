@@ -75,7 +75,7 @@ def get_s_metric(labels, predictions):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
@@ -99,8 +99,8 @@ if prname == 'BalanceGrasp':
     # f_quasistatic = 'data/evaluation/balance_grasp/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
     f_heuristics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/heuristics/scripted_movement_heuristics_BalanceGrasp.csv'
 if prname == 'BoxPivot':
-    f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
-    f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
+    f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_success_labels_BoxPivot.csv'
+    f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BoxPivot.csv'
     f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
     f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aoest/ao_est.csv'
@@ -178,9 +178,9 @@ with open(f_heuristics, 'r') as file:
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
         if prname == 'BoxPivot':
-            closeset_distance_metrics.append(float(row[2])+float(row[5]))
-            s_stick_metrics.append(float(row[3])+float(row[6]))
-            s_engage_metrics.append(float(row[4])+float(row[7]))
+            closeset_distance_metrics.append(float(row[5]))
+            s_stick_metrics.append(float(row[6]))
+            s_engage_metrics.append(float(row[7]))
         else:
             closeset_distance_metrics.append(float(row[2]))
             s_stick_metrics.append(float(row[3]))
