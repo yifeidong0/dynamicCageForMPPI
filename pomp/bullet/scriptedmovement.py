@@ -227,7 +227,7 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         self.create_shapes()
     
     def sample_init_state(self):
-        self.lateral_friction_coef = np.random.uniform(0.3,1.5)
+        self.lateral_friction_coef = np.random.uniform(0.5,1.5)
         print("lateral_friction_coef: ", self.lateral_friction_coef)
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
@@ -247,7 +247,7 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         self.cutoff_t = total_time
         for t in range(num_steps):
             if do_cutdown_test:
-                rand_force = [random.uniform(1,9), 0, 0]
+                rand_force = [random.uniform(1,7), 0, 0]
                 self.rand_forces.append(rand_force)
                 p.applyExternalForce(self.gripperUid1, -1, # push spring
                                     # [2,0,0], # force

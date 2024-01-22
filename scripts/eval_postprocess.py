@@ -83,7 +83,6 @@ if prname == 'PlanePush':
     # f_states = 'data/evaluation/push_fixture/rand_traj/dataset/scripted_movement_viapoints_PlanePush.csv'
     f_success_labels = 'data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_success_labels_PlanePush.csv'
     f_maneuver_labels = 'data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
-    # f_aorrt_metrics = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-metrics/ao_rrt.csv'
     f_aoest_metrics = 'data/evaluation/push_fixture/rand_traj_3/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/push_fixture/rand_traj_3/approaches/heuristics/scripted_movement_heuristics_PlanePush.csv'
     f_effort_aorrt = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aorrt/ao_rrt.csv'
@@ -93,14 +92,17 @@ if prname == 'PlanePush':
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
     f_maneuver_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
-    # f_aorrt_metrics = 'data/evaluation/balance_grasp/comp_contact_score/approaches/prob-aorrt/ao_rrt.csv'
     f_aoest_metrics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/prob-aoest/ao_est.csv'
     f_effort_aorrt = 'data/evaluation/balance_grasp/rand_traj_1/approaches/effort-aorrt/ao_rrt.csv'
     f_effort_aoest = 'data/evaluation/balance_grasp/rand_traj_1/approaches/effort-aoest/ao_est.csv'
     # f_soft_fixture = ''
     # f_quasistatic = 'data/evaluation/balance_grasp/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
     f_heuristics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/heuristics/scripted_movement_heuristics_BalanceGrasp.csv'
-# if prname == 'BoxPivot':
+if prname == 'BoxPivot':
+    f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
+    f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
+    f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/prob-aoest/ao_est.csv'
+    f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
 # if prname == 'Shuffling':
 
 # # Read from the CSV file
@@ -136,19 +138,19 @@ with open(f_aoest_metrics, 'r') as file:
         success_metrics_aoest.append(float(row[5]))
         maneuverability_metric_aoest.append(float(row[6]))
 
-effort_aorrt_metrics = []
-with open(f_effort_aorrt, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        effort_aorrt_metrics.append(float(row[4]))
+# effort_aorrt_metrics = []
+# with open(f_effort_aorrt, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         effort_aorrt_metrics.append(float(row[4]))
 
-effort_aoest_metrics = []
-with open(f_effort_aoest, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        effort_aoest_metrics.append(float(row[4]))
+# effort_aoest_metrics = []
+# with open(f_effort_aoest, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         effort_aoest_metrics.append(float(row[4]))
           
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
@@ -174,9 +176,14 @@ with open(f_heuristics, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        closeset_distance_metrics.append(float(row[2]))
-        s_stick_metrics.append(float(row[3]))
-        s_engage_metrics.append(float(row[4]))
+        if prname == 'BoxPivot':
+            closeset_distance_metrics.append(float(row[2])+float(row[5]))
+            s_stick_metrics.append(float(row[3])+float(row[6]))
+            s_engage_metrics.append(float(row[4])+float(row[7]))
+        else:
+            closeset_distance_metrics.append(float(row[2]))
+            s_stick_metrics.append(float(row[3]))
+            s_engage_metrics.append(float(row[4]))
 
 ##################################
 # print('######1. AO-RRT Maneuverability Metric######')
@@ -220,17 +227,17 @@ get_m_metric(maneuver_labels, hybrid_score)
 print('######Heuristic - Contact Force - Success Metric######')
 get_s_metric(success_labels, hybrid_score)
 
-print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aorrt_metrics)
+# print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aorrt_metrics)
 
-print('###### Escape Effort AO-RRT - Success Metric######')
-get_s_metric(success_labels, effort_aorrt_metrics)
+# print('###### Escape Effort AO-RRT - Success Metric######')
+# get_s_metric(success_labels, effort_aorrt_metrics)
 
-print('######8. Escape Effort AO-EST - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aoest_metrics)
+# print('######8. Escape Effort AO-EST - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aoest_metrics)
 
-print('###### Escape Effort AO-EST - Success Metric######')
-get_s_metric(success_labels, effort_aoest_metrics)
+# print('###### Escape Effort AO-EST - Success Metric######')
+# get_s_metric(success_labels, effort_aoest_metrics)
 
 
 

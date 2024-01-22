@@ -55,10 +55,10 @@ class BoxPivot:
         self.num_input = 2
         self.x_range = 12
         self.y_range = 12
-        self.offset = 0.0 # extend the landscape
-        self.max_velocity = 1
-        self.max_ang_velocity = 3
-        self.max_acceleration = .5
+        self.offset = 10.0 # extend the landscape
+        self.max_velocity = 100
+        self.max_ang_velocity = 100
+        self.max_acceleration = 1
         self.max_ang_acceleration = 1 # might need to be 100
         self.task_goal_margin = 0.1 * math.pi/6
         self.maneuver_goal_margin = 1/3 * math.pi/6
@@ -80,7 +80,7 @@ class BoxPivot:
         self.gripper_vel = data[self.num_state:] # spring 1,2 velocity
         self.start_state = data[:self.num_state]
         self.goal_state = [0, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
-        self.time_range = .5
+        self.time_range = .1
         self.obstacles = []
         self.gravity = -9.81
 

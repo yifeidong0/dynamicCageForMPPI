@@ -18,7 +18,7 @@ import os
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
-vis = 1
+vis = 0
 maxTime = 2 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
