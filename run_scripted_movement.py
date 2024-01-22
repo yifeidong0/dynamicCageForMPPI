@@ -7,7 +7,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BalanceGrasp" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+problem_name = "BoxPivot" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
 gui = 0
 num_via_points = 10
 num_trajs = 50
@@ -18,8 +18,11 @@ filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_n
 
 if problem_name == 'BalanceGrasp':
     total_time = 3
+    num_state_planner = 9
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
+    headers_success = ['num_traj', 'label']
+    headers_maneuver = ['num_traj', 'data_id', 'label',]
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
@@ -29,8 +32,11 @@ if problem_name == 'BalanceGrasp':
     sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'PlanePush':
     total_time = 2.5
+    num_state_planner = 9
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
+    headers_success = ['num_traj', 'label']
+    headers_maneuver = ['num_traj', 'data_id', 'label',]
     fake_data = [5.0, 6.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 6.0, 0.0, 0.0, 2.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -38,6 +44,21 @@ if problem_name == 'PlanePush':
     x_init = fake_data
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
+if problem_name == 'BoxPivot':
+    total_time = 2.5
+    num_state_planner = 8
+    headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance_spring', 'S_stick_spring', 'S_engage_spring', 'shortest_distance_ground', 'S_stick_ground', 'S_engage_ground']
+    headers_success = ['num_traj', 'label',]
+    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef']
+    fake_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                 0.0, 0.0, 0.0, 0.0, ]
+    dynamics_sim = forwardSimulationBoxPivot(gui=0)
+    cage = BoxPivot(fake_data, dynamics_sim)
+    x_init = [6, 2, 0, 0, 0, 0,
+              2, 3.7, 0, 0]
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimBoxPivot(cage, gui=gui)
 if problem_name == 'WaterSwing':
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
@@ -48,17 +69,6 @@ if problem_name == 'WaterSwing':
               cage.x_range/2, cage.y_range/3, 0, 0, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimWaterSwing(cage, gui=gui)
-if problem_name == 'BoxPivot':
-    total_time = 2.
-    headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
-    fake_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                 0.0, 0.0, 0.0, 0.0, ]
-    dynamics_sim = forwardSimulationBoxPivot(gui=0)
-    cage = BoxPivot(fake_data, dynamics_sim)
-    x_init = [6, 2, 0, 0, 0, 0,
-              0, 3, 0, 0]
-    dynamics_sim.finish_sim()
-    sim = scriptedMovementSimBoxPivot(cage, gui=gui)
 if problem_name == 'Shuffling':
     total_time = 7.5
     headers = ['data_id', 'y', 'z', 'x', 'thetax', 'thetay', 'thetaz', 
@@ -83,14 +93,15 @@ heuriset = []
 success_labelset = []
 maneuver_labelset = []
 for i in range(num_trajs):
-    x_init = sim.sample_init_state()
+    sim.sample_init_state()
     sim.reset_states(x_init)
     # time.sleep(2)
-    # _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
-    # sim.reset_states(x_init)
-    # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points)
-    # x_news = sim.run_forward_sim(3, num_via_points) # 3 for the 50-traj planar push dataset
-    x_news = sim.run_forward_sim(total_time, num_via_points) # 3 for the 50-traj planar push dataset
+    if problem_name == 'BoxPivot':
+        _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
+        sim.reset_states(x_init)
+        x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points, do_cutdown_test=0)
+    else:
+        x_news = sim.run_forward_sim(total_time, num_via_points)
     heuristics = sim.heuristics_traj
     for k in range(len(x_news)):
         dataset.append([i, k,] + x_news[k])
@@ -99,9 +110,11 @@ for i in range(num_trajs):
             cage = PlanePush(x_news[k], dynamics_sim)
         elif problem_name == 'BalanceGrasp':
             cage = BalanceGrasp(x_news[k], dynamics_sim)
-        man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:9]) else 1
-        maneuver_labelset.append([i, k,] + [man_label,])
-    success_labelset.append([i, sim.task_success_label])
+        elif problem_name == 'BoxPivot':
+            cage = BoxPivot(x_news[k], dynamics_sim)
+        man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:num_state_planner]) else 1
+        maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef])
+    success_labelset.append([i, sim.task_success_label,])
 sim.finish_sim()
 
 # Save data to a CSV file with headers
@@ -119,11 +132,11 @@ with open(filename_metric, mode='w', newline='') as file:
 # Save labels to a CSV file with headers
 with open(filename_suc_label, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['num_traj', 'label'])
+    writer.writerow(headers_success)
     writer.writerows(success_labelset)
 
 # Save labels to a CSV file with headers
 with open(filename_man_label, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['num_traj', 'data_id', 'label'])
+    writer.writerow(headers_maneuver)
     writer.writerows(maneuver_labelset)

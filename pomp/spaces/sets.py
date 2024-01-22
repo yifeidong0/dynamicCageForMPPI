@@ -162,6 +162,30 @@ class FiniteSet(Set):
         return 2*(x-minv)
 
 
+class BoxPivotNonManeuverableSet(Set):
+    """Represents a non-maneuverable set of state that the pivoting point has a high velocity."""
+    def __init__(self,bmin,bmax):
+        self.bmin = bmin
+        self.bmax = bmax
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin,self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x, vel_thres=1.5):
+        assert len(x)==len(self.bmin)
+        point_relative_position = [2, 0, -2]
+        angular_velocity = [0, x[5], 0]
+        linear_velocity = [x[3], 0, x[4]]
+        point_velocity = linear_velocity + np.cross(angular_velocity, point_relative_position)
+        point_velocity = np.linalg.norm(point_velocity)
+        if point_velocity > vel_thres:
+            return True
+        else:
+            return False
+    
+
 class BoxSet(Set):
     """Represents an axis-aligned box in a vector space."""
     def __init__(self,bmin,bmax):

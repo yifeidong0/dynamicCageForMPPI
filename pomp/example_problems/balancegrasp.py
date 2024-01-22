@@ -101,10 +101,10 @@ class BalanceGrasp:
         self.gravity = -9.81
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
                             self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
-                            self.maneuver_goal_tmax, self.cost_inv_coef] + self.params
+                            self.maneuver_goal_tmax, self.cost_inv_coef, self.goal_height] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
                                    'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 'maneuver_goal_tmax',
-                                   'cost_inv_coef',
+                                   'cost_inv_coef', 'goal_height',
                                    'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
                                    'object_name', 'gripper_name', 'lateral_friction_coef']
         if save_hyperparams:

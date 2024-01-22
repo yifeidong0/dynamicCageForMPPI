@@ -9,6 +9,7 @@ from ..planners.problem import PlanningProblem
 from ..bullet.forwardsimulator import *
 from ..structures.toolfunc import *
 import math
+import csv
 
 class BoxPivotControlSpace(ControlSpace):
     def __init__(self, cage):
@@ -17,6 +18,7 @@ class BoxPivotControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.cost_inv_coef = cage.cost_inv_coef
         self.is_box_pivot = True
 
     def configurationSpace(self):
@@ -32,19 +34,11 @@ class BoxPivotControlSpace(ControlSpace):
         t, ax, omega = u # control space
         tc = t * amount
         mu = [tc, ax, omega]
-
-        # xaug = x + self.cage.gripper_vel
         vxg1, vxg2 = self.cage.gripper_vel[:2]
-        # omegag = self.cage.gripper_vel_theta
-        # vxg, vyg = calculate_new_velocity(vxg_init, vyg_init, omegag, self.cage.start_state[8], x[8])
         xaug = x + [vxg1, vxg2]
 
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
-
-        # # Make theta fall in [-pi, pi]
-        # x_new[2] = limit_angle_to_pi(x_new[2])
-        # x_new[8] = limit_angle_to_pi(x_new[8])
 
         if print_via_points: # TODO
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
@@ -55,7 +49,7 @@ class BoxPivotControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class BoxPivot:
-    def __init__(self, data, dynamics_sim):
+    def __init__(self, data, dynamics_sim, save_hyperparams=1, lateral_friction_coef=0.8):
         self.dynamics_sim = dynamics_sim
         self.num_state = 8 # box 6 + spring 2
         self.num_input = 2
@@ -64,43 +58,55 @@ class BoxPivot:
         self.offset = 0.0 # extend the landscape
         self.max_velocity = 1
         self.max_ang_velocity = 3
-        self.max_acceleration = 3.0
-        self.max_ang_acceleration = 20 # might need to be 100
+        self.max_acceleration = .5
+        self.max_ang_acceleration = 1 # might need to be 100
+        self.task_goal_margin = 0.1 * math.pi/6
+        self.maneuver_goal_margin = 1/3 * math.pi/6
+        self.maneuver_goal_tmax = 1.5
+        self.cost_inv_coef = -3e0
+
         self.mass_object = .3
         self.mass_gripper = 1e-1
         self.moment_object = 8e-1 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=4
         self.moment_gripper = 3e-3 # (2/5) * mass_ball * radius_ball**2
-        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper]
-
-        # Gripper moving velocity (constant)
+        self.lateral_friction_coef = lateral_friction_coef
+        self.rest_length = 3
+        self.k = 2  # Spring constant
+        self.height_spring = 3.7
+        self.quasistatic_motion = False
+        self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.lateral_friction_coef,
+                       self.rest_length, self.k, self.height_spring, self.quasistatic_motion]
+        
         self.gripper_vel = data[self.num_state:] # spring 1,2 velocity
-        # self.gripper_vel_x = data[9]
-        # self.gripper_vel_y = data[10]
-        # self.gripper_vel_theta = data[11]
-
         self.start_state = data[:self.num_state]
         self.goal_state = [0, 0, 0, 0, 0, 0, 0, 0] # varying goal region # TODO
-        # self.goal_radius = .2 # MPPI goal radius
-        # self.goal_half_extent = 1.5 # AO-xxx goal region
         self.time_range = .5
-
         self.obstacles = []
         self.gravity = -9.81
 
-        # self.cspace_bound = [[0, self.x_range], 
-        #                      [0, self.y_range], 
-        #                      [-math.pi, math.pi], 
-        #                      [-self.max_velocity, self.max_velocity],
-        #                      [-self.max_velocity, self.max_velocity],
-        #                      [-self.max_ang_velocity, self.max_ang_velocity],
-        #                      [-self.x_range, 2*self.x_range], 
-        #                      [-self.y_range, 2*self.y_range], 
-        #                      [-math.pi, math.pi], 
-        #                      ]
+        # Gripper moving velocity (constant)
+        if self.quasistatic_motion:
+            self.gripper_vel = [0, 0]
+        self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
+                            self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
+                            self.maneuver_goal_tmax, self.cost_inv_coef] + self.params
+        self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
+                                   'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 'maneuver_goal_tmax',
+                                   'cost_inv_coef', 
+                                   'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'lateral_friction_coef', 'rest_length',
+                                   'k', 'height_spring', 'quasistatic_motion']
+        if save_hyperparams:
+            self.saveHyperparams()
+
+    def saveHyperparams(self, filename='balance_grasp_hyperparams.csv'):
+        with open(filename, 'w', newline='') as file:
+            csv_writer = csv.writer(file)
+            for header, data in zip(self.hyperparams_header, self.hyperparams):
+                csv_writer.writerow([header, data])
 
     def controlSet(self):
         return BoxSet([-self.max_acceleration, -1.0*self.max_ang_acceleration], 
-                      [self.max_acceleration, 0.0*self.max_ang_acceleration])
+                      [self.max_acceleration, 1.0*self.max_ang_acceleration])
 
     def controlSpace(self):
         # System dynamics
@@ -119,7 +125,7 @@ class BoxPivot:
         wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         wspace.addObstacleParam(self.obstacles)
         res =  MultiConfigurationSpace(wspace,
-                                       BoxConfigurationSpace([0.0*math.pi],[0.5*math.pi]),
+                                       BoxConfigurationSpace([-math.pi],[math.pi]),
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
@@ -132,14 +138,36 @@ class BoxPivot:
         return self.start_state
 
     def goalSet(self):
-        return BoxSet([-self.offset, -self.offset, 0.0*math.pi,
+        workspaceset = BoxSet([-self.offset, -self.offset], [self.x_range+self.offset, self.y_range+self.offset])
+        thetaset = UnionBoxSet([[-math.pi,],[math.pi-0.1]],[[-math.pi+0.1,],[math.pi]])
+        restset = BoxSet([-self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.x_range],
+                         [self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.x_range])
+        return MultiSet(workspaceset, thetaset, restset)
+        # return BoxSet([-self.offset, -self.offset, -self.task_goal_margin,
+        #                -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
+        #                -2.5*self.x_range, -2.5*self.x_range],
+        #               [self.x_range+self.offset, self.y_range+self.offset, self.task_goal_margin,
+        #                self.max_velocity, self.max_velocity, self.max_ang_velocity,
+        #                2.5*self.x_range, 2.5*self.x_range])
+        # return self.maneuverGoalSet()
+    
+    def taskGoalSet(self):
+        return BoxSet([-self.offset, -self.offset, math.pi/2-self.task_goal_margin,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -2.5*self.x_range, -2.5*self.x_range],
-                      [self.x_range+self.offset, self.y_range+self.offset, (3e-2)*math.pi,
+                      [self.x_range+self.offset, self.y_range+self.offset, math.pi,
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
                        2.5*self.x_range, 2.5*self.x_range])
-
-
+    
+    def maneuverGoalSet(self):
+        """The object is maneuverable if the pivot point velocity is not too large."""
+        return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
+                       -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
+                       -2.5*self.x_range, -2.5*self.x_range],
+                      [self.x_range+self.offset, self.y_range+self.offset, math.pi/2,
+                       self.max_velocity, self.max_velocity, self.max_ang_velocity,
+                       2.5*self.x_range, 2.5*self.x_range])
+    
 class BoxPivotObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
@@ -153,47 +181,31 @@ class BoxPivotObjectiveFunction(ObjectiveFunction):
     def incremental(self, x, u, uparent=None):
         m = self.cage.mass_object
         I = self.cage.moment_object # TODO
-        # g = self.cage.gravity
-
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
 
-        # Energy
-        # E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
-        # Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
-        # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        # c = max((Enext-E), 1e-5)
-
         # Work (applied force, torque and friction)
-        delta_alpha = xnext[2] - x[2]
-        # if delta_alpha < -math.pi:
-        #     delta_alpha = 2*math.pi + delta_alpha
-        # if delta_alpha > math.pi:
-        #     delta_alpha = -2*math.pi + delta_alpha
-        W = m*u[1]*(xnext[0]-x[0]) + I*u[2]*delta_alpha
-        c = max(W, 1e-5)
-        # c = max(abs(W), 1e-5)
-
+        W = m*u[1]*(xnext[0]-x[0]) + I*u[2]*(xnext[2]-x[2])
+        c = max(abs(W), 1e-5)
         return c
 
 
 def boxPivotTest(dynamics_sim,
-                #  data=[6.088935001616721,2.085201582357198,0.04356701420972912,0.8179462670670236,0.7514566040947372,0.39286942983033646,
-                #        1.2081902424651314,3.857239623005551,3.363011718477068,1.3836635048618797]
-                 data=[6.499079904444838,2.397549737084281,0.22622950186326807,1.8207181866422655,1.1495647514494098,0.7609057703831511,
-                         1.6157827276435577,4.439045449428635,0.20465756939330715,2.192905112691566]
-                #  data=[8.078300255697453,2.827378659621455,0.8128189302617814,3.3118722652718695,-0.07453201727857538,1.1712296629792454,
-                #        2.791803974737872,5.655365749729913,0.17408929947791152,1.435692406769087]
+                data=[6.499079904444838,2.397549737084281,0.22622950186326807,1.8207181866422655,1.1495647514494098,0.7609057703831511,
+                      1.6157827276435577,4.439045449428635,0.20465756939330715,2.192905112691566],
+                save_hyperparams=False,
+                lateral_friction_coef=0.8,
                  ):
-    p = BoxPivot(data, dynamics_sim)
-
-    # if p.checkStartFeasibility():
-    #     print('In collision!')
-    #     return False
+    p = BoxPivot(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
     objective = BoxPivotObjectiveFunction(p)
-    return PlanningProblem(objective.space,p.startState(),p.goalSet(),
+    return PlanningProblem(objective.space,
+                           p.startState(),
+                           p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean = True)
+                           euclidean=True,
+                           taskGoal=p.taskGoalSet(),
+                           maneuverGoal=p.maneuverGoalSet(),
+                           )
 
 

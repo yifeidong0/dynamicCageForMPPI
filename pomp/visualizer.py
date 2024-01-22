@@ -165,6 +165,8 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_balance_grasp", color='maneuverGoal')
             self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_balance_grasp", color='taskGoal')
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
+        elif hasattr(self.problem.controlSpace, "is_box_pivot"):
+            self.problem.visualizer.drawObjectGL(self.problem.controlSpace.cage.start_state[:2])
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 

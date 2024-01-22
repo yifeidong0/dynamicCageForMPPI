@@ -219,6 +219,115 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         return via_points
 
 
+class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
+    def __init__(self, cage, gui=False):
+        super().__init__(gui=gui)
+        self.cage = cage
+        self.set_params(cage.params)
+        self.create_shapes()
+    
+    def sample_init_state(self):
+        self.lateral_friction_coef = np.random.uniform(0.3,1.5)
+        print("lateral_friction_coef: ", self.lateral_friction_coef)
+        p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+
+    def run_forward_sim(self, total_time=5, num_via_points=20, do_cutdown_test=False):
+        num_steps = int(total_time * 240)  # Number of time steps
+        interval = int(num_steps/num_via_points)
+        interval = 3 if interval==0 else interval
+
+        # Step the simulation
+        self.heuristics_traj = []
+        via_points = []
+        self.task_success_label = 0
+        if do_cutdown_test: self.rand_forces = []
+        self.cutoff_t = total_time
+        for t in range(num_steps):
+            if do_cutdown_test:
+                rand_force = [random.uniform(1,9), 0, 0]
+                self.rand_forces.append(rand_force)
+                p.applyExternalForce(self.gripperUid1, -1, # push spring
+                                    # [2,0,0], # force
+                                    rand_force,
+                                    [0,0,0], 
+                                    p.LINK_FRAME)
+            else:
+                p.applyExternalForce(self.gripperUid1, -1, # push spring
+                                    self.rand_forces[t], # force
+                                    [0,0,0], 
+                                    p.LINK_FRAME)
+            # Get positions of the boxes
+            self.pos_gripper1, _ = p.getBasePositionAndOrientation(self.gripperUid1)
+            self.pos_gripper2, _ = p.getBasePositionAndOrientation(self.gripperUid2)
+            
+            # Update the maxForce for the spring constraint
+            maxForce = self.k * np.abs(np.linalg.norm(np.array(self.pos_gripper2) - np.array(self.pos_gripper1)) - self.rest_length)
+            p.changeConstraint(self.c_spring, maxForce=maxForce)
+
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if (t+1) % interval == 0:
+                # Get the object and gripper states
+                self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+                self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+                self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+                self.pos_gripper1, _ = p.getBasePositionAndOrientation(self.gripperUid1)
+                self.pos_gripper2, _ = p.getBasePositionAndOrientation(self.gripperUid2)
+                self.vel_gripper1,_ = p.getBaseVelocity(self.gripperUid1)
+                self.vel_gripper2,_ = p.getBaseVelocity(self.gripperUid2)
+
+                # Get contact forces
+                heuristics = []
+                for contact in [self.gripperUid2, self.planeUid]:
+                    res = p.getContactPoints(contact, self.objectUid)
+                    all_contact_normal_forces = [contact[9] for contact in res]
+                    contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+                    s_engage = contact_normal_force
+                    contact_friction_force_xy = sum([contact[12] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
+                    # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+                    s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
+
+                    # Get bodies closest points distance
+                    dist = p.getClosestPoints(contact, self.objectUid, 100)
+                    dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+                    heuristics.append(dist)
+                    heuristics.append(s_stick)
+                    heuristics.append(s_engage)
+                
+                self.heuristics_traj.append(heuristics)
+
+                point_relative_position = [2, 0, -2]
+                angular_velocity = self.vel_ang_object
+                linear_velocity = self.vel_object
+                point_velocity = linear_velocity + np.cross(angular_velocity, point_relative_position)
+                point_velocity = np.linalg.norm(point_velocity)
+                new_states = [self.pos_object[0], self.pos_object[2], self.eul_object[1],
+                            self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],
+                            self.pos_gripper1[0], self.pos_gripper2[0],  
+                            self.vel_gripper1[0], self.vel_gripper2[0], 
+                            ]
+                via_points.append(new_states)
+
+            self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+            self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+            object_reached = self.eul_object[1] > math.pi/2-0.5*self.cage.task_goal_margin
+            if do_cutdown_test and object_reached:
+                self.cutoff_t = t / 240.0
+                return via_points
+            if self.gui:
+                time.sleep(1/240)
+        
+        self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+        if self.eul_object[1] > math.pi/2-self.cage.task_goal_margin:
+            self.task_success_label = 1
+        return via_points
+    
+
 class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
     def __init__(self, cage, gui=False):
         super().__init__(gui=gui)
@@ -280,61 +389,6 @@ class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
                             self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],
                             self.pos_gripper[0], self.pos_gripper[2], correct_euler(self.eul_gripper)[1], 
                             self.vel_gripper[0], self.vel_gripper[2], self.vel_ang_gripper[1]
-                            ]
-                via_points.append(new_states)
-
-            if self.gui:
-                time.sleep(2/240)
-
-        return via_points
-
-
-class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
-    def __init__(self, cage, gui=False):
-        super().__init__(gui=gui)
-        # p.setGravity(0, 0, self.g)
-
-        self.set_params(cage.params)
-        self.create_shapes()
-
-    def run_forward_sim(self, total_time=4, num_via_points=20):
-        num_steps = int(total_time * 240)  # Number of time steps
-        interval = int(num_steps/num_via_points)
-        interval = 3 if interval==0 else interval
-
-        # Step the simulation
-        via_points = []
-        for t in range(num_steps):
-            p.applyExternalForce(self.gripperUid1, -1, # push spring
-                                [2,0,0], # force
-                                [0,0,0], 
-                                p.LINK_FRAME)
-            
-            # Get positions of the boxes
-            self.pos_gripper1, _ = p.getBasePositionAndOrientation(self.gripperUid1)
-            self.pos_gripper2, _ = p.getBasePositionAndOrientation(self.gripperUid2)
-            
-            # Update the maxForce for the spring constraint
-            maxForce = self.k * np.abs(np.linalg.norm(np.array(self.pos_gripper2) - np.array(self.pos_gripper1)) - self.rest_length)
-            p.changeConstraint(self.c_spring, maxForce=maxForce)
-
-            p.stepSimulation()
-
-            # Print object via-points along the trajectory for visualization
-            if t % interval == 0 or t == int(t*240)-1:
-                # Get the object and gripper states
-                self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
-                self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
-                self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
-                self.pos_gripper1, _ = p.getBasePositionAndOrientation(self.gripperUid1)
-                self.pos_gripper2, _ = p.getBasePositionAndOrientation(self.gripperUid2)
-                self.vel_gripper1,_ = p.getBaseVelocity(self.gripperUid1)
-                self.vel_gripper2,_ = p.getBaseVelocity(self.gripperUid2)
-
-                new_states = [self.pos_object[0], self.pos_object[2], self.eul_object[1],
-                            self.vel_object[0], self.vel_object[2], self.vel_ang_object[1],
-                            self.pos_gripper1[0], self.pos_gripper2[0],  
-                            self.vel_gripper1[0], self.vel_gripper2[0], 
                             ]
                 via_points.append(new_states)
 

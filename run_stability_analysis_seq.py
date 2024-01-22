@@ -17,9 +17,9 @@ import os
 # !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'BalanceGrasp' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
-vis = 0
-maxTime = 10 # only used when vis=0
+prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'WaterSwing', 'Shuffling'
+vis = 1
+maxTime = 2 # only used when vis=0
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     filenames = [
@@ -31,20 +31,11 @@ if prname == 'BalanceGrasp':
         # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_fail.csv',
         # 'data/evaluation/balance_grasp/trial/test_data/scripted_movement_viapoints_BalanceGrasp_success.csv'
         ]
-# if prname == 'WaterSwing':
-#     filenames = [
-#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t5.5.csv',
-#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_radius3_t3.5.csv',
-#                 # 'data/waterswing/scripted_movement_viapoints_WaterSwing_t2.2.csv',
-#                 #  'data/waterswing/scripted_movement_viapoints_WaterSwing_t3.5.csv',
-#                 'scripted_movement_viapoints_WaterSwing_t3.5.csv',
-#                  ]
-# if prname == 'BoxPivot':
-#     filenames = [
-#                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k8.0.csv',
-#                 # 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction0.4.csv',
-#                 'data/boxpivot/scripted_movement_viapoints_BoxPivot_k2.0_friction1.0.csv',
-#                  ]
+if prname == 'BoxPivot':
+    filenames = [
+                'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_viapoints_BoxPivot.csv',
+                 ]
+    filename_friction = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BoxPivot.csv'
 # if prname == 'Shuffling':
 #     filenames = [
 #                 'data/shuffling/scripted_movement_viapoints_Shuffling.csv',
@@ -61,6 +52,13 @@ for filename in filenames:
             rows.append([float(d) for d in row[2:]])
             ids.append(int(row[0]))
 
+    if prname == 'BoxPivot':
+        fri_coeffs = []
+        with open(filename_friction, 'r') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+            for id, row in enumerate(csv_reader):
+                fri_coeffs.append(float(row[3]))
     params = {'maxTime':maxTime}
     if 'maxTime' in params:
         del params['maxTime']
@@ -74,24 +72,16 @@ for filename in filenames:
             problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
-
-        #     cage = PlanePush(data_i, dynamics_sim)
-        #     man_label = 0 if cage.maneuverGoalSet().contains(data_i[:9]) else 1
-        #     maneuver_labelset.append([ids[i], k,] + [man_label,])
-        # k += 1
-        # if k == 10:
-        #     k = 0
-            
             problem = planePushTest(dynamics_sim, data_i, save_hyperparams=1,)
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
+        if prname == 'BoxPivot':
+            dynamics_sim = forwardSimulationBoxPivot(gui=0)
+            problem = boxPivotTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
         if prname == 'WaterSwing':
             dynamics_sim = forwardSimulationWaterSwing(gui=0)
             problem = waterSwingTest(dynamics_sim, data_i)
-        if prname == 'BoxPivot':
-            dynamics_sim = forwardSimulationBoxPivot(gui=0)
-            problem = boxPivotTest(dynamics_sim, data_i)
         if prname == 'Shuffling':
             dynamics_sim = forwardSimulationShuffling(gui=0)
             problem = ShufflingTest(dynamics_sim, data_i)
@@ -102,11 +92,3 @@ for filename in filenames:
             testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
         time.sleep(3.0)
-
-# # Save labels to a CSV file with headers
-# problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
-# filename_man_label = "scripted_maneuver_labels_{}.csv".format(problem_name)
-# with open(filename_man_label, mode='w', newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(['num_traj', 'data_id', 'label'])
-#     writer.writerows(maneuver_labelset)
