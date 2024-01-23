@@ -62,7 +62,7 @@ customParameters = {
                     'PlanePushRrtstar':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
-                    'Herding':{'maxTime':1},
+                    'Herding':{'maxTime':20},
                     'Gripper':{'maxTime':20},
                     'Shuffling':{'maxTime':20},
                     }
