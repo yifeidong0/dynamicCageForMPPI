@@ -91,4 +91,4 @@ for filename in filenames:
             print(ids[i])
             testPlannerDefault(problem, prname, maxTime, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
-        time.sleep(3.0)
+        # time.sleep(3.0)

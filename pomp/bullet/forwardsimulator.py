@@ -726,6 +726,7 @@ class forwardSimulationHerding():
             # Apply the force on the object
             acc_object = force_on_object / self.mass_object
             acc_object += np.asarray([ax, ay])
+            # acc_object = np.asarray([ax, ay])
             self.pos_object += self.vel_object * dt + 0.5 * acc_object * dt * dt
             self.vel_object += acc_object * dt
                         

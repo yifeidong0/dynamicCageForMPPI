@@ -167,6 +167,9 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.controlSpace, "is_box_pivot"):
             self.problem.visualizer.drawObjectGL(self.problem.controlSpace.cage.start_state[:2])
+        elif hasattr(self.problem.controlSpace, "is_herding"):
+            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_herding", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_herding", color='escapeGoal')
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)
 

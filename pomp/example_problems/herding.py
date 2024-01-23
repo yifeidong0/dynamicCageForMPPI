@@ -17,6 +17,7 @@ class HerdingControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.cost_inv_coef = cage.cost_inv_coef
         self.is_herding = True
 
     def configurationSpace(self):
@@ -48,7 +49,7 @@ class HerdingControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class Herding:
-    def __init__(self, data, dynamics_sim, num_robots=5, save_hyperparams=False):
+    def __init__(self, data, dynamics_sim, num_robots=5, cage_radius=2.0, save_hyperparams=False):
         self.dynamics_sim = dynamics_sim
         self.num_robot = num_robots
         self.dim_workspace = 2
@@ -57,7 +58,7 @@ class Herding:
         self.x_range = 10
         self.y_range = 10
         self.offset = 4.0 # extend the landscape
-        self.max_velocity = 10
+        self.max_velocity = 100
         self.max_acceleration = 1
         self.mass_object = 1
         self.mass_gripper = 1 # has to be the SAME as the 4face-bottle.urdf file!
@@ -69,6 +70,7 @@ class Herding:
         self.start_state = data[:self.dim_state]
         self.goal_state = [0,] * self.dim_state # varying goal region # TODO
         self.time_range = 0.5
+        self.cage_radius = cage_radius
 
         self.obstacles = []
         self.gravity = -9.81
@@ -76,19 +78,18 @@ class Herding:
         self.task_goal_margin = 0.1
         self.maneuver_goal_margin = 1/3
         self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -3e0
+        self.cost_inv_coef = -5e-1
         self.quasistatic_motion = False
-        self.task_goal_center = [8, 8]
-        self.task_goal_radius = 1
+        self.task_goal_y = 4
         if self.quasistatic_motion:
             self.gripper_vel = [0, 0]
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_acceleration, 
                             self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
-                            self.maneuver_goal_tmax, self.cost_inv_coef, self.task_goal_center, self.task_goal_radius,
+                            self.maneuver_goal_tmax, self.cost_inv_coef, self.task_goal_y, 
                             self.quasistatic_motion] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_acceleration',
                                    'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 
-                                   'maneuver_goal_tmax', 'cost_inv_coef', 'task_goal_center', 'task_goal_radius', 
+                                   'maneuver_goal_tmax', 'cost_inv_coef', 'task_goal_y',
                                    'quasistatic_motion',
                                    'mass_object', 'moment_object', 'num_robot']
         if save_hyperparams:
@@ -134,23 +135,22 @@ class Herding:
     def goalSet(self):
         bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
-        return MultiSet(RingSet([0.5*self.x_range, 0.5*self.y_range], 0.5*(self.x_range+self.offset), 0.5*self.x_range+self.offset), 
+        return MultiSet(RingSet(self.start_state[:2], self.cage_radius+0.5, 0.5*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
     
-    def taskGoalSet(self):
+    def taskGoalSet(self): # TODO
+        # bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
+        # bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
+        # return MultiSet(BoxSet([-self.offset, self.task_goal_y], [self.x_range+self.offset, self.y_range+self.offset]), 
+        #                 BoxSet(bmin, bmax))
+        return self.maneuverGoalSet()
+    
+    def maneuverGoalSet(self): # TODO
+        """This is literally the maneuverable set rather than non-maneuverable set."""
         bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
-        return MultiSet(BoxSet([-self.offset, 8], [self.x_range+self.offset, self.y_range+self.offset]), 
+        return MultiSet(RingSet(self.start_state[:2], 0., self.cage_radius), 
                         BoxSet(bmin, bmax))
-    
-    def maneuverGoalSet(self):
-        """The object is maneuverable if the pivot point velocity is not too large."""
-        return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
-                       -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
-                       -2.5*self.x_range, -2.5*self.x_range],
-                      [self.x_range+self.offset, self.y_range+self.offset, math.pi/2,
-                       self.max_velocity, self.max_velocity, self.max_ang_velocity,
-                       2.5*self.x_range, 2.5*self.x_range])
     
 
 class HerdingObjectiveFunction(ObjectiveFunction):
@@ -172,13 +172,12 @@ class HerdingObjectiveFunction(ObjectiveFunction):
 
         # Work (applied force, torque and friction)
         W = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[1]-x[1])
-        c = max(W, 1e-5)
+        c = max(abs(W), 1e-5)
 
         return c
 
 def form_a_random_cage(data, num_robot=5, radius=2.0):
     center = data[:2]
-    # num_robot = len(data[4:]) // 4
     while True:
         # Generate num_robot equally spaced angles between 0 and 2pi
         angles = np.linspace(0, 2*np.pi, num_robot, endpoint=False)
@@ -195,10 +194,10 @@ def form_a_random_cage(data, num_robot=5, radius=2.0):
 
         return data_new
 
-def HerdingTest(dynamics_sim, data=None, num_robots=5):
+def HerdingTest(dynamics_sim, data=None, num_robots=5, cage_radius=2.0, save_hyperparams=False):
     data = [5.0, 5.0, 0.0, 0.0,] + [0.0, 0.0,]*num_robots + [0.0, 0,0]*num_robots
-    data = form_a_random_cage(data, num_robots)
-    p = Herding(data, dynamics_sim, num_robots)
+    data = form_a_random_cage(data, num_robots, cage_radius)
+    p = Herding(data, dynamics_sim, num_robots, cage_radius, save_hyperparams)
 
     objective = HerdingObjectiveFunction(p)
     return PlanningProblem(objective.space,
@@ -206,6 +205,9 @@ def HerdingTest(dynamics_sim, data=None, num_robots=5):
                            p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean=True)
+                           euclidean=True,
+                           taskGoal=p.taskGoalSet(),
+                           maneuverGoal=p.maneuverGoalSet(),
+                           )
 
 

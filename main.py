@@ -62,7 +62,7 @@ customParameters = {
                     'PlanePushRrtstar':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
-                    'Herding':{'maxTime':20},
+                    'Herding':{'maxTime':1},
                     'Gripper':{'maxTime':20},
                     'Shuffling':{'maxTime':20},
                     }
@@ -161,9 +161,13 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationBoxPivot(gui=0)
         problem = boxpivot.boxPivotTest(dynamics_sim)
     if problem_name == 'Herding':
-        num_robots = 4
-        dynamics_sim = forwardSimulationHerding(gui=0)
-        problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots)
+        num_runs = 10
+        # num_robots=10
+        for num_robots in range(1,15):  
+            dynamics_sim = forwardSimulationHerding(gui=0)
+            problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots, save_hyperparams=1)
+            for i in range(num_runs):
+                runTests(problem_name, planner_name, problem)
     if problem_name == 'Gripper':
         dynamics_sim = forwardSimulationGripper(gui=0)
         problem = gripper.GripperTest(dynamics_sim)
