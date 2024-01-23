@@ -21,7 +21,7 @@ def mkdir_p(path):
         if e.errno != errno.EEXIST:
             raise
 
-def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
+def testPlannerDefault(problem, problemName, maxTime, maxIters, plannerType,**plannerParams):
     global numTrials
     print("Planning with",plannerType,'on problem',problemName)
     planner = problem.planner(plannerType,**plannerParams)
@@ -43,6 +43,7 @@ def testPlannerDefault(problem,problemName,maxTime,plannerType,**plannerParams):
     test.testPlanner(planner,
                      numTrials,
                      maxTime,
+                     maxIters,
                      #  os.path.join(folder,allplanners.filename[plannerType]+'.csv'), 
                      file_path,
                      data_id=data_id)
@@ -55,14 +56,14 @@ est_planners = ['ao-est','r-est','r-est-prune']
 all_problems = {'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 
                 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
-defaultParameters = {'maxTime':30}
+defaultParameters = {'maxTime':30, 'maxIters':200000}
 customParameters = {
                     'PlanePush':{'maxTime':20},
                     'BalanceGrasp':{'maxTime':20},
                     'PlanePushRrtstar':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
-                    'Herding':{'maxTime':20},
+                    'Herding':{'maxTime':3000, 'maxIters':3000},
                     'Gripper':{'maxTime':20},
                     'Shuffling':{'maxTime':20},
                     }
@@ -96,11 +97,13 @@ def parseParameters(problem,planner):
 def runTests(problem_name, planner_name, problem):
     planner_name, params = parseParameters(problem_name, planner_name)
     maxTime = params['maxTime']
+    maxIters = params['maxIters']
     del params['maxTime']
+    del params['maxIters']
     if problem.differentiallyConstrained() and planner_name in allplanners.kinematicPlanners:
         return
         #p does not support differentially constrained problems
-    testPlannerDefault(problem, problem_name, maxTime, planner_name, **params)
+    testPlannerDefault(problem, problem_name, maxTime, maxIters, planner_name, **params)
     print("Finished test on problem", problem_name, "with planner", planner_name)
     print("Parameters:")
     for (k,v) in iteritems(params):
@@ -161,9 +164,9 @@ if __name__=="__main__":
         dynamics_sim = forwardSimulationBoxPivot(gui=0)
         problem = boxpivot.boxPivotTest(dynamics_sim)
     if problem_name == 'Herding':
-        num_runs = 10
+        num_runs = 6
         # num_robots=10
-        for num_robots in range(1,15):  
+        for num_robots in range(4,9):  
             dynamics_sim = forwardSimulationHerding(gui=0)
             problem = herding.HerdingTest(dynamics_sim, num_robots=num_robots, save_hyperparams=1)
             for i in range(num_runs):

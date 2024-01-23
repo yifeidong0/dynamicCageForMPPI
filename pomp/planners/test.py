@@ -5,11 +5,11 @@ from builtins import range
 from .profiler import Profiler
 import time
 
-def testPlanner(planner,numTrials,maxTime,filename,**params):
+def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
     id = 0
     if 'data_id' in params:
         id = params['data_id']
-    print("Testing planner for %d trials, %f seconds"%(numTrials,maxTime))
+    print("Testing planner for %d trials, %f seconds"%(numTrials, maxTime))
     print("Saving to",filename)
     if id == 0:
         f = open(filename,'a')
@@ -25,7 +25,7 @@ def testPlanner(planner,numTrials,maxTime,filename,**params):
         numupdates = 0
         iters = 0
         hadException = False
-        while time.time()-t0 < maxTime:
+        while time.time()-t0 < maxTime and iters < maxIters:
             try:
                 planner.planMore(10)
             except Exception as e:

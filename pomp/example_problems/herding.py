@@ -78,7 +78,7 @@ class Herding:
         self.task_goal_margin = 0.1
         self.maneuver_goal_margin = 1/3
         self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -5e-1
+        self.cost_inv_coef = -4e-1
         self.quasistatic_motion = False
         self.task_goal_y = 4
         if self.quasistatic_motion:
@@ -135,7 +135,7 @@ class Herding:
     def goalSet(self):
         bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
-        return MultiSet(RingSet(self.start_state[:2], self.cage_radius+0.5, 0.5*self.x_range+self.offset), 
+        return MultiSet(RingSet(self.start_state[:2], self.cage_radius+5, 0.5*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
     
     def taskGoalSet(self): # TODO

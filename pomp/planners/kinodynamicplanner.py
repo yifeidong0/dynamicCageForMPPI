@@ -473,7 +473,6 @@ class RRT(TreePlanner):
         return TreePlanner.getPath(self,n)
 
 
-
 class EST(TreePlanner):
     """The Expansive Space Tree kinodynamic planner.
 
@@ -492,7 +491,7 @@ class EST(TreePlanner):
         self.stats = Profiler()
         self.numIters = self.stats.count('numIters')
         self.pruner = None
-        self.radius = popdefault(params,'densityEstimationRadius',1)
+        self.radius = popdefault(params,'densityEstimationRadius',.1)
         self.nearestNeighbors = NearestNeighbors(self.cspace.distance,popdefault(params,'nearestNeighborMethod','kdtree'))
         if len(params) != 0:
             print("Warning, unused params",params)
@@ -1244,7 +1243,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self, iters, do_pruning=1):
+    def planMore(self, iters, do_pruning=0):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)
