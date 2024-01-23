@@ -5,7 +5,7 @@ import csv
 
 # Read from the CSV file
 best_costs = []
-file_num_herders = 'data/evaluation/herding/num_herders/prob-aorrt/ao_rrt.csv'
+file_num_herders = 'data/evaluation/herding/num_herders/effort-aorrt/ao_rrt.csv'
 with open(file_num_herders, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
