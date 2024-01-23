@@ -1081,7 +1081,7 @@ class CostSpaceRRT:
         else:
             self.metric.costWeight = 0.0
     
-    def planMore(self, iters, do_pruning=1):
+    def planMore(self, iters, do_pruning=0):
         didreset = False
         foundNewPath = False
         for n in range(iters):
