@@ -1,11 +1,11 @@
-
-import time
-import csv
 # from main import *
 import os
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 import matplotlib.pyplot as plt
+
+import time
+import csv
 
 # Function to calculate AUC and AP and plot ROC and PRC
 def plot_metrics_and_curves(labels, predictions):
@@ -104,6 +104,7 @@ if prname == 'BoxPivot':
     f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
     f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aoest/ao_est.csv'
+    f_effort_aorrt = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aorrt/ao_rrt.csv'
 # if prname == 'Shuffling':
 
 # # Read from the CSV file
@@ -139,12 +140,12 @@ with open(f_aoest_metrics, 'r') as file:
         success_metrics_aoest.append(float(row[5]))
         maneuverability_metric_aoest.append(float(row[6]))
 
-# effort_aorrt_metrics = []
-# with open(f_effort_aorrt, 'r') as file:
-#     csv_reader = csv.reader(file)
-#     header = next(csv_reader)
-#     for id, row in enumerate(csv_reader):
-#         effort_aorrt_metrics.append(float(row[4]))
+effort_aorrt_metrics = []
+with open(f_effort_aorrt, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        effort_aorrt_metrics.append(float(row[4]))
 
 effort_aoest_metrics = []
 with open(f_effort_aoest, 'r') as file:
@@ -228,11 +229,11 @@ get_m_metric(maneuver_labels, hybrid_score)
 print('######Heuristic - Contact Force - Success Metric######')
 get_s_metric(success_labels, hybrid_score)
 
-# print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
-# get_m_metric(maneuver_labels, effort_aorrt_metrics)
+print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
+get_m_metric(maneuver_labels, effort_aorrt_metrics)
 
-# print('###### Escape Effort AO-RRT - Success Metric######')
-# get_s_metric(success_labels, effort_aorrt_metrics)
+print('###### Escape Effort AO-RRT - Success Metric######')
+get_s_metric(success_labels, effort_aorrt_metrics)
 
 print('######8. Escape Effort AO-EST - Maneuverability Metric######')
 get_m_metric(maneuver_labels, effort_aoest_metrics)

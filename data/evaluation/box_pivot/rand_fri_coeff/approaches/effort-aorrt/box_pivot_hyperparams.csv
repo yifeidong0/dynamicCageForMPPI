@@ -20,3 +20,4 @@ rest_length,3
 k,2
 height_spring,3.7
 quasistatic_motion,False
+inf,1000
