@@ -1,0 +1,17 @@
+x_range,10
+y_range,10
+offset,4.0
+max_velocity,100
+max_acceleration,1
+time_range,0.5
+gravity,-9.81
+task_goal_margin,0.1
+maneuver_goal_margin,0.3333333333333333
+maneuver_goal_tmax,1.5
+cost_inv_coef,-0.5
+task_goal_y,4
+quasistatic_motion,False
+mass_object,1
+moment_object,1
+num_robot,14
+pruning,True
