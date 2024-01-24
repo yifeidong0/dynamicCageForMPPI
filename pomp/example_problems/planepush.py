@@ -18,8 +18,8 @@ class PlanePushControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.cost_inv_coef = self.cage.cost_inv_coef
         self.is_plane_push = True
-        self.cost_inv_coef = self.cage.cost_inv_coef = -3e0
 
     def configurationSpace(self):
         return self.cage.configurationSpace()

@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from scipy.spatial.transform import Rotation as R
 import numpy as np
+import csv
 from .geometric import *
 from ..spaces.objective import *
 from ..spaces.statespace import *
@@ -49,6 +50,7 @@ class GripperControlSpace(ControlSpace):
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
+        self.cost_inv_coef = self.cage.cost_inv_coef
         self.is_gripper = True
 
     def configurationSpace(self):
@@ -79,7 +81,7 @@ class GripperControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class Gripper:
-    def __init__(self, data, dynamics_sim, movable_joints=[1,2,3,5,6,7,9,10,11]):
+    def __init__(self, data, dynamics_sim, movable_joints=[1,2,3,5,6,7,9,10,11], save_hyperparams=1, quasistatic_motion=0):
         self.dynamics_sim = dynamics_sim
         self.movable_joints = movable_joints
         self.num_joints = len(movable_joints)
@@ -99,15 +101,38 @@ class Gripper:
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
 
         # Gripper moving velocity (constant)
-        self.gripper_vel = data[self.dim_state:] # list[9,]
+        if quasistatic_motion:
+            self.gripper_vel = [0.0,] * self.num_joints # list[9,]
+        else:
+            self.gripper_vel = data[self.dim_state:] # list[9,]
+
         self.start_state = data[:self.dim_state] # list[6+6+9,] gripper joints velocity
         self.start_gripper_pos = self.start_state[-self.num_joints:]
         self.goal_state = [0,] * self.dim_state # varying goal region
         self.time_range = 1.
-
-        self.params = [self.mass_object, self.moment_object, self.length_object, movable_joints, self.start_gripper_pos]
+        self.lateral_friction_coef = 0.5
+        self.params = [self.mass_object, self.moment_object, self.length_object, movable_joints, self.start_gripper_pos, self.lateral_friction_coef]
         self.obstacles = []
         self.gravity = -9.81
+
+        self.task_goal_margin = 0.2
+        self.maneuver_goal_margin = .57
+        self.cost_inv_coef = -3e0
+        self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
+                            self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
+                            self.cost_inv_coef] + self.params
+        self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
+                                   'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 
+                                   'cost_inv_coef',
+                                   'mass_object', 'moment_object', 'length_object', 'movable_joints', 'start_gripper_pos', 'lateral_friction_coef']
+        if save_hyperparams:
+            self.saveHyperparams()
+
+    def saveHyperparams(self, filename='push_press_hyperparams.csv'):
+        with open(filename, 'w', newline='') as file:
+            csv_writer = csv.writer(file)
+            for header, data in zip(self.hyperparams_header, self.hyperparams):
+                csv_writer.writerow([header, data])
 
     def controlSet(self):
         return BoxSet([-.4*self.max_acceleration,-0.*self.max_acceleration,-self.gravity-self.max_acceleration,] + [-self.max_ang_acceleration,]*self.dim_workspace, 
@@ -140,6 +165,12 @@ class Gripper:
 
     def startState(self):
         return self.start_state
+
+    def taskGoalSet(self):
+        pass
+
+    def maneuverGoalSet(self):
+        pass
 
     def goalSet(self):
         return BoxSet([-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
@@ -175,29 +206,25 @@ class GripperObjectiveFunction(ObjectiveFunction):
         self.xnext = xnext
 
         # Calculate the work done by the applied force and torque
-        # angle_diffs = angle_diff(xnext[3:6], x[3:6])
         alpha = np.array(u[4:])
         W_SO3 = calculate_work(alpha, I, np.array(x[3:6]), np.array(xnext[3:6]))
         W_R3 = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[2]-x[2]) + m*(u[3]-g)*(xnext[1]-x[1]) # u[1:4] - x,y,z, x[:3] - x,z,y
 
-        # Energy
-        # E = 0.5*m*(x[3]**2+x[4]**2) + 0.5*I*x[5]**2 + m*g*x[1]
-        # Enext = 0.5*m*(xnext[3]**2+xnext[4]**2) + 0.5*I*xnext[5]**2 + m*g*xnext[1]
-        # # c = max((Enext-E), 1e-3) + (2e-2)*(abs(u[0]) + abs(u[1]) + abs(u[2]))
-        # c = max((Enext-E), 1e-5)
-
         # Work (applied force, torque and friction)
         W = W_R3 + W_SO3
-        c = max(W, 1e-5)
+        c = max(abs(W), 1e-5)
 
         return c
 
-def GripperTest(dynamics_sim, data=None):
+def GripperTest(dynamics_sim, 
+                data=[0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [math.pi/12]*9 + [0.0]*9,
+                save_hyperparams=False,
+                ):
     movable_joints = [1,2,3,5,6,7,9,10,11]
-    num_joints = len(movable_joints)
-    num_dim_se3 = 6
-    data = [0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*num_dim_se3 + [math.pi/12]*num_joints + [0.0]*num_joints
-    p = Gripper(data, dynamics_sim, movable_joints)
+    # num_joints = len(movable_joints)
+    # num_dim_se3 = 6
+    # data = [0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*num_dim_se3 + [math.pi/12]*num_joints + [0.0]*num_joints
+    p = Gripper(data, dynamics_sim, movable_joints, save_hyperparams=save_hyperparams)
 
     objective = GripperObjectiveFunction(p)
     return PlanningProblem(objective.space,
@@ -205,6 +232,9 @@ def GripperTest(dynamics_sim, data=None):
                            p.goalSet(),
                            objective=objective,
                            visualizer=p.workspace(),
-                           euclidean=True)
+                           euclidean=True,
+                           taskGoal=p.taskGoalSet(),
+                           maneuverGoal=p.maneuverGoalSet(),
+                           )
 
 

@@ -7,7 +7,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BoxPivot" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp"
+problem_name = "BoxPivot" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
 gui = 0
 num_via_points = 10
 num_trajs = 50

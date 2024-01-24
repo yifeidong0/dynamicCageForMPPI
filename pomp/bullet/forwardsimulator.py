@@ -758,7 +758,7 @@ class forwardSimulationGripper():
     
     def set_params(self, params):
         # Kinodynamics
-        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_gripper_pos = params[0], params[1], params[2], params[3], params[4]
+        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_gripper_pos, self.lateral_friction_coef = params
         self.num_movable_joints = len(self.movable_joints)
         self.num_joints = 12
         self.non_movable_joints = [i for i in range(self.num_joints) if i not in self.movable_joints]
@@ -767,7 +767,6 @@ class forwardSimulationGripper():
         self.vel_object = [0,0,0]
 
         self.dim_workspace = 3
-        self.lateral_friction_coef = 0.7
         self.stiffness = [1e-2,] * self.num_movable_joints  # P gain for each joint
         self.damping = [1e-1,] * self.num_movable_joints  # D gain for each joint
 

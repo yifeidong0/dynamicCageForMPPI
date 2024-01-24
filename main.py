@@ -64,7 +64,7 @@ customParameters = {
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':3000, 'maxIters':3000},
-                    'Gripper':{'maxTime':20},
+                    'Gripper':{'maxTime':10},
                     'Shuffling':{'maxTime':20},
                     }
 
