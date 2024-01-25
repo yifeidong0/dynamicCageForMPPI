@@ -392,7 +392,7 @@ class forwardSimulationBoxPivot():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
-        p.setGravity(0, 0, self.g)
+        # p.setGravity(0, 0, self.g)
 
         # self.set_params(params)
         # self.create_shapes()
@@ -758,36 +758,54 @@ class forwardSimulationGripper():
     
     def set_params(self, params):
         # Kinodynamics
-        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_gripper_pos, self.lateral_friction_coef = params
+        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_env_pos, self.lateral_friction_coef = params
+        self.mass_table = 1e9
+        self.mass_gripper_base = 10
         self.num_movable_joints = len(self.movable_joints)
         self.num_joints = 12
+        self.num_links = 13
         self.non_movable_joints = [i for i in range(self.num_joints) if i not in self.movable_joints]
-        self.pos_object = [0,0,1.]
-        self.quat_object = p.getQuaternionFromEuler([0,0,0])
-        self.vel_object = [0,0,0]
-
         self.dim_workspace = 3
+        self.fingertip_ids = [3, 7, 11]
         self.stiffness = [1e-2,] * self.num_movable_joints  # P gain for each joint
         self.damping = [1e-1,] * self.num_movable_joints  # D gain for each joint
 
-        self.pos_gripper_base = [0,0,0]
-        self.quat_gripper_base = p.getQuaternionFromEuler([math.pi/2,0,0])
+        self.pos_object = [-0.9,0,.6]
+        self.quat_object = p.getQuaternionFromEuler([0,0,0])
+        self.vel_object = [0,0,0]
+
+        self.pos_table = [0,0,self.start_env_pos[-1]]
+        self.vel_table = [0,0,0]
+        self.pivot_in_table = [0, 0, 0] # for the prismatic constraint
+        self.pivot_in_world = [0, 0, 0]
+
+        self.start_gripper_pos = self.start_env_pos[:-1]
+        self.pos_gripper_base = [-1.1,0,1.9]
+        self.quat_gripper_base = p.getQuaternionFromEuler([-math.pi/2,-0.3,0])
 
     def create_shapes(self):
+        # Add a table
+        boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[1,1,0.3])
+        mass = self.mass_table if self.pos_table[2] < -1e-4 else -1 # lift phase / clench phase
+        self.tableUid = p.createMultiBody(0, boxId, mass, self.pos_table)
+        
         # Add a box
         boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[self.length_object,]*3)
         self.objectUid = p.createMultiBody(self.mass_object, boxId, -1, self.pos_object)
 
         # Add a 3-finger gripper
         self.gripperUid = p.loadURDF(fileName='asset/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_articulated.urdf', 
-                                basePosition=self.pos_gripper_base, 
-                                baseOrientation=self.quat_gripper_base,
-                                globalScaling=10,
-                                )
+                                     basePosition=self.pos_gripper_base, 
+                                     baseOrientation=self.quat_gripper_base,
+                                     globalScaling=10,
+                                     )
         p.changeDynamics(self.gripperUid, -1, mass=0) # fix the base link
-
+        for i in range(-1, self.num_links-1):
+            p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+            
     def reset_states(self, states):
-        """states: 6+6+9+9 DoF"""
+        """states: 6+6+9+1+9+1 DoF"""
         # Object kinematics
         pos = states[:self.dim_workspace]
         self.pos_object = [pos[0], pos[2], pos[1]] # pos: x,z,y
@@ -797,13 +815,21 @@ class forwardSimulationGripper():
 
         # Gripper kinematics
         self.pos_gripper = states[4*self.dim_workspace:4*self.dim_workspace+self.num_movable_joints]
-        self.vel_gripper = states[4*self.dim_workspace+self.num_movable_joints:]
+        self.vel_gripper = states[4*self.dim_workspace+self.num_movable_joints+1:-1]
 
-        # Reset the kinematics of the object and the gripper
+        # Table kinematics
+        self.pos_table = [0,0,states[4*self.dim_workspace+self.num_movable_joints]]
+        self.quat_table = p.getQuaternionFromEuler([0,0,0])
+        self.vel_table = [0,0,states[-1]]
+        self.vel_ang_table = [0,0,0]
+
+        # Reset the kinematics of the object, the gripper and the table
         p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
         p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         for i, jid in enumerate(self.movable_joints):
             p.resetJointState(self.gripperUid, jid, targetValue=self.pos_gripper[i], targetVelocity=self.vel_gripper[i])
+        p.resetBasePositionAndOrientation(self.tableUid, self.pos_table, self.quat_table)
+        p.resetBaseVelocity(self.tableUid, self.vel_table, self.vel_ang_table)
 
         # Reset joints of the gripper that is not movable
         for i, jid in enumerate(self.non_movable_joints):
@@ -822,9 +848,6 @@ class forwardSimulationGripper():
             # Apply the calculated torques to all joints at once  
             p.setJointMotorControlArray(bodyUniqueId=self.gripperUid,
                                         jointIndices=self.movable_joints,
-                                        # controlMode=p.VELOCITY_CONTROL,
-                                        # targetVelocities=[.1,]*self.num_movable_joints,
-                                        # forces=target_torques)
                                         controlMode=p.POSITION_CONTROL,
                                         targetPositions=self.start_gripper_pos,
                                         targetVelocities=[0,]*self.num_movable_joints,
@@ -841,6 +864,9 @@ class forwardSimulationGripper():
             p.applyExternalTorque(self.objectUid, -1, 
                                 torque_on_object,
                                 p.WORLD_FRAME)
+            
+            # Constraint of table
+            constraint = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], self.pivot_in_table, self.pivot_in_world)
             
             p.stepSimulation()
 

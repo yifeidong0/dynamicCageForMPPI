@@ -328,6 +328,107 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         return via_points
     
 
+class scriptedMovementSimGripper(forwardSimulationGripper):
+    def __init__(self, cage, gui=False):
+        super().__init__(gui=gui)
+        self.cage = cage
+        self.set_params(cage.params)
+        self.create_shapes()
+        
+    def sample_init_state(self):
+        self.mass_object = np.random.uniform(1,5)
+        self.lateral_friction_coef = np.random.uniform(0.1,1)
+        p.changeDynamics(self.objectUid, -1, mass=self.mass_object) # fix the base link
+        for i in range(-1, self.num_links-1):
+            p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+
+    def run_forward_sim(self, total_time=5, num_via_points=10, clench_time=.3, lift_time=.6, lift_acc=-.7):
+        num_steps = int(total_time * 240)  # Number of time steps
+        interval = int(num_steps/num_via_points)
+
+        # Step the simulation
+        self.heuristics_traj = []
+        via_points = []
+        self.task_success_label = 0
+        for t in range(num_steps):
+            # Apply the calculated torques to all joints at once  
+            if t > clench_time*240:
+                p.setJointMotorControlArray(bodyUniqueId=self.gripperUid,
+                                            jointIndices=self.movable_joints,
+                                            controlMode=p.POSITION_CONTROL,
+                                            # targetPositions=self.start_gripper_pos,
+                                            targetPositions=[math.pi/8,]*len(self.start_gripper_pos),
+                                            targetVelocities=[0,]*self.num_movable_joints,
+                                            positionGains=self.stiffness,
+                                            velocityGains=self.damping,
+                                            forces=[10,]*self.num_movable_joints,)
+                
+            if t > lift_time*240:
+                # Apply downward force on the table to equavalently lift the gripper
+                p.changeDynamics(self.tableUid, -1, mass=self.mass_table) # unfix the table
+                self.pos_table, _ = p.getBasePositionAndOrientation(self.tableUid)
+                p.applyExternalForce(self.tableUid, -1, 
+                                    [0, 0, self.mass_table*(lift_acc-self.g)], # gravity compensation and lifting force
+                                    self.pos_table, 
+                                    p.WORLD_FRAME)
+                pivotInBox = [0, 0, 0] 
+                pivotInWorld = [0, 0, 0]
+                constraint1 = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], pivotInBox, pivotInWorld)
+            else:
+                p.changeDynamics(self.tableUid, -1, mass=0) # fix the table
+
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if (t+1) % interval == 0:
+                # Get the object and gripper states
+                pos, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+                pos_object_GL = [pos[0], pos[2], pos[1]] # x,z,y
+                self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+                self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+                joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
+                self.pos_gripper = [state[0] for state in joint_states]
+                self.vel_gripper = [state[1] for state in joint_states]
+                pos_table, _ = p.getBasePositionAndOrientation(self.tableUid)
+                vel_table, _ = p.getBaseVelocity(self.tableUid)
+
+                # Get contact forces
+                heuristics = []
+                for id in self.fingertip_ids:
+                    res = p.getContactPoints(self.gripperUid, self.objectUid, id, -1)
+                    all_contact_normal_forces = [contact[9] for contact in res]
+                    contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+                    s_engage = contact_normal_force # engage metric
+                    contact_friction_force_1 = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0
+                    contact_friction_force_2 = sum([contact[12] for contact in res]) if len(all_contact_normal_forces)>0 else 0
+                    contact_friction_force = np.sqrt(contact_friction_force_1**2 + contact_friction_force_2**2)
+
+                    # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+                    s_stick = (self.lateral_friction_coef*contact_normal_force - contact_friction_force) * math.cos(np.arctan(self.lateral_friction_coef))
+
+                    # Get bodies closest points distance
+                    res = p.getClosestPoints(self.gripperUid, self.objectUid, 100, id, -1) # 3,7,11
+                    dist = res[0][8] if (len(res)>0) else 0 # and res[0][8]>=0
+                    heuristics.append(dist)
+                    heuristics.append(s_stick)
+                    heuristics.append(s_engage)
+
+                self.heuristics_traj.append(heuristics)
+                new_states = (pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + self.pos_gripper
+                              + [pos_table[2],] + self.vel_gripper + [vel_table[2],])
+                via_points.append(new_states)
+
+            if self.gui:
+                time.sleep(1/240)
+        
+        self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+        if self.eul_object[1] > math.pi/2-self.cage.task_goal_margin:
+            self.task_success_label = 1
+        return via_points
+    
+
 class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
     def __init__(self, cage, gui=False):
         super().__init__(gui=gui)

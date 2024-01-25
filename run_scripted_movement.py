@@ -3,33 +3,20 @@ from pomp.example_problems.planepush import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
+from pomp.example_problems.gripper import *
 from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BoxPivot" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
-gui = 0
+problem_name = "Gripper" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
+gui = 1
 num_via_points = 10
-num_trajs = 50
+num_trajs = 3
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
 filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
-if problem_name == 'BalanceGrasp':
-    total_time = 3
-    num_state_planner = 9
-    headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
-    headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label',]
-    fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
-                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
-    cage = BalanceGrasp(fake_data, dynamics_sim)
-    x_init = fake_data
-    dynamics_sim.finish_sim()
-    sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'PlanePush':
     total_time = 2.5
     num_state_planner = 9
@@ -44,6 +31,20 @@ if problem_name == 'PlanePush':
     x_init = fake_data
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
+if problem_name == 'BalanceGrasp':
+    total_time = 3
+    num_state_planner = 9
+    headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
+    headers_success = ['num_traj', 'label']
+    headers_maneuver = ['num_traj', 'data_id', 'label',]
+    fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
+                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
+    cage = BalanceGrasp(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'BoxPivot':
     total_time = 2.5
     num_state_planner = 8
@@ -59,6 +60,24 @@ if problem_name == 'BoxPivot':
               2, 3.7, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBoxPivot(cage, gui=gui)
+if problem_name == 'Gripper':
+    total_time = 2.5
+    num_state_planner = 6+6+9+1
+    headers = ['num_traj', 'data_id', 
+               'xo', 'zo', 'yo', 'thetaxo', 'thetayo', 'thetazo', 
+               'vxo', 'vyo', 'vzo', 'omegaxo', 'omegayo', 'omegazo', 
+               'j0', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6', 'j7', 'j8', 'zt',
+               'jv0', 'jv1', 'jv2', 'jv3', 'jv4', 'jv5', 'jv6', 'jv7', 'jv8', 'vzt',]
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance_3', 'S_stick_3', 'S_engage_3', 
+                      'shortest_distance_7', 'S_stick_7', 'S_engage_7', 'shortest_distance_11', 'S_stick_11', 'S_engage_11',]
+    headers_success = ['num_traj', 'label']
+    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'mass_object']
+    fake_data = [-0.99, 0.6, 0.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [0*math.pi/12]*9 + [0.0,] + [0.0]*9 + [0.0,]
+    dynamics_sim = forwardSimulationGripper(gui=0)
+    cage = Gripper(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimGripper(cage, gui=gui)
 if problem_name == 'WaterSwing':
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
@@ -83,7 +102,7 @@ if problem_name == 'Shuffling':
               0, 0, 0, 0, 0, 0,
               0, 0, 0, 0,
               0, 0, 0, 0,
-              5.2, 0
+              5.2, 0,
               ]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimShuffling(cage, gui=gui)
@@ -103,6 +122,7 @@ for i in range(num_trajs):
     else:
         x_news = sim.run_forward_sim(total_time, num_via_points)
     heuristics = sim.heuristics_traj
+
     for k in range(len(x_news)):
         dataset.append([i, k,] + x_news[k])
         heuriset.append([i, k,] + heuristics[k])
@@ -112,8 +132,11 @@ for i in range(num_trajs):
             cage = BalanceGrasp(x_news[k], dynamics_sim)
         elif problem_name == 'BoxPivot':
             cage = BoxPivot(x_news[k], dynamics_sim)
+        elif problem_name == 'Gripper':
+            cage = Gripper(x_news[k], dynamics_sim)
         man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:num_state_planner]) else 1
-        maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef])
+        maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.mass_object])
+
     success_labelset.append([i, sim.task_success_label,])
 sim.finish_sim()
 

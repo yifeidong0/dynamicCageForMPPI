@@ -84,10 +84,10 @@ class Gripper:
     def __init__(self, data, dynamics_sim, movable_joints=[1,2,3,5,6,7,9,10,11], save_hyperparams=1, quasistatic_motion=0):
         self.dynamics_sim = dynamics_sim
         self.movable_joints = movable_joints
-        self.num_joints = len(movable_joints)
+        self.num_joints = len(movable_joints) + 1 # 9+1, plus z-axis movement of the table
         self.dim_workspace = 3
         self.dim_object = 6 + 6
-        self.dim_state = self.dim_object + self.num_joints
+        self.dim_state = self.dim_object + self.num_joints # 6+6+9+1
         self.x_range = 4
         self.z_range = 4
         self.y_range = 4
@@ -96,21 +96,21 @@ class Gripper:
         self.max_ang_velocity = 5
         self.max_acceleration = 3
         self.max_ang_acceleration = .3
-        self.mass_object = .5
         self.length_object = .3
+        self.mass_object = 3
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
+        self.lateral_friction_coef = 0.1
 
-        # Gripper moving velocity (constant)
+        # Gripper joints velocity and table z-axis velocity
         if quasistatic_motion:
-            self.gripper_vel = [0.0,] * self.num_joints # list[9,]
+            self.gripper_vel = [0.0,] * self.num_joints # list[9+1,]
         else:
-            self.gripper_vel = data[self.dim_state:] # list[9,]
+            self.gripper_vel = data[self.dim_state:] # list[9+1,]
 
-        self.start_state = data[:self.dim_state] # list[6+6+9,] gripper joints velocity
-        self.start_gripper_pos = self.start_state[-self.num_joints:]
-        self.goal_state = [0,] * self.dim_state # varying goal region
+        self.start_state = data[:self.dim_state] # list[6+6+9+1,]
+        self.start_gripper_pos = self.start_state[-self.num_joints:] # list[9+1,]
+        # self.goal_state = [0,] * self.dim_state # varying goal region
         self.time_range = 1.
-        self.lateral_friction_coef = 0.5
         self.params = [self.mass_object, self.moment_object, self.length_object, movable_joints, self.start_gripper_pos, self.lateral_friction_coef]
         self.obstacles = []
         self.gravity = -9.81
@@ -128,15 +128,17 @@ class Gripper:
         if save_hyperparams:
             self.saveHyperparams()
 
-    def saveHyperparams(self, filename='push_press_hyperparams.csv'):
+    def saveHyperparams(self, filename='gripper_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
             csv_writer = csv.writer(file)
             for header, data in zip(self.hyperparams_header, self.hyperparams):
                 csv_writer.writerow([header, data])
 
     def controlSet(self):
-        return BoxSet([-.4*self.max_acceleration,-0.*self.max_acceleration,-self.gravity-self.max_acceleration,] + [-self.max_ang_acceleration,]*self.dim_workspace, 
-                      [.4*self.max_acceleration,0.*self.max_acceleration,-self.gravity+self.max_acceleration,] + [self.max_ang_acceleration,]*self.dim_workspace)
+        # return BoxSet([-.4*self.max_acceleration,-0.*self.max_acceleration,-self.gravity-self.max_acceleration,] + [-self.max_ang_acceleration,]*self.dim_workspace, 
+        #               [.4*self.max_acceleration,0.*self.max_acceleration,-self.gravity+self.max_acceleration,] + [self.max_ang_acceleration,]*self.dim_workspace)
+        return BoxSet([-.4*self.max_acceleration,-0.*self.max_acceleration,-self.max_acceleration,] + [-0.0*self.max_ang_acceleration,]*self.dim_workspace, 
+                      [.4*self.max_acceleration,0.*self.max_acceleration,+self.max_acceleration,] + [0.0*self.max_ang_acceleration,]*self.dim_workspace)
 
     def controlSpace(self):
         # System dynamics
@@ -166,11 +168,33 @@ class Gripper:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self):
-        pass
+    def taskGoalSet(self): # TODO
+        return BoxSet([-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
+                       -math.pi, -math.pi, -math.pi,
+                       -self.max_velocity, -self.max_velocity, -self.max_velocity,
+                       -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,
+                       *[-5e-2,]*self.num_joints
+                       ],
+                      [(self.x_range+self.offset)/2, 1.-(self.z_range+self.offset)/2, (self.y_range+self.offset)/2,
+                       math.pi, math.pi, math.pi,
+                       self.max_velocity, self.max_velocity, self.max_velocity,
+                       self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
+                       *[math.pi/2,]*self.num_joints
+                       ])
 
     def maneuverGoalSet(self):
-        pass
+        return BoxSet([-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
+                       -math.pi, -math.pi, -math.pi,
+                       -self.max_velocity, -self.max_velocity, -self.max_velocity,
+                       -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,
+                       *[-5e-2,]*self.num_joints
+                       ],
+                      [(self.x_range+self.offset)/2, 1.-(self.z_range+self.offset)/2, (self.y_range+self.offset)/2,
+                       math.pi, math.pi, math.pi,
+                       self.max_velocity, self.max_velocity, self.max_velocity,
+                       self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
+                       *[math.pi/2,]*self.num_joints
+                       ])
 
     def goalSet(self):
         return BoxSet([-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
@@ -213,11 +237,10 @@ class GripperObjectiveFunction(ObjectiveFunction):
         # Work (applied force, torque and friction)
         W = W_R3 + W_SO3
         c = max(abs(W), 1e-5)
-
         return c
 
 def GripperTest(dynamics_sim, 
-                data=[0.0, 1., 0.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [math.pi/12]*9 + [0.0]*9,
+                data=[0.0, 1.0, 1.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [math.pi/12]*9 + [0.0]*9 + [0.0, 0.0],
                 save_hyperparams=False,
                 ):
     movable_joints = [1,2,3,5,6,7,9,10,11]
