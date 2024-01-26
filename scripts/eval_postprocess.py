@@ -111,8 +111,8 @@ if prname == 'Gripper':
     f_maneuver_labels = 'data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_maneuver_labels_Gripper.csv'
     f_aoest_metrics = 'data/evaluation/gripper/rand_objmass_fri/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/gripper/rand_objmass_fri/approaches/heuristics/scripted_movement_heuristics_Gripper.csv'
-    f_effort_aoest = ''
-    f_effort_aorrt = ''
+    f_effort_aoest = 'data/evaluation/gripper/rand_objmass_fri/approaches/effort-aoest/ao_est.csv'
+    f_effort_aorrt = 'data/evaluation/gripper/rand_objmass_fri/approaches/effort-aorrt/ao_rrt.csv'
 
 # # Read from the CSV file
 success_labels = []
@@ -147,19 +147,19 @@ with open(f_aoest_metrics, 'r') as file:
         success_metrics_aoest.append(float(row[5]))
         maneuverability_metric_aoest.append(float(row[6]))
 
-# effort_aorrt_metrics = []
-# with open(f_effort_aorrt, 'r') as file:
-#     csv_reader = csv.reader(file)
-#     header = next(csv_reader)
-#     for id, row in enumerate(csv_reader):
-#         effort_aorrt_metrics.append(float(row[4]))
+effort_aorrt_metrics = []
+with open(f_effort_aorrt, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        effort_aorrt_metrics.append(-float(row[4]))
 
-# effort_aoest_metrics = []
-# with open(f_effort_aoest, 'r') as file:
-#     csv_reader = csv.reader(file)
-#     header = next(csv_reader)
-#     for id, row in enumerate(csv_reader):
-#         effort_aoest_metrics.append(float(row[4]))
+effort_aoest_metrics = []
+with open(f_effort_aoest, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        effort_aoest_metrics.append(-float(row[4]))
           
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
@@ -240,17 +240,17 @@ get_m_metric(maneuver_labels, hybrid_score)
 print('######Heuristic - Contact Force - Success Metric######')
 get_s_metric(success_labels, hybrid_score)
 
-# print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
-# get_m_metric(maneuver_labels, effort_aorrt_metrics)
+print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
+get_m_metric(maneuver_labels, effort_aorrt_metrics)
 
-# print('###### Escape Effort AO-RRT - Success Metric######')
-# get_s_metric(success_labels, effort_aorrt_metrics)
+print('###### Escape Effort AO-RRT - Success Metric######')
+get_s_metric(success_labels, effort_aorrt_metrics)
 
-# print('######8. Escape Effort AO-EST - Maneuverability Metric######')
-# get_m_metric(maneuver_labels, effort_aoest_metrics)
+print('######8. Escape Effort AO-EST - Maneuverability Metric######')
+get_m_metric(maneuver_labels, effort_aoest_metrics)
 
-# print('###### Escape Effort AO-EST - Success Metric######')
-# get_s_metric(success_labels, effort_aoest_metrics)
+print('###### Escape Effort AO-EST - Success Metric######')
+get_s_metric(success_labels, effort_aoest_metrics)
 
 
 

@@ -199,7 +199,7 @@ class Gripper:
                        self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
                        *[math.pi/2,]*(self.num_joints-1), 1,
                        ])
-        # return self.maneuverGoalSet()
+        # return self.taskGoalSet()
     
 class GripperObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
