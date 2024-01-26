@@ -19,7 +19,7 @@ import os
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'Gripper' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-vis = 1
+vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 2000
 

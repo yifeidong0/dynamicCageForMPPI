@@ -1,0 +1,18 @@
+x_range,4
+y_range,4
+offset,0.0
+max_velocity,100
+max_ang_velocity,100
+max_acceleration,3
+max_ang_acceleration,0.3
+time_range,0.1
+gravity,-9.81
+success_vz_thres,-0.5
+success_z_thres,0.25
+cost_inv_coef,-3.0
+mass_object,3.842999183274671
+moment_object,"[0.05764498774912005, 0.05764498774912005, 0.05764498774912005]"
+length_object,0.3
+movable_joints,"[1, 2, 3, 5, 6, 7, 9, 10, 11]"
+start_gripper_pos,"[0.38309000331112925, 0.3871768312082412, 0.40064340703096224, 0.38304535792233313, 0.38719005983826765, 0.4006332665502338, 0.38393449881716424, 0.38191549462061325, 0.3982226436103002, -0.9740997081561924]"
+lateral_friction_coef,0.6162420771233763
