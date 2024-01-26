@@ -338,12 +338,15 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
     def sample_init_state(self):
         self.mass_object = np.random.uniform(1,5)
         self.lateral_friction_coef = np.random.uniform(0.1,1)
+        print("lateral_friction_coef: ", self.lateral_friction_coef)
+        print("mass_object: ", self.mass_object)
+        print("")
         p.changeDynamics(self.objectUid, -1, mass=self.mass_object) # fix the base link
         for i in range(-1, self.num_links-1):
             p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
 
-    def run_forward_sim(self, total_time=5, num_via_points=10, clench_time=.3, lift_time=.6, lift_acc=-.7):
+    def run_forward_sim(self, total_time=5, num_via_points=10, clench_time=.05, lift_time=.3, lift_acc=-.7):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
 
@@ -351,6 +354,7 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
         self.heuristics_traj = []
         via_points = []
         self.task_success_label = 0
+        self.constraint_added = 0
         for t in range(num_steps):
             # Apply the calculated torques to all joints at once  
             if t > clench_time*240:
@@ -374,7 +378,9 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
                                     p.WORLD_FRAME)
                 pivotInBox = [0, 0, 0] 
                 pivotInWorld = [0, 0, 0]
-                constraint1 = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], pivotInBox, pivotInWorld)
+                if not self.constraint_added: # multiple runs slow down the scripted-movement simulation
+                    constraint1 = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], pivotInBox, pivotInWorld)
+                    self.constraint_added = 1
             else:
                 p.changeDynamics(self.tableUid, -1, mass=0) # fix the table
 
@@ -423,8 +429,8 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
                 time.sleep(1/240)
         
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
-        self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
-        if self.eul_object[1] > math.pi/2-self.cage.task_goal_margin:
+        self.vel_object, _ = p.getBaseVelocity(self.objectUid)
+        if self.vel_object[2] > -0.5 and self.pos_object[2] > 0.25:
             self.task_success_label = 1
         return via_points
     

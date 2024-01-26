@@ -9,9 +9,9 @@ import time
 import csv
 
 problem_name = "Gripper" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
-gui = 1
+gui = 0
 num_via_points = 10
-num_trajs = 3
+num_trajs = 50
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -61,7 +61,7 @@ if problem_name == 'BoxPivot':
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBoxPivot(cage, gui=gui)
 if problem_name == 'Gripper':
-    total_time = 2.5
+    total_time = 2
     num_state_planner = 6+6+9+1
     headers = ['num_traj', 'data_id', 
                'xo', 'zo', 'yo', 'thetaxo', 'thetayo', 'thetazo', 
@@ -114,7 +114,6 @@ maneuver_labelset = []
 for i in range(num_trajs):
     sim.sample_init_state()
     sim.reset_states(x_init)
-    # time.sleep(2)
     if problem_name == 'BoxPivot':
         _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
         sim.reset_states(x_init)

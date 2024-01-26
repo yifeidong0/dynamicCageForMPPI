@@ -258,7 +258,7 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         return max(c, 1e-5)
 
 
-def planePushTest(dynamics_sim, 
+def PlanePushTest(dynamics_sim, 
                 data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 # data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object

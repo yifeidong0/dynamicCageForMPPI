@@ -779,6 +779,11 @@ class ESTWithProjections(EST):
         except Exception:
             scale = [1]*self.controlSpace.configurationSpace().dimension()
             print("EST projection hash scale",scale,"resolution",self.projectionResolution)
+
+        # Limit the number of dimensions used for projection bases
+        max_dimensions = 6  # Set a limit to the number of dimensions
+        indices = indices[:max_dimensions]  # Select the first 'max_dimensions' indices
+
         #now enumerate all size-4 subsets of the indices
         d = min(len(indices),4)
         self.projectionBases = []
@@ -799,7 +804,7 @@ class ESTWithProjections(EST):
                     basis.append(scalebasis)
                 self.projectionBases.append(basis)
                 self.projectionHashes.append(RandomDict())
-        print("EST using",len(self.projectionBases),"projection bases")
+        print("EST using",len(self.projectionBases),"projection bases") # TODO: high num of projection bases makes EST running slow!
         if self.root is not None:
             #need to re-add the elements of the tree
             def recursive_add(node):

@@ -184,7 +184,7 @@ class BoxPivotObjectiveFunction(ObjectiveFunction):
         return c
 
 
-def boxPivotTest(dynamics_sim,
+def BoxPivotTest(dynamics_sim,
                 data=[6.499079904444838,2.397549737084281,0.22622950186326807,1.8207181866422655,1.1495647514494098,0.7609057703831511,
                       1.6157827276435577,4.439045449428635,0.20465756939330715,2.192905112691566],
                 save_hyperparams=False,

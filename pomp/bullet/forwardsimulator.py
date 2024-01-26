@@ -4,6 +4,7 @@ import time
 import math
 from ..structures.toolfunc import *
 import numpy as np
+import time
 
 class forwardSimulationPlanePush():
     def __init__(self, gui=False):
@@ -168,7 +169,6 @@ class forwardSimulationPlanePush():
                       self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
                       self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
                       ]
-
         return new_states, via_points
 
     def finish_sim(self):
@@ -786,9 +786,10 @@ class forwardSimulationGripper():
     def create_shapes(self):
         # Add a table
         boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[1,1,0.3])
-        mass = self.mass_table if self.pos_table[2] < -1e-4 else -1 # lift phase / clench phase
-        self.tableUid = p.createMultiBody(0, boxId, mass, self.pos_table)
-        
+        mass = self.mass_table if self.pos_table[2] < -1e-4 else 0 # lift phase / clench phase
+        self.tableUid = p.createMultiBody(mass, boxId, -1, self.pos_table)
+        constraint = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], self.pivot_in_table, self.pivot_in_world)
+
         # Add a box
         boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[self.length_object,]*3)
         self.objectUid = p.createMultiBody(self.mass_object, boxId, -1, self.pos_object)
@@ -839,6 +840,7 @@ class forwardSimulationGripper():
         t = inputs[0]
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
+        # t1 = time.time()
 
         # Step the simulation
         via_points = []
@@ -864,10 +866,6 @@ class forwardSimulationGripper():
             p.applyExternalTorque(self.objectUid, -1, 
                                 torque_on_object,
                                 p.WORLD_FRAME)
-            
-            # Constraint of table
-            constraint = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], self.pivot_in_table, self.pivot_in_world)
-            
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
@@ -875,6 +873,9 @@ class forwardSimulationGripper():
                 via_points.append([self.pos_object[0], self.pos_object[2]])
             if self.gui:
                 time.sleep(3/240)
+            
+        # t2 = time.time()
+        # print("!!!!!!!!Time elapsed: ", t2-t1)
 
         # Get the object and gripper states
         pos, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
@@ -883,8 +884,9 @@ class forwardSimulationGripper():
         self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
         joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
         self.pos_gripper = [state[0] for state in joint_states]
-
-        new_states = pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + self.pos_gripper
+        pos_table, _ = p.getBasePositionAndOrientation(self.tableUid)
+        
+        new_states = pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + self.pos_gripper + [pos_table[2],] # 3+3+3+3+9+1=22
         return new_states, via_points
 
     def finish_sim(self):
@@ -998,7 +1000,6 @@ class forwardSimulationShuffling():
                                         controlMode=p.VELOCITY_CONTROL,
                                         targetVelocities=[100,]*self.num_joints,
                                         forces=total_torques,)
-            
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
@@ -1018,7 +1019,8 @@ class forwardSimulationShuffling():
         self.vel_object_joints = [state[1] for state in joint_states]
         self.pos_gripper, _ = p.getBasePositionAndOrientation(self.gripperUid)
 
-        new_states = pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + self.pos_object_joints + self.vel_object_joints + [self.pos_gripper[2],]
+        new_states = (pos_object_GL + list(self.eul_object) + list(self.vel_object) + list(self.vel_ang_object) + 
+                      self.pos_object_joints + self.vel_object_joints + [self.pos_gripper[2],])
         return new_states, via_points
 
     def finish_sim(self):

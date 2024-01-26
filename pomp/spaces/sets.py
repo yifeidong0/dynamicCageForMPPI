@@ -186,6 +186,48 @@ class BoxPivotNonManeuverableSet(Set):
             return False
     
 
+class GripperNonManeuverableSet(Set):
+    """Represents a non-maneuverable set of state that the box is not inside the hand."""
+    def __init__(self, bmin, bmax, success_z_thres, success_vz_thres):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.success_z_thres = success_z_thres
+        self.success_vz_thres = success_vz_thres
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin,self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        # assert len(x)==len(self.bmin)
+        # linear_velocity = np.linal.norm(linear_velocity)
+        if x[8] < self.success_vz_thres or x[1] < self.success_z_thres: # high velocity or under the hand
+            return True # non-maneuverable
+        else:
+            return False
+    
+
+class GripperSuccessSet(Set):
+    """Represents a non-maneuverable set of state that the box is not inside the hand."""
+    def __init__(self, bmin, bmax, success_z_thres, success_vz_thres):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.success_z_thres = success_z_thres
+        self.success_vz_thres = success_vz_thres
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin,self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        if x[8] > self.success_vz_thres and x[1] > self.success_z_thres: # low velocity or inside the hand
+            return True # successfully grasped
+        else:
+            return False
+        
+
 class BoxSet(Set):
     """Represents an axis-aligned box in a vector space."""
     def __init__(self,bmin,bmax):

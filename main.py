@@ -153,7 +153,7 @@ if __name__=="__main__":
         problem = balancegrasp.BalanceGraspTest(dynamics_sim)
     if problem_name == 'PlanePush':
         dynamics_sim = forwardSimulationPlanePush(gui=0)
-        problem = planepush.planePushTest(dynamics_sim)
+        problem = planepush.PlanePushTest(dynamics_sim)
     if problem_name == 'PlanePushRrtstar':
         dynamics_sim = forwardSimulationPlanePushRrtstar(gui=1)
         problem = planepushrrtstar.PlanePushRrtstarTest(dynamics_sim)
@@ -162,7 +162,7 @@ if __name__=="__main__":
         problem = waterswing.waterSwingTest(dynamics_sim)
     if problem_name == 'BoxPivot':
         dynamics_sim = forwardSimulationBoxPivot(gui=0)
-        problem = boxpivot.boxPivotTest(dynamics_sim)
+        problem = boxpivot.BoxPivotTest(dynamics_sim)
     if problem_name == 'Herding':
         num_runs = 6
         # num_robots=10
