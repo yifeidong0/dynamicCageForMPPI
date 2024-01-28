@@ -162,6 +162,7 @@ class BoxPivot:
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
                        2.5*self.x_range, 2.5*self.x_range])
     
+    
 class BoxPivotObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.

@@ -8,10 +8,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "Gripper" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
+problem_name = "PlanePush" # "Shuffling", "BoxPivot", "WaterSwing", "PlanePush", "BalanceGrasp", "Gripper"
 gui = 0
 num_via_points = 10
-num_trajs = 50
+num_trajs = 3
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -112,7 +112,11 @@ heuriset = []
 success_labelset = []
 maneuver_labelset = []
 for i in range(num_trajs):
-    sim.sample_init_state()
+    if problem_name == 'BoxPivot' or problem_name == 'Gripper':
+        sim.sample_init_state()
+    elif problem_name == 'PlanePush' or problem_name == 'BalanceGrasp':
+        x_init = sim.sample_init_state()
+    
     sim.reset_states(x_init)
     if problem_name == 'BoxPivot':
         _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time

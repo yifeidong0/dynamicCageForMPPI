@@ -86,14 +86,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 contact_friction_force_xy = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
                 # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
                 s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
-                # print("@@@@@@@s_stick: ", s_stick)
-                # print("s_engage: ", s_engage)
-                # print("len(res): ", len(res))
-                # print([contact[10] for contact in res])
-                # print([contact[11] for contact in res])
-                # print([contact[12] for contact in res])
-                # print([contact[13] for contact in res])
-
+                
                 # Get bodies closest points distance
                 dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
                 dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0

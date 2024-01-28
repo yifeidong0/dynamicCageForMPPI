@@ -75,7 +75,7 @@ def predict(model, input_data, scale_, min_):
     # Perform prediction
     with torch.no_grad():
         predictions = model(input_data_scaled)
-    
+
     return predictions
 
 
@@ -84,17 +84,13 @@ class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(10, 64),
+            nn.Linear(12, 64),
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(32, 2)  # Output layer for 2D output
         )
 
     def forward(self, x):
@@ -130,6 +126,7 @@ class MPPI():
         self.num_vis_samples = num_vis_samples # nu. of rollouts
         self.theta_max = math.pi/2
         self.theta_min = -math.pi/2
+        self.max_acceleration = 2 # 2 for dataset generation
 
         # dimensions of state and control
         self.nx = nx
@@ -150,32 +147,31 @@ class MPPI():
         self.rollout_state = None
         self.rollout_cutdown_id = None
 
-        # self._prepare_nn()
+        self._prepare_nn()
 
         self.g = self.cage.gravity
         self.control_space = self.cage.controlSpace()
         self.u_boundary = [
-                           [-self.cage.max_acceleration, self.cage.max_acceleration],
-                           [-self.cage.max_acceleration, self.cage.max_acceleration],
-                           [-self.cage.max_ang_acceleration, self.cage.max_ang_acceleration],
+                           [-self.max_acceleration, self.max_acceleration],
+                           [-self.max_acceleration, self.max_acceleration],
+                           [0,0],
                            ]
         self.c_space_boundary = self.cage.c_space_boundary
 
     def _prepare_nn(self):
-        scaler = joblib.load('data/9kdataset-from-mppi/scaler_minmax.pkl')
+        scaler = joblib.load('data/11k_dataset_from_mppi/scaler_minmax.pkl')
 
         # Convert the scaler parameters to PyTorch tensors
         self.scaler_scale = torch.tensor(scaler.scale_, dtype=torch.float32, device=self.d)
         self.scaler_min = torch.tensor(scaler.min_, dtype=torch.float32, device=self.d)
 
         self.model = NeuralNetwork()
-        self.model.load_state_dict(torch.load('data/9kdataset-from-mppi/model_9k_1000epoch.pth'))
+        self.model.load_state_dict(torch.load('data/11k_dataset_from_mppi/model_12d_2d_outputs.pth'))
         self.model.to(self.d)
         self.model.eval()
 
-    def _reset_start_goal(self, params):
-        xo_init, yo_init, xg_init, yg_init, thetag_init = params
-        self.state_start = torch.tensor([xo_init,yo_init,0,0,0,0,xg_init, yg_init,thetag_init,0,0,0], device=self.d) # dim=12
+    def _reset_start_goal(self, x_init):
+        self.state_start = torch.tensor(x_init, device=self.d) # dim=12
 
     def _check_collision(self):
         # Check if bodies are in collision
@@ -183,7 +179,6 @@ class MPPI():
         is_in_collision = self.cage.dynamics_sim.check_collision()
         if is_in_collision:
             print('!!!Collision at start state!!!')
-            # self.cage.dynamic_sim.finish_sim()
             return True
         print('!!!Not in Collision!!!')
         return False
@@ -242,7 +237,7 @@ class MPPI():
             self.rollout_state[k,t+1,:] = state.clone().detach().to(self.d) # save rollouts for dataset generation
 
             # Break the for loop if current state is in goal
-            if abs(cost_t) < self.goal_thres: # block already against the wall (PlanePush)
+            if abs(state[1]-self.cage.y_obstacle) < self.goal_thres: # block already against the wall (PlanePush)
                 if vis_rollouts and t+2 <= self.T: 
                     stacked_state = torch.tensor(state).unsqueeze(0).expand(self.T-(t+2)+1, -1)
                     self.rollout_state[k,t+2:,:] = stacked_state # save rollouts for visualization
@@ -254,7 +249,7 @@ class MPPI():
         if self.terminal_state_cost:
             self.cost_total[k] += self.terminal_state_cost(state)
 
-    def _add_cage_cost(self, cage_weight=1.):
+    def _add_cage_cost(self, cage_weight_s=10., cage_weight_m=1.):
         # Inference in batches
         # Create a mask to select the columns based on rollout_cutdown_id
         mask = torch.arange(self.rollout_state.shape[1], device=self.d).expand(self.rollout_state.shape[0], -1) < self.rollout_cutdown_id.view(-1, 1)
@@ -264,8 +259,9 @@ class MPPI():
 
         # Make a prediction
         stability_cage = predict(self.model, stacked_states, self.scaler_scale, self.scaler_min)
-        # print('stability_cage', stability_cage[:int(self.rollout_cutdown_id[0].item())])
-        cost_cage = cage_weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
+        cost_cage_success = torch.max(torch.tensor(-3.0, device='cuda:0'), 1 - cage_weight_s*stability_cage[:,0]) # torch.Size([-1,1]), gpu
+        cost_cage_maneuver = (1 - cage_weight_m*stability_cage[:,1]) # torch.Size([-1,1]), gpu
+        cost_cage = cost_cage_success + cost_cage_maneuver
 
         # Calculate cumulative sum of rollout_cutdown_id
         cumulative_rollout = torch.cumsum(self.rollout_cutdown_id, dim=0)
@@ -297,8 +293,8 @@ class MPPI():
         for k in range(self.K):
             self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
-        # Add penalization against unstable configurations
-        # self._add_cage_cost()
+        # Add penalization against configurations that are unmaneuverable or of less probability of tasks success 
+        self._add_cage_cost()
         
         beta = torch.min(self.cost_total) # min cost
         cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
@@ -321,33 +317,22 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     uhist = torch.zeros((iter, mppi.nu), device=mppi.d)
     rollouts_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx), device=mppi.d)
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
-    # gripperhist = torch.zeros((iter+1, 4, 2), device=mppi.d) # 4 corners, 2d points
 
     cutdown_iter = iter
     state = mppi.state_start
     mppi._initialize_rollout_container()
     xhist[0] = torch.tensor(state)
-    # gripperhist[0] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
     for t in range(iter):
         print('')
         print('----------iter----------', t)
         action = mppi.command(state)
         state = mppi.control_space.nextState(state.tolist(), [mppi.dt,]+action.tolist(), is_planner=True)
-
-        # Keep theta within [-pi/2,pi/2]
-        # if state[6] > mppi.theta_max:
-        #     state[6] = (state[6] - mppi.theta_max) % math.pi + mppi.theta_min
-        # elif state[6] < mppi.theta_min:
-        #     state[6] = mppi.theta_max - (mppi.theta_min - state[6]) % math.pi
         state = torch.tensor(state, device=mppi.d)
 
         # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
         # cost = 0. # TODO: print cost
 
         # Log and visualize
-        # xhist[t+1] = torch.tensor(state_q, device=mppi.d)
-        # gripperhist[t+1] = get_gripper_corners(state_q[4:7], mppi.half_extents_gripper).clone().detach()
-        # uhist[t] = torch.tensor(action_q, device=mppi.d)
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
         if t % 4 == 0:
@@ -356,10 +341,6 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         # Check if goal is reached
         curr = state[1] # object position
         dist_to_goal = abs(mppi.cage.y_obstacle - curr)
-        print('dist_to_goal',dist_to_goal)
-        print('!!!state',state)
-        print('!!!mppi.c_space_boundary',mppi.c_space_boundary)
-        print('!!!action',action)
         if dist_to_goal < mppi.goal_thres:
             print('REACHED!')
             cutdown_iter = t
@@ -368,6 +349,8 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
                 mppi.cage.dynamics_sim.finish_sim()
             visualize_mppi(mppi, xhist, uhist, t, reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
             break
+
+        # Check if out of boundary
         if not is_within_boundaries(state, mppi.c_space_boundary):
             print('OUT OF LIMIT!')
             cutdown_iter = t

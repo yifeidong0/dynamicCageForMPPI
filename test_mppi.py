@@ -14,18 +14,19 @@ if __name__ == "__main__":
         fake_data = [0.0,]*12
         dynamics_sim = forwardSimulationPlanePushPlanner(gui=0)
         cage = PlanePush(fake_data, dynamics_sim)
-        goal_threshold = 0.22 # half of the width of the box
-        initial_params = [8, 6, 0.3, 8, 5.5,]
+        goal_threshold = 0.25 # half of the width of the box
+        init_state = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
+                          5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     elif problem_name == 'BalanceGrasp':
         pass
 
-    N_EPISODE = 10
-    N_ITER = 30 # max no. of iterations
-    N_SAMPLE = 500 # 1000  # K
-    N_HORIZON = 15  # T, MPPI horizon
+    N_EPISODE = 15
+    N_ITER = 25 # max no. of iterations
+    N_SAMPLE = 100 # 1000  # K
+    N_HORIZON = 30  # T, MPPI horizon
     nx = len(fake_data)
-    nu = cage.nu - 1 # expect time as the first element of action
-    dt = .2 # 0.15 # fixed time step
+    nu = cage.nu - 1 # except time as the first element of action
+    dt = .2 # fixed time step
     num_vis_samples = 1
     lambda_ = 1.
     gravity = 9.81
@@ -47,24 +48,19 @@ if __name__ == "__main__":
     torch.manual_seed(randseed)
     print("random seed %d", randseed)
 
-    def running_cost(state, action, w1=0.2, w2=0.2, w3=0.1):
+    def running_cost(state, action, w0=0.1, w1=0.02, w2=0.02, w3=0.01):
         '''state and state_goal: torch.tensor()'''
-        # weight = 1.
-        # cost = (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
-        cost = ((state[1]-cage.y_obstacle)**2 
-                + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
-                + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
-                + w3 * (state[2]**2 + state[8]**2)) # orientation
-        # cost = angle_normalize(theta) ** 2 + 0.1 * theta_dt ** 2 + 0.001 * action ** 2
+        # cost = (w0 * (state[1]-cage.y_obstacle)**2 
+        #         + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
+        #         + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
+        #         + w3 * (state[2]**2 + state[8]**2)) # orientation
+        cost = torch.Tensor([1e-9,])
         return cost
 
-    def terminal_state_cost(state, weight=5.):
+    def terminal_state_cost(state, weight=10.):
         '''state and state_goal: torch.tensor()'''
-        cost_goal = weight * (state[1]-cage.y_obstacle)**2
-        # cost_goal = weight * (state_goal[0]-state[0])**2 + (state_goal[1]-state[1])**2
-        # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
-        # cost_cage = 2.*weight / (.01 + 2*torch.max(stability_cage, torch.tensor(1e-3))) # torch.Size([self.nx,1]), gpu
-        # return cost_goal + cost_cage
+        # cost_goal = weight * (state[1]-cage.y_obstacle)**2
+        cost_goal = torch.tensor(0.0, device='cuda:0')
         return cost_goal
     
     mppi_gym = MPPI(nx, 
@@ -96,31 +92,30 @@ if __name__ == "__main__":
         print('##############iter#############', e)
         data = []
         if randomize and problem_name == 'PlanePush':
-            thres = 2.8
-            params = [
-                (cage.x_range-2*thres*1.5)*random.random() + thres*1.5, # xo_init
-                (cage.y_obstacle-2*thres)*random.random() + thres + 0.7, # yo_init
-                (cage.x_range-2*thres*1.5)*random.random() + thres*1.5, # xg_init
-                (cage.y_obstacle-2*thres)*random.random() + thres - 0.7, # yg_init
-                0.5*math.pi*random.random() - 0.25*math.pi, # thetag_init
-                ]
-            print('params', params)
-        else:
-            params = initial_params
-        mppi_gym._reset_start_goal(params)
+            xo = random.uniform(4,6)
+            # yo = random.uniform(3,5)
+            yo = random.uniform(7,7)
+            thetao = random.uniform(-math.pi/6, math.pi/6)
+            vxo = random.uniform(-0.0, 0.0)
+            vyo = random.uniform(-0.0, 0.0)
+            omegao = random.uniform(-0.0, 0.0)
+            xg = xo + random.uniform(-0.6, 0.6)
+            yg = yo + random.uniform(-1, -0.5)
+            vxg = random.uniform(-0.0, 0.0)
+            vyg = random.uniform(0, 0.2)
+            init_state = [xo, yo, thetao, vxo, vyo, omegao,
+                        xg, yg, 0, vxg, vyg, 0]
+        mppi_gym._reset_start_goal(init_state)
         is_in_collsion = mppi_gym._check_collision()
         if is_in_collsion:
             continue
 
         rollouts_hist, cutdown_hist, cutdown_iter = run_mppi(mppi_gym, iter=N_ITER, episode=e, do_bullet_vis=do_bullet_vis)
-        # rollouts_hist = torch.tensor((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx))
-        # cutdown_hist = torch.tensor((iter, mppi.num_vis_samples))
 
         # Process data to save
         for i in range(cutdown_iter):
             for s in range(mppi_gym.num_vis_samples):
                 cutoff = int(cutdown_hist[i, s].item()) # cutoff in the horizon
-                # print('cutoff',cutoff)
                 selected_data = rollouts_hist[i, s, 1:cutoff, :]
                 
                 for h in range(cutoff-1):

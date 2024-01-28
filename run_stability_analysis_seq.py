@@ -18,13 +18,16 @@ import os
 # !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'Gripper' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+traj_type = 'mppi' # "scripted"
 vis = 0
 maxTime = 10000 # only used when vis=0
-maxIters = 2000
+maxIters = 500
+init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
+    filenames = ['states_from_mppi.csv',]
+    # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',]
 if prname == 'BoxPivot':
@@ -44,7 +47,7 @@ for filename in filenames:
         csv_reader = csv.reader(file)
         header = next(csv_reader)
         for id, row in enumerate(csv_reader):
-            rows.append([float(d) for d in row[2:]])
+            rows.append([float(d) for d in row[init_id:]])
             ids.append(int(row[0]))
 
     if prname == 'BoxPivot':
