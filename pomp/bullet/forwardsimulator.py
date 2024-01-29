@@ -221,6 +221,21 @@ class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
         self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
 
+        # Get contact forces
+        res = p.getContactPoints(self.gripperUid, self.objectUid)
+        all_contact_normal_forces = [contact[9] for contact in res]
+        contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+        s_engage = contact_normal_force
+        contact_friction_force_xy = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
+        # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+        s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
+        
+        # Get bodies closest points distance
+        dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
+        dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+        
+        self.heuristics = [dist, s_stick, s_engage,]
+
         new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
                       self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
                       self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 

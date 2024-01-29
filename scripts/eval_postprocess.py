@@ -3,7 +3,6 @@ import os
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 import matplotlib.pyplot as plt
-
 import time
 import csv
 
@@ -37,7 +36,6 @@ def plot_metrics_and_curves(labels, predictions):
     plt.ylabel('Precision')
     plt.title('Precision-Recall Curve')
     plt.legend(loc="lower left")
-
     plt.tight_layout()
     plt.show()
 
@@ -72,7 +70,7 @@ def get_s_metric(labels, predictions, predict_id=5):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 

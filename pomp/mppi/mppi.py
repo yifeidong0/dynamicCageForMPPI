@@ -185,6 +185,7 @@ class MPPI():
 
     def _initialize_rollout_container(self):
         self.rollout_state = torch.zeros((self.K, self.T+1, self.nx), device=self.d)
+        self.rollout_quality = torch.zeros((self.K, self.T+1, 3), device=self.d)
         self.rollout_cutdown_id = torch.zeros((self.K), device=self.d).fill_(self.T+1)
 
     def _start_action_consideration(self):
@@ -211,6 +212,7 @@ class MPPI():
             state = self.control_space.nextState(state.tolist(), 
                                                  [self.dt,]+perturbed_action_t.tolist(), 
                                                  is_planner=True) # TODO: dynamics take 95% of the runtime
+            quality = self.control_space.dynamics_sim.heuristics
             
             # State space boundary
             is_valid_state = is_within_boundaries(state, self.c_space_boundary)
@@ -235,6 +237,7 @@ class MPPI():
             # self.cost_total[k] += c_action
 
             self.rollout_state[k,t+1,:] = state.clone().detach().to(self.d) # save rollouts for dataset generation
+            self.rollout_quality[k,t+1,:] = torch.tensor(quality, device=self.d) # save quality metrics for dataset generation
 
             # Break the for loop if current state is in goal
             if abs(state[1]-self.cage.y_obstacle) < self.goal_thres: # block already against the wall (PlanePush)
@@ -294,7 +297,7 @@ class MPPI():
             self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
         # Add penalization against configurations that are unmaneuverable or of less probability of tasks success 
-        self._add_cage_cost()
+        # self._add_cage_cost()
         
         beta = torch.min(self.cost_total) # min cost
         cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
@@ -316,6 +319,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     xhist = torch.zeros((iter+1, mppi.nx), device=mppi.d)
     uhist = torch.zeros((iter, mppi.nu), device=mppi.d)
     rollouts_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx), device=mppi.d)
+    rollouts_quality_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, 3), device=mppi.d)
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
 
     cutdown_iter = iter
@@ -328,7 +332,6 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         action = mppi.command(state)
         state = mppi.control_space.nextState(state.tolist(), [mppi.dt,]+action.tolist(), is_planner=True)
         state = torch.tensor(state, device=mppi.d)
-
         # stability_cage = predict(mppi.model, state.reshape(-1, mppi.nx), mppi.scaler_scale, mppi.scaler_min)[0,0]
         # cost = 0. # TODO: print cost
 
@@ -340,6 +343,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
 
         # Check if goal is reached
         curr = state[1] # object position
+        print('dist_to_goal', abs(mppi.cage.y_obstacle - curr))
         dist_to_goal = abs(mppi.cage.y_obstacle - curr)
         if dist_to_goal < mppi.goal_thres:
             print('REACHED!')
@@ -358,10 +362,11 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
 
         # Save rollouts and clean up the container
         rollouts_hist[t,:,:,:] = mppi.rollout_state[:mppi.num_vis_samples,:,:]
+        rollouts_quality_hist[t,:,:,:] = mppi.rollout_quality[:mppi.num_vis_samples,:,:]
         cutdown_hist[t,:] = mppi.rollout_cutdown_id[:mppi.num_vis_samples]
         mppi._initialize_rollout_container()
 
-    return rollouts_hist, cutdown_hist, cutdown_iter
+    return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist
 
 
 def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=0):
