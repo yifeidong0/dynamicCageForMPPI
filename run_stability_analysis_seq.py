@@ -17,7 +17,7 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 # !!! More non-maneuverable states needed in the 50 trajs
 
-plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
+plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'BoxPivot' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # "scripted"
 vis = 0

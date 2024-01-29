@@ -101,10 +101,10 @@ if prname == 'BalanceGrasp':
 if prname == 'BoxPivot':
     f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_success_labels_BoxPivot.csv'
     f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BoxPivot.csv'
-    f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/prob-aoest/ao_est.csv'
+    f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/prob-aoest/ao_est.csv'
     f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
-    f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aoest/ao_est.csv'
-    f_effort_aorrt = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/effort-aorrt/ao_rrt.csv'
+    f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/effort-aoest/ao_est.csv'
+    f_effort_aorrt = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/effort-aorrt/ao_rrt.csv'
 # if prname == 'Shuffling':
 if prname == 'Gripper':
     f_success_labels = 'data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_success_labels_Gripper.csv'
