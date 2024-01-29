@@ -75,7 +75,7 @@ def get_s_metric(labels, predictions):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'Gripper' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
@@ -152,14 +152,14 @@ with open(f_effort_aorrt, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        effort_aorrt_metrics.append(-float(row[4]))
+        effort_aorrt_metrics.append(float(row[4]))
 
 effort_aoest_metrics = []
 with open(f_effort_aoest, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        effort_aoest_metrics.append(-float(row[4]))
+        effort_aoest_metrics.append(float(row[4]))
           
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
@@ -189,7 +189,7 @@ with open(f_heuristics, 'r') as file:
             closeset_distance_metrics.append(float(row[5]))
             s_stick_metrics.append(float(row[6]))
             s_engage_metrics.append(float(row[7]))
-        if prname == 'Gripper':
+        elif prname == 'Gripper':
             closeset_distance_metrics.append(float(row[2])+float(row[5])+float(row[8]))
             s_stick_metrics.append(float(row[3])+float(row[6])+float(row[9]))
             s_engage_metrics.append(float(row[4])+float(row[7])+float(row[10]))

@@ -55,11 +55,11 @@ class BoxPivot:
         self.num_input = 2
         self.x_range = 12
         self.y_range = 12
-        self.offset = 10.0 # extend the landscape
+        self.offset = 100.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 100
-        self.max_acceleration = 1
-        self.max_ang_acceleration = 1 # might need to be 100
+        self.max_acceleration = 50 # 1 for prob-aoest
+        self.max_ang_acceleration = 50 # 1 for prob-aoest
         self.task_goal_margin = 0.1 * math.pi/6
         self.maneuver_goal_margin = 1/3 * math.pi/6
         self.maneuver_goal_tmax = 1.5
@@ -129,8 +129,8 @@ class BoxPivot:
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
-                                       BoxConfigurationSpace([0.0],[self.x_range]), # spring positions
-                                       BoxConfigurationSpace([0.0],[self.y_range]),
+                                       BoxConfigurationSpace([-self.offset],[self.x_range+self.offset]), # spring positions
+                                       BoxConfigurationSpace([-self.offset],[self.y_range+self.offset]),
                                        ) # this c-space has to cover the state constraint in MPPI, better with some more margins
         return res
 
@@ -148,19 +148,21 @@ class BoxPivot:
     def taskGoalSet(self):
         return BoxSet([-self.offset, -self.offset, math.pi/2-self.task_goal_margin,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
-                       -2.5*self.x_range, -2.5*self.x_range],
+                       -self.x_range-self.offset, -self.x_range-self.offset],
                       [self.x_range+self.offset, self.y_range+self.offset, math.pi,
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
-                       2.5*self.x_range, 2.5*self.x_range])
+                       self.x_range+self.offset, self.x_range+self.offset])
     
     def maneuverGoalSet(self):
         """The object is maneuverable if the pivot point velocity is not too large."""
         return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
-                       -2.5*self.x_range, -2.5*self.x_range],
+                       -self.x_range-self.offset, -self.x_range-self.offset],
+                    #    -2.5*self.x_range, -2.5*self.x_range],
                       [self.x_range+self.offset, self.y_range+self.offset, math.pi/2,
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
-                       2.5*self.x_range, 2.5*self.x_range])
+                       self.x_range+self.offset, self.x_range+self.offset])
+                    #    2.5*self.x_range, 2.5*self.x_range])
     
     
 class BoxPivotObjectiveFunction(ObjectiveFunction):
