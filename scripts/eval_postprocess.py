@@ -11,15 +11,12 @@ import csv
 def plot_metrics_and_curves(labels, predictions):
     # Calculating True Positive Rate (TPR), False Positive Rate (FPR), Precision and Recall for various thresholds
     fpr, tpr, roc_thresholds = roc_curve(labels, predictions)
-    print('!!!!!len roc_thresholds: ', len(fpr))
     roc_auc = auc(fpr, tpr)
-
     precision, recall, pr_thresholds = precision_recall_curve(labels, predictions)
     average_precision = average_precision_score(labels, predictions)
 
     # Plotting ROC Curve
     plt.figure(figsize=(12, 5))
-
     plt.subplot(1, 2, 1)
     plt.plot(fpr, tpr, color='blue', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -55,7 +52,7 @@ def get_m_metric(labels, predictions):
     print("AUC (Area Under Curve) for ROC: ", roc_auc)
     print("AP (Average Precision) for Precision-Recall Curve: ", average_precision)
 
-def get_s_metric(labels, predictions):
+def get_s_metric(labels, predictions, predict_id=5):
     """ success metric
         metric_original: list of floats, len=num_traj*num_via_points
     """
@@ -65,7 +62,7 @@ def get_s_metric(labels, predictions):
     # weights = [w/sum(weights) for w in weights]
     for i in range(num_trajs):
         m = predictions[i*num_via_points:(i+1)*num_via_points]
-        metrics_traj.append(sum([w*m for w,m in zip(weights,m)]))
+        metrics_traj.append(sum([w*m for w,m in zip(weights[:predict_id],m[:predict_id])]))
 
     # Example usage with the AO-RRT success metrics
     roc_auc, average_precision = plot_metrics_and_curves(labels, metrics_traj)
@@ -75,7 +72,7 @@ def get_s_metric(labels, predictions):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
