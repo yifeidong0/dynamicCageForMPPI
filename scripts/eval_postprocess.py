@@ -58,7 +58,7 @@ def get_s_metric(labels, predictions, predict_id=5):
     """
     metrics_traj = []
     # list of weights of length 10 that add up to 1 and exponentially increase
-    weights = [1.5**i for i in range(num_via_points)]
+    weights = [1.4**i for i in range(num_via_points)]
     # weights = [w/sum(weights) for w in weights]
     for i in range(num_trajs):
         m = predictions[i*num_via_points:(i+1)*num_via_points]
@@ -72,7 +72,7 @@ def get_s_metric(labels, predictions, predict_id=5):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'BoxPivot' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
@@ -96,10 +96,10 @@ if prname == 'BalanceGrasp':
     # f_quasistatic = 'data/evaluation/balance_grasp/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
     f_heuristics = 'data/evaluation/balance_grasp/rand_traj_1/approaches/heuristics/scripted_movement_heuristics_BalanceGrasp.csv'
 if prname == 'BoxPivot':
-    f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_success_labels_BoxPivot.csv'
-    f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff/dataset/scripted_movement_maneuver_labels_BoxPivot.csv'
+    f_success_labels = 'data/evaluation/box_pivot/rand_fri_coeff1/dataset/scripted_movement_success_labels_BoxPivot.csv'
+    f_maneuver_labels = 'data/evaluation/box_pivot/rand_fri_coeff1/dataset/scripted_movement_maneuver_labels_BoxPivot.csv'
     f_aoest_metrics = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/prob-aoest/ao_est.csv'
-    f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
+    f_heuristics = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/heuristics/scripted_movement_heuristics_BoxPivot.csv'
     f_effort_aoest = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/effort-aoest/ao_est.csv'
     f_effort_aorrt = 'data/evaluation/box_pivot/rand_fri_coeff1/approaches/effort-aorrt/ao_rrt.csv'
 # if prname == 'Shuffling':
