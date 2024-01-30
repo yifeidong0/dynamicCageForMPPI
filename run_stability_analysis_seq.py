@@ -19,15 +19,15 @@ import os
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-traj_type = 'mppi' # 'mppi', "scripted"
+traj_type = 'scripted' # 'mppi', "scripted"
 vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 1000
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
-    # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
+    # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
+    filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',]
 if prname == 'BoxPivot':
@@ -74,6 +74,7 @@ for filename in filenames:
     if 'maxTime' in params:
         del params['maxTime']
 
+    t0 = time.time()
     for i, data_i in enumerate(rows):
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -102,3 +103,5 @@ for filename in filenames:
             print(ids[i])
             testPlannerDefault(problem, prname, maxTime, maxIters, plannername, data_id=ids[i], **params)
         dynamics_sim.finish_sim()
+    t_elapsed = time.time() - t0
+    print('^^^^^^^^^^^Time elapsed: ', t_elapsed)

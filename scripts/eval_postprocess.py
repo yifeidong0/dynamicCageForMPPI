@@ -50,7 +50,7 @@ def get_m_metric(labels, predictions):
     print("AUC (Area Under Curve) for ROC: ", roc_auc)
     print("AP (Average Precision) for Precision-Recall Curve: ", average_precision)
 
-def get_s_metric(labels, predictions, predict_id=5):
+def get_s_metric(labels, predictions, predict_id=3):
     """ success metric
         metric_original: list of floats, len=num_traj*num_via_points
     """
@@ -79,6 +79,7 @@ if prname == 'PlanePush':
     f_success_labels = 'data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_success_labels_PlanePush.csv'
     f_maneuver_labels = 'data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
     f_aoest_metrics = 'data/evaluation/push_fixture/rand_traj_3/approaches/prob-aoest/ao_est.csv'
+    # f_aoest_metrics = 'data/evaluation/time_ablation/ao_est_1000it_2.csv'
     f_heuristics = 'data/evaluation/push_fixture/rand_traj_3/approaches/heuristics/scripted_movement_heuristics_PlanePush.csv'
     f_effort_aorrt = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aorrt/ao_rrt.csv'
     f_effort_aoest = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aoest/ao_est.csv'
