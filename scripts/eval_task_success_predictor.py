@@ -80,15 +80,16 @@ def get_predictor_ablation(success_labels, success_metrics, num_via_points):
         average_precision_list.append(average_precision)
 
     # Plot the AUC and AP for different number of known states with no subplots
-    plt.figure(figsize=(12, 5))
+    # plt.figure(figsize=(12, 5))
     plt.plot(range(1,num_via_points), roc_auc_list, color='blue', lw=2, label='AUC')
     plt.plot(range(1,num_via_points), average_precision_list, color='green', lw=2, label='AP')
+    plt.ylim(0.4, 1.05)
     plt.xlabel('Number of known states')
     plt.ylabel('AUC/AP')
     plt.title('AUC/AP vs. Number of known states')
     plt.legend(loc="lower left")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     
     return roc_auc_list, average_precision_list
 ##################################
@@ -155,7 +156,9 @@ with open(f_heuristics, 'r') as file:
         s_engage_metrics.append(float(row[4]))
 
 ##################################
+plt.figure(figsize=(12, 5))
 print('######1. Probability AO-EST Success Metric######')
+plt.subplot(1, 2, 1)
 get_predictor_ablation(success_labels, success_metrics_aoest, num_via_points)
 
 print('######2. Baseline - Contact Force-related Score - Maneuverability ######')
@@ -163,6 +166,8 @@ w0, w1, w2 = -1,1,1
 hybrid_score = [(w0*d + w1*s + w2*e) for d,s,e in zip(closeset_distance_metrics, s_stick_metrics, s_engage_metrics)]
 # get_m_metric(maneuver_labels, hybrid_score)
 print('######Heuristic - Contact Force - Success Metric######')
+plt.subplot(1, 2, 2)
 get_predictor_ablation(success_labels, hybrid_score, num_via_points)
+plt.show()
 
 

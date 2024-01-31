@@ -338,7 +338,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         final_traj[t+1,:] = state.clone().detach()
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
-        if t % 4 == 0:
+        if t % 5 == 0:
             visualize_mppi(mppi, xhist, uhist, t, epi=episode)
         
         # Save maneuverability labels

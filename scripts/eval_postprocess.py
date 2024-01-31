@@ -50,7 +50,7 @@ def get_m_metric(labels, predictions):
     print("AUC (Area Under Curve) for ROC: ", roc_auc)
     print("AP (Average Precision) for Precision-Recall Curve: ", average_precision)
 
-def get_s_metric(labels, predictions, predict_id=3):
+def get_s_metric(labels, predictions, predict_id=10):
     """ success metric
         metric_original: list of floats, len=num_traj*num_via_points
     """
@@ -70,7 +70,7 @@ def get_s_metric(labels, predictions, predict_id=3):
 ##################################
 
 # plannername = 'ao-rrt' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'Gripper' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 10
 num_trajs = 50
 
@@ -148,15 +148,21 @@ with open(f_effort_aorrt, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        effort_aorrt_metrics.append(float(row[4]))
+        if prname == 'Gripper':
+            effort_aorrt_metrics.append(-float(row[4])) # effort of escaping to success region
+        else:
+            effort_aorrt_metrics.append(float(row[4]))
 
 effort_aoest_metrics = []
 with open(f_effort_aoest, 'r') as file:
     csv_reader = csv.reader(file)
     header = next(csv_reader)
     for id, row in enumerate(csv_reader):
-        effort_aoest_metrics.append(float(row[4]))
-          
+        if prname == 'Gripper':
+            effort_aoest_metrics.append(-float(row[4]))
+        else:
+            effort_aoest_metrics.append(float(row[4]))
+
 # soft_fixture_metrics = []
 # with open(f_soft_fixture, 'r') as file:
 #     csv_reader = csv.reader(file)
