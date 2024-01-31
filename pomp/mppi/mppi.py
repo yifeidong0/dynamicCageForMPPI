@@ -4,7 +4,6 @@ import torch
 import time
 import logging
 from torch.distributions.multivariate_normal import MultivariateNormal
-# from ..example_problems.cageplanner import CagePlannerControlSpace, CagePlanner
 from ..example_problems.planepush import *
 import copy
 import math 
@@ -43,9 +42,9 @@ def predict(model, input_data, scale_, min_):
 
 
 # Define the same model class used for training the cage stability network
-class NeuralNetwork(nn.Module):
+class NeuralNetwork2DOutput(nn.Module):
     def __init__(self):
-        super(NeuralNetwork, self).__init__()
+        super(NeuralNetwork2DOutput, self).__init__()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(12, 64),
             nn.ReLU(),
@@ -58,15 +57,29 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         return self.linear_relu_stack(x)
 
-
+class NeuralNetwork3DOutput(nn.Module):
+    def __init__(self):
+        super(NeuralNetwork3DOutput, self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(12, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 3)  # Adjusted for 3D output
+        )
+    def forward(self, x):
+        return self.linear_relu_stack(x)
+    
 class MPPI():
     """ MMPI according to algorithm 2 in Williams et al., 2017
         'Information Theoretic MPC for Model-Based Reinforcement Learning' """
-
     def __init__(self, 
                  nx, 
                  nu, 
                  cage,
+                 dynamics_sim,
                  K, 
                  T, 
                  running_cost, 
@@ -78,14 +91,18 @@ class MPPI():
                  noise_sigma=torch.tensor(1., dtype=torch.double),
                  u_init=torch.tensor(1., dtype=torch.double),
                  num_vis_samples=5,
-                 dt=0.5):
+                 dt=0.5,
+                 cost_type='simple',
+                 ):
         self.goal_thres = goal_thres
         self.cage = cage
+        self.dynamics_sim = dynamics_sim
         self.d = device
         self.K = K  # N_SAMPLES
         self.T = T  # HORIZON
         self.dt = dt
         self.num_vis_samples = num_vis_samples # nu. of rollouts
+        self.cost_type = cost_type
         self.theta_max = math.pi/2
         self.theta_min = -math.pi/2
         self.max_acceleration = 2 # 2 for dataset generation
@@ -108,8 +125,10 @@ class MPPI():
         self.state = None
         self.rollout_state = None
         self.rollout_cutdown_id = None
+        self.reached_goal = 0
 
-        self._prepare_nn()
+        if self.cost_type != 'simple':
+            self._prepare_nn()
 
         self.g = self.cage.gravity
         self.control_space = self.cage.controlSpace()
@@ -121,14 +140,18 @@ class MPPI():
         self.c_space_boundary = self.cage.c_space_boundary
 
     def _prepare_nn(self):
-        scaler = joblib.load('data/11k_dataset_from_mppi/scaler_minmax.pkl')
+        if self.cost_type == 'ours':
+            scaler = joblib.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/scaler_minmax_ours.pkl')
+            self.model = NeuralNetwork2DOutput()
+            self.model.load_state_dict(torch.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/model_ours.pth'))
+        elif self.cost_type == 'hou':
+            scaler = joblib.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/scaler_minmax_hou.pkl')
+            self.model = NeuralNetwork3DOutput()
+            self.model.load_state_dict(torch.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/model_hou.pth'))
 
         # Convert the scaler parameters to PyTorch tensors
         self.scaler_scale = torch.tensor(scaler.scale_, dtype=torch.float32, device=self.d)
         self.scaler_min = torch.tensor(scaler.min_, dtype=torch.float32, device=self.d)
-
-        self.model = NeuralNetwork()
-        self.model.load_state_dict(torch.load('data/11k_dataset_from_mppi/model_12d_2d_outputs.pth'))
         self.model.to(self.d)
         self.model.eval()
 
@@ -190,9 +213,10 @@ class MPPI():
             # Cage cost TODO: the inference can be done in parallel once every K*T times
             # increased_weight = (t+1) / ((1+self.T)*self.T/2)
             state = torch.tensor(state, device=self.d)
-
-            cost_t = self.running_cost(state, perturbed_action_t).item()
-            self.cost_total[k] += cost_t
+            
+            if self.cost_type == 'simple':
+                cost_t = self.running_cost(state, perturbed_action_t).item()
+                self.cost_total[k] += cost_t
 
             # Add action perturbation cost
             # c_action = perturbed_action_t @ self.action_cost[k, t]
@@ -214,7 +238,7 @@ class MPPI():
         if self.terminal_state_cost:
             self.cost_total[k] += self.terminal_state_cost(state)
 
-    def _add_cage_cost(self, cage_weight_s=10., cage_weight_m=1.):
+    def _add_cage_cost(self, weights_ours=[10,1,], weights_hou=[1,-1,-1,],):
         # Inference in batches
         # Create a mask to select the columns based on rollout_cutdown_id
         mask = torch.arange(self.rollout_state.shape[1], device=self.d).expand(self.rollout_state.shape[0], -1) < self.rollout_cutdown_id.view(-1, 1)
@@ -224,9 +248,16 @@ class MPPI():
 
         # Make a prediction
         stability_cage = predict(self.model, stacked_states, self.scaler_scale, self.scaler_min)
-        cost_cage_success = torch.max(torch.tensor(-3.0, device='cuda:0'), 1 - cage_weight_s*stability_cage[:,0]) # torch.Size([-1,1]), gpu
-        cost_cage_maneuver = (1 - cage_weight_m*stability_cage[:,1]) # torch.Size([-1,1]), gpu
-        cost_cage = cost_cage_success + cost_cage_maneuver
+        if self.cost_type == 'ours':
+            cost_cage_success = torch.max(torch.tensor(-3.0, device='cuda:0'), 1 - weights_ours[0]*stability_cage[:,0]) # torch.Size([-1,1]), gpu
+            cost_cage_maneuver = (1 - weights_ours[1]*stability_cage[:,1]) # torch.Size([-1,1]), gpu
+            cost_cage = cost_cage_success + cost_cage_maneuver
+        elif self.cost_type == 'hou':
+            # distance,S_stick,S_engage
+            cost_s_distance = weights_hou[1] * stability_cage[:,1] # torch.Size([-1,1]), gpu
+            cost_s_stick = weights_hou[1] * stability_cage[:,1] # torch.Size([-1,1]), gpu
+            cost_s_engage = weights_hou[2] * stability_cage[:,2] # torch.Size([-1,1]), gpu
+            cost_cage = cost_s_distance + cost_s_stick + cost_s_engage
 
         # Calculate cumulative sum of rollout_cutdown_id
         cumulative_rollout = torch.cumsum(self.rollout_cutdown_id, dim=0)
@@ -258,8 +289,9 @@ class MPPI():
         for k in range(self.K):
             self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
-        # Add penalization against configurations that are unmaneuverable or of less probability of tasks success 
-        self._add_cage_cost()
+        # Add penalization against configurations that are unmaneuverable or of less probability of tasks success
+        if self.cost_type != 'simple':
+            self._add_cage_cost()
         
         beta = torch.min(self.cost_total) # min cost
         cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
@@ -285,11 +317,14 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
     final_traj = torch.zeros((iter+1, mppi.nx), device=mppi.d)
 
+    mppi.reached_goal = 0
     cutdown_iter = iter
     state = mppi.state_start
     final_traj[0,:] = state.clone().detach()
     mppi._initialize_rollout_container()
     xhist[0] = torch.tensor(state)
+    maneuver_labelset = []
+    success_labelset = []
     for t in range(iter):
         print('')
         print('----------iter----------', t)
@@ -305,6 +340,11 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         uhist[t] = torch.tensor(action, device=mppi.d)
         if t % 4 == 0:
             visualize_mppi(mppi, xhist, uhist, t, epi=episode)
+        
+        # Save maneuverability labels
+        cage = PlanePush(state.tolist(), mppi.dynamics_sim)
+        man_label = 0 if cage.maneuverGoalSet().contains(state[:9].tolist()) else 1
+        maneuver_labelset.append([episode, t,] + [man_label,])
 
         # Check if goal is reached
         curr = state[1] # object position
@@ -313,17 +353,17 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         if dist_to_goal < mppi.goal_thres:
             print('REACHED!')
             cutdown_iter = t
-            reached_goal = True
+            mppi.reached_goal = 1
             if do_bullet_vis:
                 mppi.cage.dynamics_sim.finish_sim()
-            visualize_mppi(mppi, xhist, uhist, t, reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
+            visualize_mppi(mppi, xhist, uhist, t, mppi.reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
             break
 
-        # Check if out of boundary
-        if not is_within_boundaries(state, mppi.c_space_boundary):
-            print('OUT OF LIMIT!')
-            cutdown_iter = t
-            break
+        # # Check if out of boundary
+        # if not is_within_boundaries(state, mppi.c_space_boundary):
+        #     print('OUT OF LIMIT!')
+        #     cutdown_iter = t
+        #     break
 
         # Save rollouts and clean up the container
         rollouts_hist[t,:,:,:] = mppi.rollout_state[:mppi.num_vis_samples,:,:]
@@ -331,7 +371,12 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         cutdown_hist[t,:] = mppi.rollout_cutdown_id[:mppi.num_vis_samples]
         mppi._initialize_rollout_container()
 
-    return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist
+    success_labelset.append([episode,] + [mppi.reached_goal,])
+    dist_to_goal = abs(mppi.cage.y_obstacle - curr)
+    if dist_to_goal > mppi.goal_thres:
+        print('NOT REACHED!')
+
+    return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, maneuver_labelset, final_traj
 
 
 def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=0):
