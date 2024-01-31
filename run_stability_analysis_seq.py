@@ -26,8 +26,9 @@ maxIters = 1000
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
+    filenames = ['data/evaluation/plane_push_ablation/dis2wall_pushbias/ablation_dp_PlanePush.csv',]
     # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
-    filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
+    # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',]
 if prname == 'BoxPivot':

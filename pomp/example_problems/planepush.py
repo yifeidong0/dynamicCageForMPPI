@@ -74,7 +74,7 @@ class PlanePush:
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .57
         self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -3e0
+        self.cost_inv_coef = -1e0
 
         self.object_name = 'box' # 'box', 'cylinder'
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
