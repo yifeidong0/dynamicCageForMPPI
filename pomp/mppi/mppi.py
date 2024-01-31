@@ -24,39 +24,6 @@ def is_within_boundaries(x, x_boundary):
             return False
     return True
 
-# def get_gripper_corners(pose, half_extents_gripper):
-#     # Calculate the corner points of the rotated box
-#     half_length, half_height = half_extents_gripper
-#     center_x, center_y, theta = pose
-#     cos_theta = math.cos(theta)
-#     sin_theta = math.sin(theta)
-
-#     p1 = (center_x - cos_theta * half_length + sin_theta * half_height,
-#             center_y + sin_theta * half_length + cos_theta * half_height)
-    
-#     p2 = (center_x + cos_theta * half_length + sin_theta * half_height,
-#             center_y - sin_theta * half_length + cos_theta * half_height)
-
-#     p3 = (center_x + cos_theta * half_length - sin_theta * half_height,
-#             center_y - sin_theta * half_length - cos_theta * half_height)
-
-#     p4 = (center_x - cos_theta * half_length - sin_theta * half_height,
-#             center_y + sin_theta * half_length - cos_theta * half_height)
-    
-#     return torch.tensor([p1, p2, p3, p4]) # 4x2
-
-# def draw_gripper(corners, ax, alpha=0.5, label=False):
-#     points = corners.numpy() # 4x2
-#     x, y = points[:, 0], points[:, 1]
-#     # if label:
-#     #     rect = patches.Rectangle((x[-1], y[-1]), 2*0.7, 2*0.4, edgecolor='green', facecolor='green', alpha=alpha, label='gripper', angle=)
-#     # else:
-#     for i in range(len(points)):
-#         next_i = (i + 1) % len(points)  # To loop back to the first point
-#         ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'g-', alpha=alpha)  # 'b-' for blue lines
-#     #     rect = patches.Rectangle((x[-1], y[-1]), 2*0.7, 2*0.4, edgecolor='green', facecolor='green', alpha=alpha)
-#     # ax.add_patch(rect)
-
 def predict(model, input_data, scale_, min_):
     """
         input_data: torch.tensor(ndata,nx).cuda()
@@ -66,12 +33,8 @@ def predict(model, input_data, scale_, min_):
         predictions: torch.tensor(ndata,).cuda()
     """
     # Preprocess the input data
-    # input_data_scaled = scaler.transform(input_data)
     input_data_scaled = input_data * scale_ + min_
     
-    # # Convert to PyTorch tensor
-    # input_tensor = torch.tensor(input_data_scaled, dtype=torch.float32)
-
     # Perform prediction
     with torch.no_grad():
         predictions = model(input_data_scaled)
@@ -92,7 +55,6 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(32, 2)  # Output layer for 2D output
         )
-
     def forward(self, x):
         return self.linear_relu_stack(x)
 
@@ -297,7 +259,7 @@ class MPPI():
             self._compute_total_cost(k) # rollout dynamics and cost TODO:95% of total runtime
 
         # Add penalization against configurations that are unmaneuverable or of less probability of tasks success 
-        # self._add_cage_cost()
+        self._add_cage_cost()
         
         beta = torch.min(self.cost_total) # min cost
         cost_total_non_zero = self._ensure_non_zero(self.cost_total, beta, 1/self.lambda_)
@@ -321,9 +283,11 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     rollouts_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx), device=mppi.d)
     rollouts_quality_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, 3), device=mppi.d)
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
+    final_traj = torch.zeros((iter+1, mppi.nx), device=mppi.d)
 
     cutdown_iter = iter
     state = mppi.state_start
+    final_traj[0,:] = state.clone().detach()
     mppi._initialize_rollout_container()
     xhist[0] = torch.tensor(state)
     for t in range(iter):
@@ -336,6 +300,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         # cost = 0. # TODO: print cost
 
         # Log and visualize
+        final_traj[t+1,:] = state.clone().detach()
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
         if t % 4 == 0:
