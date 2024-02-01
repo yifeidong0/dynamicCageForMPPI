@@ -9,7 +9,7 @@ import random
 import csv
 
 if __name__ == "__main__":
-    cost_types = ['ours','hou'] # 'hou', 'ours', 'simple'
+    cost_types = ['hou','ours',] # 'hou', 'ours', 'simple'
 
     for t in cost_types:
         problem_name = 'PlanePush'
@@ -23,9 +23,9 @@ if __name__ == "__main__":
         elif problem_name == 'BalanceGrasp':
             pass
 
-        N_EPISODE = 20
-        N_ITER = 40 # max no. of iterations
-        N_SAMPLE = 150 # 1000  # K
+        N_EPISODE = 15
+        N_ITER = 30 # max no. of iterations
+        N_SAMPLE = 300 # 1000  # K
         N_HORIZON = 30  # T, MPPI horizon
         nx = len(fake_data)
         nu = cage.nu - 1 # except time as the first element of action
