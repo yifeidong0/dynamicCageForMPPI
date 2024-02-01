@@ -238,7 +238,7 @@ class MPPI():
         if self.terminal_state_cost:
             self.cost_total[k] += self.terminal_state_cost(state)
 
-    def _add_cage_cost(self, weights_ours=[10,1,], weights_hou=[1,-1,-1,],):
+    def _add_cage_cost(self, weights_ours=[-10,-1,], weights_hou=[1,-1,-1,],):
         # Inference in batches
         # Create a mask to select the columns based on rollout_cutdown_id
         mask = torch.arange(self.rollout_state.shape[1], device=self.d).expand(self.rollout_state.shape[0], -1) < self.rollout_cutdown_id.view(-1, 1)
@@ -249,12 +249,13 @@ class MPPI():
         # Make a prediction
         stability_cage = predict(self.model, stacked_states, self.scaler_scale, self.scaler_min)
         if self.cost_type == 'ours':
-            cost_cage_success = torch.max(torch.tensor(-3.0, device='cuda:0'), 1 - weights_ours[0]*stability_cage[:,0]) # torch.Size([-1,1]), gpu
-            cost_cage_maneuver = (1 - weights_ours[1]*stability_cage[:,1]) # torch.Size([-1,1]), gpu
+            # cost_cage_success = torch.max(torch.tensor(-3.0, device='cuda:0'), 1 - weights_ours[0]*stability_cage[:,0]) # torch.Size([-1,1]), gpu
+            cost_cage_success = weights_ours[0] * stability_cage[:,0] # torch.Size([-1,1]), gpu
+            cost_cage_maneuver = weights_ours[1] * stability_cage[:,1] # torch.Size([-1,1]), gpu
             cost_cage = cost_cage_success + cost_cage_maneuver
         elif self.cost_type == 'hou':
             # distance,S_stick,S_engage
-            cost_s_distance = weights_hou[1] * stability_cage[:,1] # torch.Size([-1,1]), gpu
+            cost_s_distance = weights_hou[0] * stability_cage[:,0] # torch.Size([-1,1]), gpu
             cost_s_stick = weights_hou[1] * stability_cage[:,1] # torch.Size([-1,1]), gpu
             cost_s_engage = weights_hou[2] * stability_cage[:,2] # torch.Size([-1,1]), gpu
             cost_cage = cost_s_distance + cost_s_stick + cost_s_engage

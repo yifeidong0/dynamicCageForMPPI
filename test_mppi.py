@@ -23,10 +23,10 @@ if __name__ == "__main__":
         elif problem_name == 'BalanceGrasp':
             pass
 
-        N_EPISODE = 2
-        N_ITER = 3 # max no. of iterations
-        N_SAMPLE = 30 # 1000  # K
-        N_HORIZON = 20  # T, MPPI horizon
+        N_EPISODE = 20
+        N_ITER = 40 # max no. of iterations
+        N_SAMPLE = 150 # 1000  # K
+        N_HORIZON = 30  # T, MPPI horizon
         nx = len(fake_data)
         nu = cage.nu - 1 # except time as the first element of action
         dt = .2 # fixed time step
@@ -54,14 +54,14 @@ if __name__ == "__main__":
 
         def running_cost(state, action, w0=0.1, w1=0.02, w2=0.02, w3=0.01):
             '''state and state_goal: torch.tensor()'''
-            cost = (w0 * (state[1]-cage.y_obstacle)**2 
-                    + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
-                    + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
-                    + w3 * (state[2]**2 + state[8]**2)) # orientation
-            # cost = torch.Tensor([1e-9,])
+            # cost = (w0 * (state[1]-cage.y_obstacle)**2 
+            #         + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
+            #         + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
+            #         + w3 * (state[2]**2 + state[8]**2)) # orientation
+            cost = torch.Tensor([1e-9,])
             return cost
 
-        def terminal_state_cost(state, weight=10.):
+        def terminal_state_cost(state, weight=.2):
             '''state and state_goal: torch.tensor()'''
             cost_goal = weight * (state[1]-cage.y_obstacle)**2
             # cost_goal = torch.tensor(0.0, device='cuda:0')
@@ -125,7 +125,6 @@ if __name__ == "__main__":
             if randomize and problem_name == 'PlanePush':
                 xo = random.uniform(4,6)
                 yo = random.uniform(5,7)
-                # yo = random.uniform(3,5)
                 thetao = random.uniform(-math.pi/6, math.pi/6)
                 vxo = random.uniform(-0.0, 0.0)
                 vyo = random.uniform(-0.0, 0.0)
