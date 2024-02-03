@@ -19,14 +19,14 @@ import os
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-traj_type = 'scripted' # 'mppi', "scripted"
+traj_type = 'mppi' # 'mppi', "scripted"
 vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 1000
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['data/evaluation/plane_push_ablation/dis2wall_pushbias/ablation_dp_PlanePush.csv',]
+    filenames = ['states_rollout_mppi_simple.csv',]
     # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
     # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':

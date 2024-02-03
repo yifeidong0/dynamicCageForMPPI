@@ -105,7 +105,7 @@ class MPPI():
         self.cost_type = cost_type
         self.theta_max = math.pi/2
         self.theta_min = -math.pi/2
-        self.max_acceleration = 2 # 2 for dataset generation
+        self.max_acceleration = 3 # 2 for dataset generation
 
         # dimensions of state and control
         self.nx = nx
