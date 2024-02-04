@@ -46,6 +46,17 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         vyg = random.uniform(0, 0.2)
         init_state = [xo, yo, thetao, vxo, vyo, omegao,
                       xg, yg, 0, vxg, vyg, 0]
+
+        self.lateral_friction_coef = np.random.uniform(0.2,0.4)
+        self.lateral_friction_coef_perturb = self.lateral_friction_coef + np.random.uniform(-0.1,0.1)
+        p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)        
         return init_state
 
     def run_forward_sim(self, total_time=10, num_via_points=20, do_cutdown_test=False):
@@ -61,7 +72,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
             # Apply external force
             self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
-            rand_force = [random.uniform(-0.4,0.4), random.uniform(8,13), 0]
+            rand_force = [random.uniform(-0.4,0.4), self.lateral_friction_coef/0.3*random.uniform(7,11), 0]
             p.applyExternalForce(self.gripperUid, -1, 
                                 rand_force,
                                 #  [0,10,0] ,

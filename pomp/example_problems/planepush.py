@@ -56,7 +56,7 @@ class PlanePushControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0,):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
@@ -65,12 +65,12 @@ class PlanePush:
         self.offset = 2.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 2
-        self.max_ang_acceleration = .5
+        self.max_acceleration = 2 * lateral_friction_coef/0.3
+        self.max_ang_acceleration = .5 * lateral_friction_coef/0.3
         self.y_obstacle = 9 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = 0.3
+        self.lateral_friction_coef = lateral_friction_coef
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .57
         self.maneuver_goal_tmax = 1.5
@@ -261,11 +261,11 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
 def PlanePushTest(dynamics_sim, 
                 data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                         5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                # data = [5.0, 4, 0.0, 0.0, 0, 0, # bowl gripper with cylinder object
-                #         5.0, 4, 0.0, 0, 1, 0],
                 save_hyperparams=False,
+                lateral_friction_coef=0.3,
                 ):
-    p = PlanePush(data, dynamics_sim, save_hyperparams)
+    print("!!!!",lateral_friction_coef)
+    p = PlanePush(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
 
     # if p.checkStartFeasibility():
     #     print('In collision!')

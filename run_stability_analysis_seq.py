@@ -19,14 +19,15 @@ import os
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-traj_type = 'mppi' # 'mppi', "scripted"
+traj_type = 'scripted' # 'mppi', "scripted"
 vis = 0
 maxTime = 10000 # only used when vis=0
-maxIters = 1000
+maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['states_rollout_mppi_simple.csv',]
+    filenames = ['data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_viapoints_PlanePush.csv',]
+    filename_friction = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
     # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
     # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':
@@ -54,6 +55,13 @@ for filename in filenames:
                 rows.append([float(d) for d in row[init_id:]])
             ids.append(int(row[0]))
 
+    if prname == 'PlanePush':
+        fri_coeffs_perturb = []
+        with open(filename_friction, 'r') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+            for id, row in enumerate(csv_reader):
+                fri_coeffs_perturb.append(float(row[7]))
     if prname == 'BoxPivot':
         fri_coeffs = []
         with open(filename_friction, 'r') as file:
@@ -79,7 +87,7 @@ for filename in filenames:
     for i, data_i in enumerate(rows):
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
-            problem = PlanePushTest(dynamics_sim, data_i, save_hyperparams=1,)
+            problem = PlanePushTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs_perturb[i])
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)

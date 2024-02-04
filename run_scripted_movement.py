@@ -8,10 +8,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BoxPivot" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
-gui = 1
+problem_name = "PlanePush" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+gui = 0
 num_via_points = 10
-num_trajs = 3
+num_trajs = 50
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -23,7 +23,7 @@ if problem_name == 'PlanePush':
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label',]
+    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'lateral_friction_coef_perturb']
     fake_data = [5.0, 6.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 6.0, 0.0, 0.0, 2.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -138,7 +138,12 @@ for i in range(num_trajs):
         elif problem_name == 'Gripper':
             cage = Gripper(x_news[k], dynamics_sim)
         man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:num_state_planner]) else 1
-        maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.mass_object])
+        if problem_name == 'PlanePush':
+            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
+        elif problem_name == 'BoxPivot':
+            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef,])
+        elif problem_name == 'Gripper':
+            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.mass_object])
 
     success_labelset.append([i, sim.task_success_label,])
 sim.finish_sim()

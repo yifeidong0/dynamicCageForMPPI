@@ -52,8 +52,8 @@ class forwardSimulationPlanePush():
     def create_shapes(self):
         # Create a plane
         #  The default frictional coefficients used by PyBullet are 0.5 for the lateral friction and 0 for both the rolling and spinning.
-        self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
-        p.changeDynamics(self.planeId, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+        self.planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object
