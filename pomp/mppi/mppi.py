@@ -141,13 +141,21 @@ class MPPI():
 
     def _prepare_nn(self):
         if self.cost_type == 'ours':
-            scaler = joblib.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/scaler_minmax_ours.pkl')
+            # scaler_filename = 'data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/scaler_minmax_ours.pkl'
+            # model_filename = 'data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/model_ours.pth'
+            scaler_filename = 'data/evaluation/mppi/28k_dataset_from_mppi/approaches/ours/scaler_minmax_ours.pkl'
+            model_filename = 'data/evaluation/mppi/28k_dataset_from_mppi/approaches/ours/model_ours.pth'
+            scaler = joblib.load(scaler_filename)
             self.model = NeuralNetwork2DOutput()
-            self.model.load_state_dict(torch.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/ours/model_ours.pth'))
+            self.model.load_state_dict(torch.load(model_filename))
         elif self.cost_type == 'hou':
-            scaler = joblib.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/scaler_minmax_hou.pkl')
+            # scaler_filename = 'data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/scaler_minmax_hou.pkl'
+            # model_filename = 'data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/model_hou.pth'
+            scaler_filename = 'data/evaluation/mppi/28k_dataset_from_mppi/approaches/hou/scaler_minmax_hou.pkl'
+            model_filename = 'data/evaluation/mppi/28k_dataset_from_mppi/approaches/hou/model_hou.pth'
+            scaler = joblib.load(scaler_filename)
             self.model = NeuralNetwork3DOutput()
-            self.model.load_state_dict(torch.load('data/evaluation/mppi/18k_dataset_from_mppi/approaches/hou/model_hou.pth'))
+            self.model.load_state_dict(torch.load(model_filename))
 
         # Convert the scaler parameters to PyTorch tensors
         self.scaler_scale = torch.tensor(scaler.scale_, dtype=torch.float32, device=self.d)

@@ -9,7 +9,7 @@ import random
 import csv
 
 if __name__ == "__main__":
-    cost_types = ['simple',] # 'hou', 'ours', 'simple'
+    cost_types = ['hou',] # 'hou', 'ours', 'simple'
 
     for t in cost_types:
         problem_name = 'PlanePush'
@@ -23,9 +23,9 @@ if __name__ == "__main__":
         elif problem_name == 'BalanceGrasp':
             pass
 
-        N_EPISODE = 100
+        N_EPISODE = 15
         N_ITER = 20 # max no. of iterations
-        N_SAMPLE = 200 # 1000  # K
+        N_SAMPLE = 1000 # 1000  # K
         N_HORIZON = 30  # T, MPPI horizon
         nx = len(fake_data)
         nu = cage.nu - 1 # except time as the first element of action
@@ -54,11 +54,13 @@ if __name__ == "__main__":
 
         def running_cost(state, action, w0=0.1, w1=0.1, w2=0.02, w3=0.01):
             '''state and state_goal: torch.tensor()'''
-            cost = (w0 * (state[1]-cage.y_obstacle)**2 
-                    + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
-                    + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
-                    + w3 * (state[2]**2 + state[8]**2)) # orientation
-            # cost = torch.Tensor([1e-9,])
+            if cost_type == 'simple':
+                cost = (w0 * (state[1]-cage.y_obstacle)**2 
+                        + w1 * (action[0]**2 + action[1]**2 + action[2]**2)
+                        + w2 * (state[3]**2 + state[4]**2 + state[5]**2 + state[9]**2 + state[10]**2 + state[11]**2)
+                        + w3 * (state[2]**2 + state[8]**2)) # orientation
+            else:
+                cost = torch.Tensor([1e-9,])
             return cost
 
         def terminal_state_cost(state, weight=.9):
