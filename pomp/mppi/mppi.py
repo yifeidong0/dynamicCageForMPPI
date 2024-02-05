@@ -246,7 +246,7 @@ class MPPI():
         if self.terminal_state_cost:
             self.cost_total[k] += self.terminal_state_cost(state)
 
-    def _add_cage_cost(self, weights_ours=[-20,-1,], weights_hou=[0,-1,-1,],):
+    def _add_cage_cost(self, weights_ours=[-5,-1,], weights_hou=[1,-1,-1,],):
         # Inference in batches
         # Create a mask to select the columns based on rollout_cutdown_id
         mask = torch.arange(self.rollout_state.shape[1], device=self.d).expand(self.rollout_state.shape[0], -1) < self.rollout_cutdown_id.view(-1, 1)

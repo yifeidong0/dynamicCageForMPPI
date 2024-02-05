@@ -9,7 +9,7 @@ import random
 import csv
 
 if __name__ == "__main__":
-    cost_types = ['hou',] # 'hou', 'ours', 'simple'
+    cost_types = ['hou','ours'] # 'hou', 'ours', 'simple'
 
     for t in cost_types:
         problem_name = 'PlanePush'
@@ -17,15 +17,15 @@ if __name__ == "__main__":
             fake_data = [0.0,]*12
             dynamics_sim = forwardSimulationPlanePushPlanner(gui=0)
             cage = PlanePush(fake_data, dynamics_sim)
-            goal_threshold = 0.3 # half of the width of the box
+            goal_threshold = 0.5 # half of the width of the box
             init_state = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                             5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
         elif problem_name == 'BalanceGrasp':
             pass
 
-        N_EPISODE = 15
-        N_ITER = 20 # max no. of iterations
-        N_SAMPLE = 1000 # 1000  # K
+        N_EPISODE = 20
+        N_ITER = 25 # max no. of iterations
+        N_SAMPLE = 3000 # 1000  # K
         N_HORIZON = 30  # T, MPPI horizon
         nx = len(fake_data)
         nu = cage.nu - 1 # except time as the first element of action
@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 cost = torch.Tensor([1e-9,])
             return cost
 
-        def terminal_state_cost(state, weight=.9):
+        def terminal_state_cost(state, weight=0):
             '''state and state_goal: torch.tensor()'''
             cost_goal = weight * (state[1]-cage.y_obstacle)**2
             # cost_goal = torch.tensor(0.0, device='cuda:0')
