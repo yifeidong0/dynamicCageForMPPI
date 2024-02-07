@@ -264,7 +264,6 @@ def PlanePushTest(dynamics_sim,
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
                 ):
-    print("!!!!",lateral_friction_coef)
     p = PlanePush(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
 
     # if p.checkStartFeasibility():
