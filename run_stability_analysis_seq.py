@@ -26,16 +26,16 @@ maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 # Randomize the velocity and position of the objects and the friction coefficient - perturbation in estimated state
-noise = 0.1
+noise = 0.0
 randomize_friction = 0
 randomize_velocity = 0
 randomize_position = 0
-randomize_all = 1
+randomize_all = 0
 fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_viapoints_PlanePush.csv',]
-    filename_friction = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
+    filenames = ['scripted_movement_viapoints_PlanePush.csv',]
+    filename_friction = 'scripted_movement_maneuver_labels_PlanePush.csv'
     # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
     # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
 if prname == 'BalanceGrasp':
@@ -122,6 +122,7 @@ for filename in filenames:
             pose_5d = data_i[:3] + data_i[6:8]
             new_pose_5d = move_along_longer_side(pose_5d, random.uniform(-noise*pos_ratio, noise*pos_ratio))
             data_i = new_pose_5d[:3] + data_i[3:6] + new_pose_5d[3:] + data_i[8:12]
+
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
             problem = PlanePushTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])

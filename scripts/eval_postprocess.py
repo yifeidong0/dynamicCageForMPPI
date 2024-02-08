@@ -85,11 +85,6 @@ if prname == 'PlanePush':
     f_effort_aoest = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aoest/ao_est.csv'
     # f_soft_fixture = 'data/evaluation/push_fixture/rand_traj/approaches/rrtstar-softfixture/rrtstar.csv'
     # f_quasistatic = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
-    # perturbed state estimation
-    f_success_labels = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_success_labels_PlanePush.csv'
-    f_maneuver_labels = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
-    # f_aoest_metrics = 'data/evaluation/perturbed_state_estimation/push_fixture/mixed/results/ao_est_unperturbed.csv'
-    f_aoest_metrics = 'data/evaluation/perturbed_state_estimation/push_fixture/mixed/results/ao_est_perturbed_0.4.csv'
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
     f_maneuver_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
