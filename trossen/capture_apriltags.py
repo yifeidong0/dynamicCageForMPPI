@@ -54,7 +54,7 @@ camera_matrix = np.array([[intrinsics["fx"], 0, intrinsics["cx"]],
 dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
 # Tag size (meters)
-tag_size = 0.04  # Adjust based on your actual tag size, TODO: measure this
+tag_size = 0.032  # Adjust based on your actual tag size, TODO: measure this
 axis_length = 0.03  # For vis (meters)
 tag_world_id = 0
 tag_objects_id = [1,2,]

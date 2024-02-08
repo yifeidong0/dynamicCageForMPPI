@@ -16,7 +16,7 @@ def main():
         print('This demo requires the robot to have at least 5 joints!')
         sys.exit()
 
-    # bot.arm.set_ee_pose_components(x=0.2, z=0.3)
+    # bot.arm.set_ee_pose_components(x=0.5, z=0.08)
     # bot.arm.set_single_joint_position("waist", np.pi/2.0)
     # bot.gripper.open()
     # bot.arm.set_ee_cartesian_trajectory(x=0.1, z=-0.16)

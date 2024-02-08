@@ -53,14 +53,15 @@ all_planners = ['ao-est','ao-rrt','r-est','r-est-prune','r-rrt','r-rrt-prune','r
 rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt']
 est_planners = ['ao-est','r-est','r-est-prune']
 
-all_problems = {'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 
+all_problems = {'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 
                 'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
 
 defaultParameters = {'maxTime':30, 'maxIters':200000}
 customParameters = {
                     'PlanePush':{'maxTime':20},
-                    'BalanceGrasp':{'maxTime':20},
                     'PlanePushRrtstar':{'maxTime':20},
+                    'PlanePushReal':{'maxTime':20},
+                    'BalanceGrasp':{'maxTime':20},
                     'WaterSwing':{'maxTime':20},
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':3000, 'maxIters':3000},
@@ -157,6 +158,9 @@ if __name__=="__main__":
     if problem_name == 'PlanePushRrtstar':
         dynamics_sim = forwardSimulationPlanePushRrtstar(gui=1)
         problem = planepushrrtstar.PlanePushRrtstarTest(dynamics_sim)
+    if problem_name == 'PlanePushReal':
+        dynamics_sim = forwardSimulationPlanePushReal(gui=0)
+        problem = planepushreal.PlanePushRealTest(dynamics_sim)
     if problem_name == 'WaterSwing':
         dynamics_sim = forwardSimulationWaterSwing(gui=0)
         problem = waterswing.waterSwingTest(dynamics_sim)
