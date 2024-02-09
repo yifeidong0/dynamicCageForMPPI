@@ -77,7 +77,7 @@ image_dir = "captured_images"
 os.makedirs(image_dir, exist_ok=True)
 
 # Number of frames to capture
-N = 100
+N = 150
 data = []
 for i in range(N):
     frames = pipeline.wait_for_frames()

@@ -233,22 +233,23 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
-        if self.gripper_name == 'box':
-            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
-            self.gripperUid = p.createMultiBody(self.mass_gripper, 
-                                           gripperId, 
-                                           self.visualShapeId, 
-                                           self.pos_gripper,
-                                           self.quat_gripper)
-        elif self.gripper_name == 'cylinder':
-            gripperId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies)
-            self.gripperUid = p.createMultiBody(self.mass_gripper,
-                                                gripperId,
-                                                self.visualShapeId,
-                                                self.pos_gripper,
-                                                self.quat_gripper)
-        elif self.gripper_name == 'bowl':
-            self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        # if self.gripper_name == 'box':
+        #     gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
+        #     self.gripperUid = p.createMultiBody(self.mass_gripper, 
+        #                                    gripperId, 
+        #                                    self.visualShapeId, 
+        #                                    self.pos_gripper,
+        #                                    self.quat_gripper)
+        # elif self.gripper_name == 'cylinder':
+        #     gripperId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies)
+        #     self.gripperUid = p.createMultiBody(self.mass_gripper,
+        #                                         gripperId,
+        #                                         self.visualShapeId,
+        #                                         self.pos_gripper,
+        #                                         self.quat_gripper)
+        # elif self.gripper_name == 'bowl':
+        #     self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
