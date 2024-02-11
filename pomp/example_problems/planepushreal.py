@@ -56,37 +56,38 @@ class PlanePushRealControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePushReal:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0,):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, quasistatic_motion=0,):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
-        self.x_range = 1
-        self.y_range = 1
-        self.offset = 2 # extend the landscape
+        self.x_range = 10
+        self.y_range = 10
+        self.offset = 5 # extend the landscape
+        self.scale_factor = 10
         self.max_velocity = 10
         self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 2 * lateral_friction_coef/0.3
-        self.max_ang_acceleration = .5 * lateral_friction_coef/0.3
-        self.y_obstacle = 9 # the lower rim y_pos of the obstacle
-        self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
+        self.lateral_friction_coef = 0.3 # TODO
+        self.max_acceleration = 1
+        self.max_ang_acceleration = 1
+        self.y_obstacle = -0.15 * self.scale_factor # the lower rim y_pos of the obstacle
+        self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = lateral_friction_coef
         self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .57
+        self.maneuver_goal_margin = .75
         self.maneuver_goal_tmax = 1.5
         self.cost_inv_coef = -1e0
 
-        self.object_name = 'box' # 'box', 'cylinder'
-        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
-        self.mass_object = 1
-        self.mass_gripper = 4
-        factor_object = 1e-1 if self.object_name == 'box' else 1e-3
-        factor_gripper = 1e-1 if (self.gripper_name == 'box' or self.gripper_name == 'bowl') else 1e-3
-        self.moment_object = self.mass_object * factor_object # moment of inertia
-        self.moment_gripper = self.mass_gripper * factor_gripper
+        self.object_name = 'rectangle' # 'rectangle', 'convex', 'concave'
+        self.gripper_name = 'circle' # 'circle', 'jaw'
+        self.mass_object = 20 # TODO
+        self.mass_gripper = 100 # TODO
+        factor_object = 1e-1
+        factor_gripper = 1e-1
+        self.moment_object = self.mass_object * factor_object # moment of inertia  # TODO
+        self.moment_gripper = self.mass_gripper * factor_gripper # TODO
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
-                       self.object_name, self.gripper_name, self.lateral_friction_coef,]
+                       self.object_name, self.gripper_name, self.lateral_friction_coef, self.scale_factor]
         self.c_space_boundary = [[0, self.x_range], [0, self.y_range], [-0.8*math.pi, 0.8*math.pi], 
                                  [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  [-self.x_range, self.x_range], [-self.y_range, self.y_range], [-0.8*math.pi, 0.8*math.pi],
@@ -106,7 +107,7 @@ class PlanePushReal:
             self.gripper_vel_theta = 0
 
         self.start_state = data[:9]
-        self.time_range = .5
+        self.time_range = .3
         self.obstacles = []
         self.gravity = -9.81
 
@@ -161,10 +162,10 @@ class PlanePushReal:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self, box_thickness=0.2):
-        wsbmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin,]
+    def taskGoalSet(self, object_thickness=0.35):
+        wsbmin = [-self.offset, self.y_obstacle+object_thickness-self.task_goal_margin,]
+        wsbmax = [self.x_range+self.offset, self.y_obstacle+object_thickness+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        wsbmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin,]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
 
@@ -262,9 +263,8 @@ def PlanePushRealTest(dynamics_sim,
                 data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 save_hyperparams=False,
-                lateral_friction_coef=0.3,
                 ):
-    p = PlanePushReal(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
+    p = PlanePushReal(data, dynamics_sim, save_hyperparams)
     objective = PlanePushRealObjectiveFunction(p)
     return PlanningProblem(objective.space,
                            p.startState(),

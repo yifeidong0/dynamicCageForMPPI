@@ -2,6 +2,7 @@ from pomp.bullet.scriptedmovement import *
 from pomp.example_problems.cageplanner import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.planepush import *
+from pomp.example_problems.planepushreal import *
 from pomp.example_problems.planepushrrtstar import *
 from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.boxpivot import *
@@ -18,11 +19,11 @@ import os
 # !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-traj_type = 'scripted' # 'mppi', "scripted"
+prname = 'PlanePushReal' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+traj_type = 'realworld' # 'mppi', "scripted", "realworld"
 vis = 0
 maxTime = 10000 # only used when vis=0
-maxIters = 500
+maxIters = 100
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 
 # Randomize the velocity and position of the objects and the friction coefficient - perturbation in estimated state
@@ -34,10 +35,17 @@ randomize_all = 0
 fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
-    filenames = ['scripted_movement_viapoints_PlanePush.csv',]
-    filename_friction = 'scripted_movement_maneuver_labels_PlanePush.csv'
-    # filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
-    # filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
+    if traj_type == 'scripted':
+        filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
+        filename_friction = 'scripted_movement_maneuver_labels_PlanePush.csv'
+    if traj_type == 'mppi':
+        filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
+if prname == 'PlanePushReal':
+    scale_factor = 10
+    if traj_type == 'realworld':
+        filenames = ['data/evaluation/real-world/circle-pushes-rectangle/success/apriltag_results.csv',
+                     'data/evaluation/real-world/circle-pushes-rectangle/failure/apriltag_results.csv',]
+
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',]
 if prname == 'BoxPivot':
@@ -71,9 +79,18 @@ for filename in filenames:
         for id, row in enumerate(csv_reader):
             if traj_type == 'mppi':
                 rows.append([float(d) for d in row[init_id:init_id+12]])
-            else:
+            elif traj_type == 'scripted':
                 rows.append([float(d) for d in row[init_id:]])
-            ids.append(int(row[0]))
+            elif traj_type == 'realworld':
+                original = [float(d) for d in row[2:8]+row[9:]]
+                converted = [original[7]*scale_factor, original[6]*scale_factor, -original[8], original[10]*scale_factor, original[9]*scale_factor, -original[11],
+                             original[1]*scale_factor, original[0]*scale_factor, -original[2], original[4]*scale_factor, original[3]*scale_factor, -original[5],
+                             ]
+                rows.append(converted)
+            if traj_type == 'realworld':
+                ids.append(id)
+            else:
+                ids.append(int(row[0]))
 
     if prname == 'PlanePush':
         fri_coeffs = []
@@ -129,6 +146,9 @@ for filename in filenames:
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
+        if prname == 'PlanePushReal':
+            dynamics_sim = forwardSimulationPlanePushReal(gui=0)
+            problem = PlanePushRealTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
             problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)

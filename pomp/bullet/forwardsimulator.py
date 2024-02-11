@@ -196,15 +196,16 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
         self.object_name = params[6] # 'box', 'cylinder'
         self.gripper_name = params[7] # 'box', 'cylinder', 'bowl'
         self.lateral_friction_coef = params[8]
+        self.scale_factor = params[9]
 
         self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.z_bodies = .05
+        self.z_bodies = 0.03/2 * self.scale_factor
         self.half_extent_obstacle = [7, .5, self.z_bodies]
-        self.pos_obstacle = [5,self.y_obstacle+self.half_extent_obstacle[1],0]
+        self.pos_obstacle = [5,self.y_obstacle-self.half_extent_obstacle[1],0]
         self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
     def create_shapes(self):
@@ -215,41 +216,14 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create an object
-        if self.object_name == 'box':
-            objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .2, self.z_bodies])
-            self.objectUid = p.createMultiBody(self.mass_object, 
-                                               objectId, 
-                                               self.visualShapeId, 
-                                               self.pos_object,
-                                               self.quat_object)
-        elif self.object_name == 'cylinder':
-            objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
-            self.objectUid = p.createMultiBody(self.mass_object, 
-                                            objectId, 
-                                            self.visualShapeId, 
-                                            self.pos_object,
-                                            self.quat_object)
+        if self.object_name == 'rectangle':
+            self.objectUid = p.loadURDF("asset/real-world/rectangle-object/rectangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
-        # if self.gripper_name == 'box':
-        #     gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
-        #     self.gripperUid = p.createMultiBody(self.mass_gripper, 
-        #                                    gripperId, 
-        #                                    self.visualShapeId, 
-        #                                    self.pos_gripper,
-        #                                    self.quat_gripper)
-        # elif self.gripper_name == 'cylinder':
-        #     gripperId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies)
-        #     self.gripperUid = p.createMultiBody(self.mass_gripper,
-        #                                         gripperId,
-        #                                         self.visualShapeId,
-        #                                         self.pos_gripper,
-        #                                         self.quat_gripper)
-        # elif self.gripper_name == 'bowl':
-        #     self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
-        self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        if self.gripper_name == 'circle':
+            self.gripperUid = p.loadURDF("asset/real-world/circle-gripper/circle-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
@@ -274,10 +248,7 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
 
         # Gripper kinematics
         self.pos_gripper = [xg, yg, 0.0]
-        if self.gripper_name == 'bowl':
-            self.quat_gripper = p.getQuaternionFromEuler([-math.pi/2, 0, thetag])
-        else:
-            self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
+        self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
         self.vel_gripper = [vxg, vyg, 0.0]
         self.vel_ang_gripper = [0.0, 0.0, omegag]
 
