@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<robot name="circle-gripper">
+<robot name="concave-object">
 
   <link name="base_link">
     <visual>
       <geometry>
-        <mesh filename="package://asset/real-world/circle-gripper/circle-gripper.obj" scale="1 1 1"/>
+        <mesh filename="package://asset/real-world/concave-object/concave-object-vhacd.obj" scale="1 1 1"/>
       </geometry>
       <material name="color">
         <color rgba="1 0 0 1"/> <!-- Red. a: transparency. -->
@@ -12,11 +12,11 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://asset/real-world/circle-gripper/circle-gripper.obj" scale="1 1 1"/>
+        <mesh filename="package://asset/real-world/concave-object/concave-object-vhacd.obj" scale="1 1 1"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="26"/> 
+      <mass value="43"/> 
       <origin xyz="0 0 0"/> 
       <inertia ixx="1" iyy="1" izz="1"/> 
     </inertial>

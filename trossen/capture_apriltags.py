@@ -54,10 +54,22 @@ camera_matrix = np.array([[intrinsics["fx"], 0, intrinsics["cx"]],
 dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
 # Tag size (meters)
+gripper_object = 'jaw-irregular'
+gripper_object_dict = {'circle-rectangle': [1,2,], 
+                       'circle-triangle': [1,3,], 
+                       'circle-convex': [1,4,], 
+                       'circle-cacave': [1,5,], 
+                       'circle-irregular': [1,6,], 
+                       'jaw-rectangle': [7,2,], 
+                       'jaw-triangle': [7,3,], 
+                       'jaw-convex': [7,4,], 
+                       'jaw-concave': [7,5,], 
+                       'jaw-irregular': [7,6,],
+                       }
 tag_size = 0.032  # Adjust based on your actual tag size, TODO: measure this
 axis_length = 0.03  # For vis (meters)
 tag_world_id = 0
-tag_objects_id = [1,2,]
+tag_objects_id = gripper_object_dict[gripper_object]
 
 # Initialize the detector
 detector = apriltag.Detector()
@@ -77,7 +89,7 @@ image_dir = "captured_images"
 os.makedirs(image_dir, exist_ok=True)
 
 # Number of frames to capture
-N = 150
+N = 50
 data = []
 for i in range(N):
     frames = pipeline.wait_for_frames()
@@ -131,6 +143,7 @@ for _, row in timestamps_df.iterrows():
     transformation_data = []
     for detection in detections:
         if detection.tag_id not in tag_objects_id+[tag_world_id,]:
+        # if detection.tag_id not in list(range(8)):
             continue
         tag_corners_2d = np.array(detection.corners, dtype=np.float32)
         

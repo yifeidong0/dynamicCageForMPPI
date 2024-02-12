@@ -79,7 +79,7 @@ class PlanePushReal:
 
         self.object_name = 'rectangle' # 'rectangle', 'convex', 'concave'
         self.gripper_name = 'circle' # 'circle', 'jaw'
-        self.mass_object = 20 # TODO
+        self.mass_object = 20 # TODO: urdf
         self.mass_gripper = 100 # TODO
         factor_object = 1e-1
         factor_gripper = 1e-1
