@@ -54,7 +54,7 @@ camera_matrix = np.array([[intrinsics["fx"], 0, intrinsics["cx"]],
 dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
 # Tag size (meters)
-gripper_object = 'jaw-irregular'
+gripper_object = 'circle-cacave'
 gripper_object_dict = {'circle-rectangle': [1,2,], 
                        'circle-triangle': [1,3,], 
                        'circle-convex': [1,4,], 
@@ -89,7 +89,7 @@ image_dir = "captured_images"
 os.makedirs(image_dir, exist_ok=True)
 
 # Number of frames to capture
-N = 50
+N = 150
 data = []
 for i in range(N):
     frames = pipeline.wait_for_frames()
