@@ -54,7 +54,7 @@ camera_matrix = np.array([[intrinsics["fx"], 0, intrinsics["cx"]],
 dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
 # Tag size (meters)
-gripper_object = 'circle-cacave'
+gripper_object = 'jaw-convex'
 gripper_object_dict = {'circle-rectangle': [1,2,], 
                        'circle-triangle': [1,3,], 
                        'circle-convex': [1,4,], 
