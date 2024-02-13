@@ -85,6 +85,11 @@ if prname == 'PlanePush':
     f_effort_aoest = 'data/evaluation/push_fixture/rand_traj_3/approaches/effort-aoest/ao_est.csv'
     # f_soft_fixture = 'data/evaluation/push_fixture/rand_traj/approaches/rrtstar-softfixture/rrtstar.csv'
     # f_quasistatic = 'data/evaluation/push_fixture/rand_traj/approaches/ao-rrt-quasistatic/ao_rrt.csv'
+
+    f_success_labels = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_success_labels_PlanePush.csv'
+    f_maneuver_labels = 'data/evaluation/perturbed_state_estimation/push_fixture/dataset/scripted_movement_maneuver_labels_PlanePush.csv'
+    f_heuristics = 'data/evaluation/perturbed_state_estimation/push_fixture/lateral_force/scripted_movement_heuristics_perturbed_0.2.csv'
+
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
     f_maneuver_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_maneuver_labels_BalanceGrasp.csv'
@@ -207,11 +212,11 @@ with open(f_heuristics, 'r') as file:
 # print('######AO-RRT Success Metric######')
 # get_s_metric(success_labels, success_metrics_aorrt)
 
-print('######2. AO-EST Maneuverability Metric######')
-get_m_metric(maneuver_labels, maneuverability_metric_aoest)
+# print('######2. AO-EST Maneuverability Metric######')
+# get_m_metric(maneuver_labels, maneuverability_metric_aoest)
 
-print('######AO-EST Success Metric######')
-get_s_metric(success_labels, success_metrics_aoest)
+# print('######AO-EST Success Metric######')
+# get_s_metric(success_labels, success_metrics_aoest)
 
 # print('######3. RRT* Soft Fixture Maneuverability Metric######')
 # get_m_metric(maneuver_labels, soft_fixture_metrics)
@@ -242,17 +247,17 @@ get_m_metric(maneuver_labels, hybrid_score)
 print('######Heuristic - Contact Force - Success Metric######')
 get_s_metric(success_labels, hybrid_score)
 
-print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aorrt_metrics)
+# print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aorrt_metrics)
 
-print('###### Escape Effort AO-RRT - Success Metric######')
-get_s_metric(success_labels, effort_aorrt_metrics)
+# print('###### Escape Effort AO-RRT - Success Metric######')
+# get_s_metric(success_labels, effort_aorrt_metrics)
 
-print('######8. Escape Effort AO-EST - Maneuverability Metric######')
-get_m_metric(maneuver_labels, effort_aoest_metrics)
+# print('######8. Escape Effort AO-EST - Maneuverability Metric######')
+# get_m_metric(maneuver_labels, effort_aoest_metrics)
 
-print('###### Escape Effort AO-EST - Success Metric######')
-get_s_metric(success_labels, effort_aoest_metrics)
+# print('###### Escape Effort AO-EST - Success Metric######')
+# get_s_metric(success_labels, effort_aoest_metrics)
 
 
 

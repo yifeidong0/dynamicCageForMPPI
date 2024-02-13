@@ -1,4 +1,4 @@
-num_traj,data_id,label,lateral_friction_coef,lateral_friction_coef_perturb,lateral_friction_coef_perturb_0.2,lateral_friction_coef_perturb_0.5,lateral_friction_coef_perturb_1.0
+num_traj,data_id,label,lateral_friction_coef,lateral_friction_coef_perturb_0.1,lateral_friction_coef_perturb_0.2,lateral_friction_coef_perturb_0.5,lateral_friction_coef_perturb_1.0
 0.0,0.0,1.0,0.2994690225657105,0.23117820661729607,0.4033879684343643,0.3631239081788835,0.19981334433009418
 0.0,1.0,1.0,0.2994690225657105,0.23117820661729607,0.4033879684343643,0.3631239081788835,0.19981334433009418
 0.0,2.0,1.0,0.2994690225657105,0.23117820661729607,0.4033879684343643,0.3631239081788835,0.19981334433009418
