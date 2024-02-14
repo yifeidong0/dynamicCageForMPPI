@@ -66,25 +66,30 @@ class PlanePushReal:
         self.scale_factor = 10
         self.max_velocity = 10
         self.max_ang_velocity = 10 # 2
-        self.lateral_friction_coef = 0.3 # TODO
-        self.max_acceleration = 1
-        self.max_ang_acceleration = 1
+        self.lateral_friction_coef = 27/68 # mu_static
+        self.max_acceleration = 2.5
+        self.max_ang_acceleration = .5
         self.y_obstacle = -0.15 * self.scale_factor # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
-        self.task_goal_margin = 0.2
-        self.maneuver_goal_margin = .75
-        self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -1e0
+        self.cost_inv_coef = -5e-2
 
-        self.object_name = 'rectangle' # 'rectangle', 'convex', 'concave'
+        self.object_name = 'irregular' # 'rectangle', 'convex', 'concave', 'irregular', 'triangle'
         self.gripper_name = 'circle' # 'circle', 'jaw'
-        self.mass_object = 20 # TODO: urdf
-        self.mass_gripper = 100 # TODO
-        factor_object = 1e-1
+        self.mass_bodies = {'rectangle': 0.048, 'convex': 0.042, 'concave': 0.043, 'irregular': 0.024, 'triangle': 0.028, 'circle': 0.026, 'jaw': 0.026}
+        self.mass_object = self.mass_bodies[self.object_name] * self.scale_factor**3
+        self.mass_gripper = self.mass_bodies[self.gripper_name] * self.scale_factor**3 + 100 # robot arm weight added
+        factor_object = 1e-1 # approximately
         factor_gripper = 1e-1
-        self.moment_object = self.mass_object * factor_object # moment of inertia  # TODO
-        self.moment_gripper = self.mass_gripper * factor_gripper # TODO
+        self.moment_object = self.mass_object * factor_object # moment of inertia
+        self.moment_gripper = self.mass_gripper * factor_gripper
+
+        self.task_goal_margins = {'rectangle': 0.05, 'convex': 0.05, 'concave': 0.05, 'irregular': 0.15, 'triangle': 0.10} # after 10-time scaling
+        self.task_goal_margin = self.task_goal_margins[self.object_name]
+        self.object_thicknesses = {'rectangle': 0.35, 'convex': 0.20, 'concave': 0.20, 'irregular': 0.20, 'triangle': 0.20} # after 10-time scaling
+        self.object_thickness = self.object_thicknesses[self.object_name]
+        self.maneuver_goal_margin = .5
+        self.maneuver_goal_tmax = 1.5
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef, self.scale_factor]
@@ -113,16 +118,16 @@ class PlanePushReal:
 
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
                             self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
-                            self.maneuver_goal_tmax, self.cost_inv_coef] + self.params
+                            self.maneuver_goal_tmax, self.cost_inv_coef, self.object_thickness] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
                                    'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 'maneuver_goal_tmax',
-                                   'cost_inv_coef',
+                                   'cost_inv_coef', 'object_thickness',
                                    'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
                                    'object_name', 'gripper_name', 'lateral_friction_coef']
         if save_hyperparams:
             self.saveHyperparams()
 
-    def saveHyperparams(self, filename='push_press_hyperparams.csv'):
+    def saveHyperparams(self, filename='push_realworld_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
             csv_writer = csv.writer(file)
             for header, data in zip(self.hyperparams_header, self.hyperparams):
@@ -162,9 +167,9 @@ class PlanePushReal:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self, object_thickness=0.35):
-        wsbmin = [-self.offset, self.y_obstacle+object_thickness-self.task_goal_margin,]
-        wsbmax = [self.x_range+self.offset, self.y_obstacle+object_thickness+self.task_goal_margin,]
+    def taskGoalSet(self): # TODO
+        wsbmin = [-self.offset, self.y_obstacle+self.object_thickness-self.task_goal_margin,]
+        wsbmax = [self.x_range+self.offset, self.y_obstacle+self.object_thickness+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
@@ -198,7 +203,7 @@ class PlanePushReal:
         else:
             # Handle linear motion case or set a default large radius
             arc_center = self.start_state[6:8]
-            arc_radius = 0.5 * self.maneuver_goal_margin
+            arc_radius = 1 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
             return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))

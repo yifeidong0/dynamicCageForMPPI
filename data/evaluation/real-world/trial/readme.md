@@ -1,1 +1,0 @@
-turning the rectangle-object by 360 degrees anti-clockwise (in the operator's angle).

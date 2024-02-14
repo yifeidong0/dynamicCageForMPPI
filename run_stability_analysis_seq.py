@@ -16,15 +16,15 @@ from main import *
 import os
 
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
-# !!! More non-maneuverable states needed in the 50 trajs
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePushReal' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
 traj_type = 'realworld' # 'mppi', "scripted", "realworld"
-vis = 0
+vis = 1
 maxTime = 10000 # only used when vis=0
-maxIters = 100
+maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
+record_mnv_labels = 1
 
 # Randomize the velocity and position of the objects and the friction coefficient - perturbation in estimated state
 noise = 0.0
@@ -43,8 +43,19 @@ if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
 if prname == 'PlanePushReal':
     scale_factor = 10
     if traj_type == 'realworld':
-        filenames = ['data/evaluation/real-world/circle-pushes-rectangle/success/apriltag_results.csv',
-                     'data/evaluation/real-world/circle-pushes-rectangle/failure/apriltag_results.csv',]
+        # filenames = ['data/evaluation/real-world/circle-pushes-rectangle/02/apriltag_results.csv',]
+        numbers = list(range(12))
+        formatted_numbers = [f"{number:02}" for number in numbers]
+        # filenames = ['data/evaluation/real-world/circle-pushes-rectangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/jaw-pushes-rectangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/circle-pushes-triangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/jaw-pushes-triangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/circle-pushes-convex/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/jaw-pushes-convex/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/circle-pushes-concave/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/jaw-pushes-concave/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        filenames = ['data/evaluation/real-world/circle-pushes-irregular/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/jaw-pushes-irregular/'+n+'/apriltag_results.csv' for n in formatted_numbers]
 
 if prname == 'BalanceGrasp':
     filenames = ['data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_viapoints_BalanceGrasp.csv',]
@@ -69,13 +80,15 @@ def move_along_longer_side(pose, d):
     
     return [xo, yo, thetao, new_xg, new_yg]
 
-for filename in filenames:
+mnv_labels = []
+for file_id, filename in enumerate(filenames):
     # Read from the CSV file
     rows = []
     ids = []
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file)
         header = next(csv_reader)
+
         for id, row in enumerate(csv_reader):
             if traj_type == 'mppi':
                 rows.append([float(d) for d in row[init_id:init_id+12]])
@@ -84,8 +97,8 @@ for filename in filenames:
             elif traj_type == 'realworld':
                 original = [float(d) for d in row[2:8]+row[9:]]
                 converted = [original[7]*scale_factor, original[6]*scale_factor, -original[8], original[10]*scale_factor, original[9]*scale_factor, -original[11],
-                             original[1]*scale_factor, original[0]*scale_factor, -original[2], original[4]*scale_factor, original[3]*scale_factor, -original[5],
-                             ]
+                            original[1]*scale_factor, original[0]*scale_factor, -original[2], original[4]*scale_factor, original[3]*scale_factor, -original[5],
+                            ]
                 rows.append(converted)
             if traj_type == 'realworld':
                 ids.append(id)
@@ -115,7 +128,8 @@ for filename in filenames:
             for id, row in enumerate(csv_reader):
                 fri_coeffs.append(float(row[3]))
                 obj_mass.append(float(row[4]))
-
+    if prname == 'PlanePushReal':
+        rows = rows[-100:] # Keep only the last 100 data points
     params = {'maxTime': maxTime}
     if 'maxTime' in params:
         del params['maxTime']
@@ -149,6 +163,11 @@ for filename in filenames:
         if prname == 'PlanePushReal':
             dynamics_sim = forwardSimulationPlanePushReal(gui=0)
             problem = PlanePushRealTest(dynamics_sim, data_i, save_hyperparams=1)
+            if record_mnv_labels:
+                num_state_planner = 9
+                cage = PlanePush(data_i, dynamics_sim)
+                man_label = 0 if cage.maneuverGoalSet().contains(data_i[:num_state_planner]) else 1
+                mnv_labels.append([file_id, i, man_label])
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
             problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)
@@ -158,17 +177,21 @@ for filename in filenames:
         if prname == 'Gripper':
             dynamics_sim = forwardSimulationGripper(gui=0)
             problem = GripperTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i], mass_object=obj_mass[i])
-        # if prname == 'WaterSwing':
-        #     dynamics_sim = forwardSimulationWaterSwing(gui=0)
-        #     problem = waterSwingTest(dynamics_sim, data_i)
-        # if prname == 'Shuffling':
-        #     dynamics_sim = forwardSimulationShuffling(gui=0)
-        #     problem = ShufflingTest(dynamics_sim, data_i)
+
         if vis:
             runVisualizer(problem, type=plannername, **params)
         else:
             print(ids[i])
-            testPlannerDefault(problem, prname, maxTime, maxIters, plannername, data_id=ids[i], **params)
+            testPlannerDefault(problem, prname, maxTime, maxIters, plannername, data_id=i, **params)
         dynamics_sim.finish_sim()
+    
     t_elapsed = time.time() - t0
     print('Time elapsed: ', t_elapsed)
+
+# Save labels to a CSV file with headers
+if record_mnv_labels:
+    filename_mnv_label = 'maneuver_labels_'+prname+'.csv'
+    with open(filename_mnv_label, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['traj_id', 'data_id', 'maneuver_label',])
+        writer.writerows(mnv_labels)

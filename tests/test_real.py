@@ -9,7 +9,7 @@ p.connect(p.GUI)
 # p.connect(p.DIRECT)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.loadURDF("plane.urdf")
-p.setGravity(0, 0, -9.8)
+# p.setGravity(0, 0, -9.8)
 # p.setRealTimeSimulation(1)
 # p.loadURDF("r2d2.urdf", [0, 0, 1])
 # id_gripper = p.loadURDF("asset/real-world/circle-gripper/circle-gripper.urdf", [0,0,0.5], globalScaling=1)
@@ -18,21 +18,21 @@ id_gripper = p.loadURDF("asset/real-world/jaw-gripper/jaw-gripper.urdf", [0,0,0.
 # id_object = p.loadURDF("asset/real-world/rectangle-object/rectangle-object.urdf", [0,1,0.5], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
 # id_object = p.loadURDF("asset/real-world/triangle-object/triangle-object.urdf", [0,1,0.5], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
 # id_object = p.loadURDF("asset/real-world/convex-object/convex-object.urdf", [0,1,0.5], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
-id_object = p.loadURDF("asset/real-world/concave-object/concave-object.urdf", [0,1,0.5], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
+id_object = p.loadURDF("asset/real-world/concave-object/concave-object.urdf", [0,0,1], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
 # id_object = p.loadURDF("asset/real-world/irregular-object/irregular-object.urdf", [0,1,0.5], p.getQuaternionFromEuler([0, 0, 0]), globalScaling=1)
 
 scale_factor = 10
 
 # read the object's pose and twist from a csv file
-filename = "data/evaluation/real-world/circle-pushes-rectangle/failure/apriltag_results.csv"
-rows = []
-with open(filename, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        rows.append([float(d) for d in row])
-print(len(rows))
-print((rows[0]))
+# filename = "data/evaluation/real-world/circle-pushes-rectangle/failure/apriltag_results.csv"
+# rows = []
+# with open(filename, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         rows.append([float(d) for d in row])
+# print(len(rows))
+# print((rows[0]))
 
 for i in range(100000):
     p.stepSimulation()

@@ -218,12 +218,22 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
         # Create an object
         if self.object_name == 'rectangle':
             self.objectUid = p.loadURDF("asset/real-world/rectangle-object/rectangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'triangle':
+            self.objectUid = p.loadURDF("asset/real-world/triangle-object/triangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'convex':
+            self.objectUid = p.loadURDF("asset/real-world/convex-object/convex-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'concave':
+            self.objectUid = p.loadURDF("asset/real-world/concave-object/concave-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'irregular':
+            self.objectUid = p.loadURDF("asset/real-world/irregular-object/irregular-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
         # Create a robot
         if self.gripper_name == 'circle':
             self.gripperUid = p.loadURDF("asset/real-world/circle-gripper/circle-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        elif self.gripper_name == 'jaw':
+            self.gripperUid = p.loadURDF("asset/real-world/jaw-gripper/jaw-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
         
