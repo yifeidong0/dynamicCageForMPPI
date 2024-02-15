@@ -50,7 +50,7 @@ def get_m_metric(labels, predictions):
     print("AUC (Area Under Curve) for ROC: ", roc_auc)
     print("AP (Average Precision) for Precision-Recall Curve: ", average_precision)
 
-def get_s_metric(labels, predictions, predict_id=50):
+def get_s_metric(labels, predictions, predict_id=60):
     """ success metric
         metric_original: list of floats, len=num_traj*num_via_points
     """
@@ -90,9 +90,9 @@ if prname == 'PlanePush':
     f_heuristics = 'data/evaluation/perturbed_state_estimation/push_fixture/lateral_force/scripted_movement_heuristics_perturbed_0.2.csv'
 
 if prname == 'PlanePushReal':
-    f_success_labels = 'data/evaluation/real-world/jaw-pushes-concave/labels.csv'
-    f_maneuver_labels = 'data/evaluation/real-world/jaw-pushes-concave/maneuver_labels_PlanePushReal.csv'
-    f_aoest_metrics = 'data/evaluation/real-world/jaw-pushes-concave/ao_est.csv'
+    f_success_labels = 'data/evaluation/real-world/circle-pushes-irregular/labels.csv'
+    f_maneuver_labels = 'data/evaluation/real-world/circle-pushes-irregular/maneuver_labels_PlanePushReal.csv'
+    f_aoest_metrics = 'data/evaluation/real-world/circle-pushes-irregular/ao_est.csv'
 
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'

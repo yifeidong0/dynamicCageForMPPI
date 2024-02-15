@@ -20,7 +20,7 @@ import os
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePushReal' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
 traj_type = 'realworld' # 'mppi', "scripted", "realworld"
-vis = 1
+vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
