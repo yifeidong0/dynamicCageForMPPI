@@ -34,16 +34,20 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
     def sample_init_state(self):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
         #                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-        xo = random.uniform(4,6)
-        yo = random.uniform(6.2,8.2)
+        # data = [1, .4, 0., 0.0, 0.0, 0, # for paper visualization
+        #         1, .1, 0.0, 0.0, 1, 0.2],
+        # xo = random.uniform(4,6)
+        # yo = random.uniform(6.2,8.2)
+        xo = random.uniform(1,1) # paper_version
+        yo = random.uniform(.4,.4)
         thetao = random.uniform(-math.pi/18, math.pi/18)
         vxo = random.uniform(-0.0, 0.0)
         vyo = random.uniform(-0.0, 0.0)
         omegao = random.uniform(-0.0, 0.0)
-        xg = xo + random.uniform(-0.3, 0.3)
+        xg = xo + random.uniform(-0.5, 0.5)
         yg = yo + random.uniform(-0.37, -0.35)
         vxg = random.uniform(-0.0, 0.0)
-        vyg = random.uniform(0, 0.2)
+        vyg = random.uniform(0.2, .5)
         init_state = [xo, yo, thetao, vxo, vyo, omegao,
                       xg, yg, 0, vxg, vyg, 0]
 

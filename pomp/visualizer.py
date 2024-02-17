@@ -89,6 +89,14 @@ class PlanVisualizationProgram(GLProgram):
             self.G = self.planner.getRoadmap()
             self.planner.stats.pretty_print()
             self.refresh()
+        elif key=='h':
+            print("Planning 100...")
+            self.planner.planMore(100)
+            self.path = self.planner.getPath()
+            self.G = self.planner.getRoadmap()
+            self.planner.getMetric()
+            self.planner.stats.pretty_print()
+            self.refresh()
         elif key=='p':
             print("Planning 1000...")
             self.planner.planMore(1000)
@@ -151,10 +159,12 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawGripperGL(gripperPose, halfExtent)
             self.problem.visualizer.drawGoalGL(self.problem.goal)
         elif hasattr(self.problem.controlSpace, "is_plane_push"):
-            self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
+            self.problem.visualizer.drawGripperGL([2,2,0], [10,10], [79/255.0, 198/255.0, 1, 1]) # draw background color (safe set)
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
             self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_plane_push", color='maneuverGoal')
             self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_plane_push", color='taskGoal')
+            self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
+            self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[:3], [.6, .2]) # draw rectangluar object
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar", color='maneuverGoal')
@@ -215,12 +225,14 @@ class PlanVisualizationProgram(GLProgram):
         """Draw the roadmap."""
         if self.G:
             V,E = self.G
-            glLineWidth(0.5)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
-            glColor4f(0,0,0,0.5)
-            glPointSize(6.0)
-            self.problem.visualizer.drawVerticesGL(V) # draw nodes
+
+            # Draw gripper and rectangular object at random 5% nodes in V
+            if hasattr(self.problem.controlSpace, "is_plane_push"):
+                total_num = len(V)
+                rand_num  = int(total_num * 0.03)
+                for i in random.sample(range(total_num), rand_num):
+                    self.problem.visualizer.drawGripperGL(V[i][:3], [.6, .2], [1.0, 0.65, 0.0, 0.5*max(0,(7-V[i][-1])/7)]) # draw rectangluar object
+                    self.problem.visualizer.drawRobotGL(V[i][6:8], [0,.6,0,0.5*max(0,(7-V[i][-1])/7)]) # draw robot gripper
 
             # Draw static obstacle
             if hasattr(self.problem.controlSpace, "is_herding"):
@@ -229,8 +241,10 @@ class PlanVisualizationProgram(GLProgram):
                 for i in range(num_robot):
                     self.problem.visualizer.drawRobotGL(V[0][4+2*i:6+2*i])
 
+            # Draw edges
             if draw_edge:
                 glColor4f(0.5,0.5,0.5,0.5)
+                glLineWidth(3)
                 for (i,j,u) in E: # (i,j,e): parent index, child_index, parent_u
                     x_new = self.problem.controlSpace.eval(V[i][:-1], u, 1, print_via_points=True)
                     xo_via_points = self.problem.controlSpace.xo_via_points
@@ -241,6 +255,14 @@ class PlanVisualizationProgram(GLProgram):
                     glEnd()
                     self.problem.visualizer.endDraw()
                 glDisable(GL_BLEND)
+
+            # Draw nodes
+            glLineWidth(1)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
+            glColor4f(0,0,0,0.5)
+            glPointSize(12.0)
+            self.problem.visualizer.drawVerticesGL(V)
 
     def draw_solution_path(self):
         if self.path is not None:
@@ -368,7 +390,7 @@ def runVisualizer(problem,**plannerParams):
     planner = problem.planner(plannerType,**plannerParams)
     mkdir_p("data")
     program = PlanVisualizationProgram(problem,planner,os.path.join("data",allplanners.filename[plannerType]))
-    program.width = program.height = 640
+    program.width = program.height = 960
     program.run()
 
 

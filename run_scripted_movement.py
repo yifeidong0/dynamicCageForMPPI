@@ -8,10 +8,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePush" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
-gui = 0
+problem_name = "BoxPivot" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+gui = 1
 num_via_points = 10
-num_trajs = 50
+num_trajs = 10
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)

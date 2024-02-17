@@ -547,7 +547,7 @@ class ArcErasedSet(Set):
         glEnd()
 
         # Draw the erased arc region
-        glColor3f(1, 1, 1)  # White color to represent the erased area
+        glColor3f(212/255.0, 241/255.0, 255/255)  # blue color to represent the erased area
         if self.arc_angle_range[0] <= self.arc_angle_range[1]:
             self.draw_triangle_strips(self.arc_angle_range[0], self.arc_angle_range[1], res)
         else:

@@ -18,13 +18,15 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePushReal' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
-traj_type = 'realworld' # 'mppi', "scripted", "realworld"
-vis = 0
+prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+traj_type = 'scripted' # 'mppi', "scripted", "realworld"
+vis = 1
 maxTime = 10000 # only used when vis=0
 maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
-record_mnv_labels = 1
+record_mnv_labels = 0
+use_default_friction = 0
+default_friction = 0.3
 
 # Randomize the velocity and position of the objects and the friction coefficient - perturbation in estimated state
 noise = 0.0
@@ -36,8 +38,8 @@ fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     if traj_type == 'scripted':
-        filenames = ['data/evaluation/push_fixture/rand_traj_3/dataset/scripted_movement_viapoints_PlanePush.csv',]
-        filename_friction = 'scripted_movement_maneuver_labels_PlanePush.csv'
+        filenames = ['data/paper_vis/plane_push/scripted_movement_viapoints_PlanePush.csv',]
+        filename_friction = 'data/paper_vis/plane_push/scripted_movement_maneuver_labels_PlanePush.csv'
     if traj_type == 'mppi':
         filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
 if prname == 'PlanePushReal':
@@ -107,11 +109,14 @@ for file_id, filename in enumerate(filenames):
 
     if prname == 'PlanePush':
         fri_coeffs = []
-        with open(filename_friction, 'r') as file:
-            csv_reader = csv.reader(file)
-            header = next(csv_reader)
-            for id, row in enumerate(csv_reader):
-                fri_coeffs.append(float(row[3]))
+        if use_default_friction:
+            fri_coeffs = [default_friction] * len(rows)
+        else:
+            with open(filename_friction, 'r') as file:
+                csv_reader = csv.reader(file)
+                header = next(csv_reader)
+                for id, row in enumerate(csv_reader):
+                    fri_coeffs.append(float(row[3]))
     if prname == 'BoxPivot':
         fri_coeffs = []
         with open(filename_friction, 'r') as file:

@@ -56,25 +56,41 @@ class PlanePushControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0,):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0, paper_version=1):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
-        self.x_range = 10
-        self.y_range = 10
-        self.offset = 2.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 10 # 2
-        self.max_acceleration = 2 * lateral_friction_coef/0.3
         self.max_ang_acceleration = .5 * lateral_friction_coef/0.3
-        self.y_obstacle = 9 # the lower rim y_pos of the obstacle
-        self.obstacle_borderline = [[-self.offset,self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = lateral_friction_coef
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .57
-        self.maneuver_goal_tmax = 1.5
-        self.cost_inv_coef = -1e0
+
+        if paper_version:
+            self.x_range = 2
+            self.y_range = 2
+            # lateral_friction_coef = 0.5
+            self.max_acceleration = .8 * lateral_friction_coef/0.3
+            self.y_obstacle = 1.6 # the lower rim y_pos of the obstacle
+            self.maneuver_goal_tmax = 1
+            self.offset = 0.1 # extend the landscape
+            self.time_range = .5
+            self.cost_inv_coef = -5e0
+            self.maneuver_goal_tmax = 1.5
+        else:
+            self.x_range = 10
+            self.y_range = 10
+            self.max_acceleration = 2 * lateral_friction_coef/0.3
+            self.y_obstacle = 9 # the lower rim y_pos of the obstacle
+            self.maneuver_goal_tmax = 1.5
+            self.offset = 2.0
+            self.time_range = .5
+            self.cost_inv_coef = -1e0
+            self.maneuver_goal_tmax = 1
+
+        self.obstacle_borderline = [[-self.offset,self.y_obstacle+0.1], [self.x_range+self.offset, self.y_obstacle+0.1]] # for OpenGL vis, 0.1 for offset
 
         self.object_name = 'box' # 'box', 'cylinder'
         self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
@@ -106,7 +122,6 @@ class PlanePush:
             self.gripper_vel_theta = 0
 
         self.start_state = data[:9]
-        self.time_range = .5
         self.obstacles = []
         self.gravity = -9.81
 
@@ -259,8 +274,10 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
 
 
 def PlanePushTest(dynamics_sim, 
-                data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                        5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
+                #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
+                data = [1, .4, 0., 0.0, 0.0, 0, # for paper visualization
+                        1, .1, 0.0, 0.0, 1, 0.2],
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
                 ):

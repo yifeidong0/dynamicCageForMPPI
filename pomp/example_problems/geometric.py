@@ -62,8 +62,8 @@ class AxisNotAlignedBox:
 
     def drawGL(self):
         # Calculate the corner points of the rotated box
-        cos_theta = math.cos(self.theta)
-        sin_theta = math.sin(self.theta)
+        cos_theta = math.cos(-self.theta)
+        sin_theta = math.sin(-self.theta)
 
         p1 = (self.center_x - cos_theta * self.half_length + sin_theta * self.half_height,
               self.center_y + sin_theta * self.half_length + cos_theta * self.half_height)
@@ -184,10 +184,12 @@ class Geometric2DCSpace(BoxConfigurationSpace):
                 o.drawGL()
         self.endDraw()
 
-    def drawGripperGL(self, gripperPose, halfExtent):
+    def drawGripperGL(self, gripperPose, halfExtent, color=[1.0, 0.65, 0.0, 1]):
         """For cagePlanner and cageEL"""
-        # glColor3f(0,0,0)
         self.beginDraw()
+        glColor4f(1,1,1,1)
+        gripper = AxisNotAlignedBox(gripperPose, halfExtent)
+        glColor4f(*color)
         gripper = AxisNotAlignedBox(gripperPose, halfExtent)
         gripper.drawGL()
         self.endDraw()
@@ -219,17 +221,21 @@ class Geometric2DCSpace(BoxConfigurationSpace):
 
     def drawLineGL(self, a, b):
         self.beginDraw()
-        glLineWidth(8)
-        glBegin(GL_LINES)  # Use GL_LINES to draw lines
+        # glLineWidth(8)
+        # glBegin(GL_LINES)  # Use GL_LINES to draw lines
 
-        # Set the color for the line (change as needed)
-        glColor4f(0.3, .3, 0.3, 1)  # Green color
+        # # Set the color for the line (change as needed)
+        # glColor4f(0.3, .3, 0.3, 1)  # Green color
 
-        # Draw the line from a to b
-        glVertex2f(*a)  # Starting point of the line
-        glVertex2f(*b)  # Ending point of the line
+        # # Draw the line from a to b
+        # glVertex2f(*a)  # Starting point of the line
+        # glVertex2f(*b)  # Ending point of the line
 
-        glEnd()
+        # glEnd()
+
+        glColor4f(0,0,0,.8)
+        gripper = AxisNotAlignedBox([1.75,a[1],0], [2,0.1])
+        gripper.drawGL()
         self.endDraw()
 
     def drawObjectGL(self,q):
@@ -237,19 +243,24 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         glPointSize(7.0)
         self.drawVerticesGL([q])
 
-    def drawRobotGL(self,q):
-        glColor3f(.75,0,0)
-        glPointSize(7.0)
-        self.drawVerticesGL([q])
+    def drawRobotGL(self,q, color=[0,.6,0,1]):
+        glColor4f(*color)
+        glPointSize(85.0)
+        self.beginDraw()
+        glBegin(GL_POINTS)
+        glVertex2f(q[0],q[1])
+        glEnd()
+        self.endDraw()
+        # self.drawVerticesGL([q])
 
     def drawGoalGL(self, goal, example_name=None, color='escapeGoal'):
         # Set the colors for the goals
         if color == 'escapeGoal':
             c = [1, 0, 0, 0.2]
         elif color == 'maneuverGoal':
-            c = [0, 1, 0, 0.2]
+            c = [255/255, 220/255, 255/255, 1]
         elif color == 'taskGoal':
-            c = [0, 0, 1, 0.2]
+            c = [105/255, 130/255, 126/255, .4]
 
         self.beginDraw()
         if isinstance(goal,NeighborhoodSubset):
@@ -269,6 +280,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
             glEnd()
         else:
             if example_name in ["is_plane_push", "is_plane_push_rrtstar", "is_balance_grasp",]:
+                goal.components[0].drawGL([1,1,1,1]) # erase set, union box set, ring set
                 goal.components[0].drawGL(c) # erase set, union box set, ring set
             else:
                 glColor4f(0,1,0,0.5)
