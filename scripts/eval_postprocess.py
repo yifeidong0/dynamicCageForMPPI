@@ -90,9 +90,9 @@ if prname == 'PlanePush':
     f_heuristics = 'data/evaluation/perturbed_state_estimation/push_fixture/lateral_force/scripted_movement_heuristics_perturbed_0.2.csv'
 
 if prname == 'PlanePushReal':
-    f_success_labels = 'data/evaluation/real-world/circle-pushes-irregular/labels.csv'
-    f_maneuver_labels = 'data/evaluation/real-world/circle-pushes-irregular/maneuver_labels_PlanePushReal.csv'
-    f_aoest_metrics = 'data/evaluation/real-world/circle-pushes-irregular/ao_est.csv'
+    f_success_labels = 'data/evaluation/real-world/jaw-pushes-rectangle/labels.csv'
+    f_maneuver_labels = 'data/evaluation/real-world/jaw-pushes-rectangle/maneuver_labels_PlanePushReal.csv'
+    f_aoest_metrics = 'data/evaluation/real-world/jaw-pushes-rectangle/ao_est.csv'
 
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'

@@ -6,6 +6,7 @@ import pybullet_data
 import time
 import math
 import numpy as np
+from PIL import Image
 
 def check_bounds(x, bd):
     # Iterate over elements in x and corresponding bounds in bd
@@ -342,7 +343,23 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
         self.cage = cage
         self.set_params(cage.params)
         self.create_shapes()
-        
+    
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 640, 480
+        fov = 60
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [1, 1, 1]  # Example values, adjust as needed
+        camera_target = [0, 0, 0]  # Point the camera is looking at
+        camera_up = [0, 0, 1]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
     def sample_init_state(self):
         self.mass_object = np.random.uniform(1,5)
         self.lateral_friction_coef = np.random.uniform(0.1,1)
@@ -435,6 +452,12 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
 
             if self.gui:
                 time.sleep(1/240)
+            
+            # Save camera images
+            if t % 100 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                # image.save(f'image_{int(current_time)}.png')  # Save the image
         
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
         self.vel_object, _ = p.getBaseVelocity(self.objectUid)
