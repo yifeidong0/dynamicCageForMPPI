@@ -56,7 +56,7 @@ class PlanePushControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class PlanePush:
-    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0, paper_version=1):
+    def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0, paper_version=0):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
         self.dynamics_sim = dynamics_sim
@@ -100,6 +100,7 @@ class PlanePush:
         factor_gripper = 1e-1 if (self.gripper_name == 'box' or self.gripper_name == 'bowl') else 1e-3
         self.moment_object = self.mass_object * factor_object # moment of inertia
         self.moment_gripper = self.mass_gripper * factor_gripper
+        self.half_extents_object = [0.6, 0.2,] # for box
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
                        self.object_name, self.gripper_name, self.lateral_friction_coef,]

@@ -40,6 +40,30 @@ def predict(model, input_data, scale_, min_):
 
     return predictions
 
+def get_object_corners(pose, half_extents_object):
+    # Calculate the corner points of the rotated box
+    half_length, half_height = half_extents_object
+    center_x, center_y, theta = pose
+    cos_theta = math.cos(-theta)
+    sin_theta = math.sin(-theta)
+
+    p1 = (center_x - cos_theta * half_length + sin_theta * half_height,
+            center_y + sin_theta * half_length + cos_theta * half_height)
+    p2 = (center_x + cos_theta * half_length + sin_theta * half_height,
+            center_y - sin_theta * half_length + cos_theta * half_height)
+    p3 = (center_x + cos_theta * half_length - sin_theta * half_height,
+            center_y - sin_theta * half_length - cos_theta * half_height)
+    p4 = (center_x - cos_theta * half_length - sin_theta * half_height,
+            center_y + sin_theta * half_length - cos_theta * half_height)
+    
+    return torch.tensor([p1, p2, p3, p4]) # 4x2
+
+def draw_object(corners, ax, alpha=0.5):
+    points = corners.numpy() # 4x2
+    x, y = points[:, 0], points[:, 1]
+    for i in range(len(points)):
+        next_i = (i + 1) % len(points)  # To loop back to the first point
+        ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'orange', alpha=alpha, linewidth=2)  # 'b-' for blue lines
 
 # Define the same model class used for training the cage stability network
 class NeuralNetwork2DOutput(nn.Module):
@@ -138,6 +162,7 @@ class MPPI():
                            [0,0],
                            ]
         self.c_space_boundary = self.cage.c_space_boundary
+        self.half_extents_object = self.cage.half_extents_object
 
     def _prepare_nn(self):
         if self.cost_type == 'ours':
@@ -321,6 +346,7 @@ class MPPI():
 def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     xhist = torch.zeros((iter+1, mppi.nx), device=mppi.d)
     uhist = torch.zeros((iter, mppi.nu), device=mppi.d)
+    object_hist = torch.zeros((iter+1, 4, 2), device=mppi.d) # rectangular object, 4 corners, 2d points
     rollouts_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, mppi.nx), device=mppi.d)
     rollouts_quality_hist = torch.zeros((iter, mppi.num_vis_samples, mppi.T+1, 3), device=mppi.d)
     cutdown_hist = torch.zeros((iter, mppi.num_vis_samples), device=mppi.d).fill_(mppi.T+1) # cutdown of #step in the horizon because reaching goals
@@ -332,6 +358,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     final_traj[0,:] = state.clone().detach()
     mppi._initialize_rollout_container()
     xhist[0] = torch.tensor(state)
+    object_hist[0] = get_object_corners(state[:3], mppi.half_extents_object).clone().detach()
     maneuver_labelset = []
     success_labelset = []
     for t in range(iter):
@@ -347,8 +374,10 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         final_traj[t+1,:] = state.clone().detach()
         xhist[t+1] = torch.tensor(state, device=mppi.d)
         uhist[t] = torch.tensor(action, device=mppi.d)
-        if t % 5 == 0:
-            visualize_mppi(mppi, xhist, uhist, t, epi=episode)
+        object_hist[t+1] = get_object_corners(state[:3], mppi.half_extents_object).clone().detach()
+
+        if t % 1 == 0:
+            visualize_mppi(mppi, xhist, uhist, object_hist, t, epi=episode)
         
         # Save maneuverability labels
         cage = PlanePush(state.tolist(), mppi.dynamics_sim)
@@ -365,14 +394,8 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
             mppi.reached_goal = 1
             if do_bullet_vis:
                 mppi.cage.dynamics_sim.finish_sim()
-            visualize_mppi(mppi, xhist, uhist, t, mppi.reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
+            visualize_mppi(mppi, xhist, uhist, object_hist, t, mppi.reached_goal, epi=episode, do_bullet_vis=do_bullet_vis)
             break
-
-        # # Check if out of boundary
-        # if not is_within_boundaries(state, mppi.c_space_boundary):
-        #     print('OUT OF LIMIT!')
-        #     cutdown_iter = t
-        #     break
 
         # Save rollouts and clean up the container
         rollouts_hist[t,:,:,:] = mppi.rollout_state[:mppi.num_vis_samples,:,:]
@@ -388,7 +411,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, maneuver_labelset, final_traj
 
 
-def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_vis=0):
+def visualize_mppi(mppi, xhist, uhist, object_hist, t, reached_goal=False, epi=0, do_bullet_vis=0):
     if reached_goal and do_bullet_vis:
         xhist = xhist.cpu().tolist()
         uhist = uhist.cpu().tolist()
@@ -412,19 +435,28 @@ def visualize_mppi(mppi, xhist, uhist, t, reached_goal=False, epi=0, do_bullet_v
             ax.plot(mppi.rollout_state[0,:,0].cpu(), mppi.rollout_state[0,:,1].cpu(), 'k', alpha=0.2, label="rollout")
 
         ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'b-', linewidth=1) # obj past trajectory
-        ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='r', s=11, label="object") # obj past positions
-        ax.scatter(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', s=8, label="gripper") # gripper past positions
+        ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='orange', s=11, label="object") # obj past positions
+        ax.scatter(xhist[0,6].cpu().tolist(), xhist[0,7].cpu().tolist(), c='g', s=8, label="gripper", alpha=1) # gripper past positions
+        ax.scatter(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', s=8, alpha=0.1)
+        for i in range(t+1): # gripper past positions
+            c1 = plt.Circle(xhist[i,6:8].cpu().tolist(), .1, color='g', linewidth=2, fill=False, zorder=7, alpha=float((i+1)/(t+1))**2.7)
+            ax.add_patch(c1)
 
-        # # # Show obstacles TODO: add obstacles.
-        # # for obs_pos, obs_r in zip(obstacle_positions, obstacle_radius):
-        # #   obs = plt.Circle(obs_pos, obs_r, color='k', fill=True, zorder=6)
-        # #   ax.add_patch(obs)
+        for i in range(t+1):
+            draw_object(object_hist[i].cpu(), ax, alpha=float((i+1)/(t+1))**2.7) # object past poses
 
-        ax.set_xlim([-1.,11.0])
-        ax.set_ylim([-1.,11.0])
+        rectangle = patches.Rectangle((0, 9), 10, 0.3, edgecolor='black', facecolor='black', fill=True, linewidth=1, alpha=0.6) # wall
+        ax.add_patch(rectangle)
+
+        ax.set_xlim([2,6])
+        ax.set_ylim([6.5,9.5])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
         ax.legend(loc="upper left")
         ax.set_aspect("equal")
         plt.tight_layout()
         # plt.show()
-        fig.savefig('mppi-plot-{}-{}.png'.format(epi, t), dpi=100)
+        fig.savefig('mppi-plot-{}-{}.png'.format(epi, t), dpi=300)
         plt.close()
