@@ -70,9 +70,15 @@ class BoxPivot:
         self.moment_object = 8e-1 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=4
         self.moment_gripper = 3e-3 # (2/5) * mass_ball * radius_ball**2
         self.lateral_friction_coef = lateral_friction_coef
-        self.rest_length = 3
-        self.k = 2  # Spring constant
-        self.height_spring = 3.7
+        self.for_paper_vis = 0
+        if self.for_paper_vis:
+            self.rest_length = 1
+            self.k = 5 # Spring constant
+            self.height_spring = 0.9
+        else:
+            self.rest_length = 3
+            self.k = 2
+            self.height_spring = 3.7
         self.quasistatic_motion = False
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.lateral_friction_coef,
                        self.rest_length, self.k, self.height_spring, self.quasistatic_motion]

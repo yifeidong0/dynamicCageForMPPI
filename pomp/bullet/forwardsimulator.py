@@ -52,10 +52,17 @@ class forwardSimulationPlanePush():
     def create_shapes(self):
         # Create a plane
         #  The default frictional coefficients used by PyBullet are 0.5 for the lateral friction and 0 for both the rolling and spinning.
-        self.planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        # self.planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        planeId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[10, 10, self.z_bodies])
+        self.planeUid = p.createMultiBody(0, 
+                                            planeId, 
+                                            self.visualShapeId, 
+                                            [0,0,-2*self.z_bodies],
+                                            p.getQuaternionFromEuler([0,0,0]))
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
-        
+        # p.changeVisualShape(self.planeUid, -1, rgbaColor=[193/255, 193/255, 193/255, 1])
+
         # Create an object
         if self.object_name == 'box':
             objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .2, self.z_bodies])
@@ -73,6 +80,7 @@ class forwardSimulationPlanePush():
                                             self.quat_object)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.objectUid, -1, rgbaColor=[247/255, 143/255, 0/255, 1])
         
         # Create a robot
         if self.gripper_name == 'box':
@@ -93,6 +101,7 @@ class forwardSimulationPlanePush():
             self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.gripperUid, -1, rgbaColor=[112/255, 190/255, 83/255, 1])
         
         # Create a static obstacle
         obstacleId = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.half_extent_obstacle)
@@ -103,6 +112,7 @@ class forwardSimulationPlanePush():
                                        self.quat_obstacle)
         p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.obstacleUid, -1, rgbaColor=[.3,.3,.3,1])
         
     def reset_states(self, states):
         xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
@@ -380,9 +390,16 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
 
     def create_shapes(self):
         # Create a plane
-        self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
-        p.changeDynamics(self.planeId, -1, lateralFriction=0.5, spinningFriction=0, # no friction
+        # self.planeId = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        planeId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[10, 10, self.z_bodies])
+        self.planeUid = p.createMultiBody(0, 
+                                            planeId, 
+                                            self.visualShapeId, 
+                                            [0,0,-2*self.z_bodies],
+                                            p.getQuaternionFromEuler([0,0,0]))
+        p.changeDynamics(self.planeUid, -1, lateralFriction=0.5, spinningFriction=0, # no friction
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.planeUid, -1, rgbaColor=[1,1,1,1])
         
         # Create an object
         if self.object_name == 'box':
@@ -408,7 +425,8 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
                                             self.quat_object)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
-        
+        p.changeVisualShape(self.objectUid, -1, rgbaColor=[247/255, 143/255, 0/255, 1])
+
         # Create a robot
         if self.gripper_name == 'box':
             gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
@@ -428,6 +446,7 @@ class forwardSimulationBalanceGrasp(forwardSimulationPlanePush):
             self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.gripperUid, -1, rgbaColor=[112/255, 190/255, 83/255, 1])
 
         # Create a static obstacle to catch the falling object
         self.half_extent_obstacle = [20, .05, self.z_bodies]
@@ -500,6 +519,7 @@ class forwardSimulationBoxPivot():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
+        self.for_paper_vis = 0
         # p.setGravity(0, 0, self.g)
 
         # self.set_params(params)
@@ -528,22 +548,41 @@ class forwardSimulationBoxPivot():
         self.vel_gripper2 = [0,0,0]
 
     def create_shapes(self):
-        self.planeUid = p.loadURDF("plane.urdf")
-
+        # self.planeUid = p.loadURDF("plane.urdf")
+        planeUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[100,100,0.1])
+        self.planeUid = p.createMultiBody(0, 
+                                           planeUid, 
+                                           -1, 
+                                           [0,0,-0.1])
+        p.changeVisualShape(self.planeUid, -1, rgbaColor=[.3,.3,.3,1])
+        
         # Add spring base object
-        gripperUid1 = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
+        if self.for_paper_vis:
+            gripperUid1 = p.createCollisionShape(p.GEOM_SPHERE, radius=.1)
+        else:
+            gripperUid1 = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
         self.gripperUid1 = p.createMultiBody(self.mass_gripper, 
                                     gripperUid1, 
                                     -1, 
                                     [-3, 0, self.height_spring])
+        
         # Add spring tip object
-        gripperUid2 = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
+        if self.for_paper_vis:
+            gripperUid2 = p.createCollisionShape(p.GEOM_SPHERE, radius=.1)
+        else:
+            gripperUid2 = p.createCollisionShape(p.GEOM_SPHERE, radius=.3)
         self.gripperUid2 = p.createMultiBody(self.mass_gripper, 
                                     gripperUid2, 
                                     -1, 
                                     [0, 0, self.height_spring])
+        p.changeVisualShape(self.gripperUid1, -1, rgbaColor=[112/255, 190/255, 83/255, 1])
+        p.changeVisualShape(self.gripperUid2, -1, rgbaColor=[112/255, 190/255, 83/255, 1])
+
         # Add box
-        objectUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[2,2,2])
+        if self.for_paper_vis:
+            objectUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.5,]*3)
+        else:
+            objectUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[2,2,2])
         self.objectUid = p.createMultiBody(self.mass_object, 
                                     objectUid, 
                                     -1, 
@@ -556,6 +595,7 @@ class forwardSimulationBoxPivot():
                             rollingFriction=0, linearDamping=0, angularDamping=0)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.objectUid, -1, rgbaColor=[247/255, 143/255, 0/255, 1])
 
         # Create a fixed joint between the cubes, acting like a spring
         self.c_spring = p.createConstraint(self.gripperUid1, -1, self.gripperUid2, -1, p.JOINT_FIXED, [1, 0, 0], [self.rest_length/2, 0, 0], [-self.rest_length/2, 0, 0])
@@ -897,10 +937,12 @@ class forwardSimulationGripper():
         mass = self.mass_table if self.pos_table[2] < -1e-4 else 0 # lift phase / clench phase
         self.tableUid = p.createMultiBody(mass, boxId, -1, self.pos_table)
         constraint = p.createConstraint(self.tableUid, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0, 1], self.pivot_in_table, self.pivot_in_world)
+        p.changeVisualShape(self.tableUid, -1, rgbaColor=[.3,.3,.3,1])
 
         # Add a box
         boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[self.length_object,]*3)
         self.objectUid = p.createMultiBody(self.mass_object, boxId, -1, self.pos_object)
+        p.changeVisualShape(self.objectUid, -1, rgbaColor=[247/255, 143/255, 0/255, 1])
 
         # Add a 3-finger gripper
         self.gripperUid = p.loadURDF(fileName='asset/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_articulated.urdf', 
@@ -912,6 +954,7 @@ class forwardSimulationGripper():
         for i in range(-1, self.num_links-1):
             p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
+            p.changeVisualShape(self.gripperUid, i, rgbaColor=[112/255, 190/255, 83/255, 1])
             
     def reset_states(self, states):
         """states: 6+6+9+1+9+1 DoF"""

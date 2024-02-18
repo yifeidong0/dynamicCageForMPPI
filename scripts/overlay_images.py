@@ -16,7 +16,7 @@ def create_timelapse(images, output_path):
         
         # Calculate the transparency for the overlay
         # This makes each successive image more transparent
-        alpha = int(255 * (i / len(images)))
+        alpha = int(255 * ((i) / (len(images))) * 0.5)
         print('alpha',alpha)
         img.putalpha(alpha)
         
@@ -32,11 +32,14 @@ def create_timelapse(images, output_path):
 
 # List of image paths
 image_paths = [
-    "/home/yif/Documents/KTH/dynamicCage/evaluation/real-world/circle-pushes-concave/0/captured_images/color_image_50.png",
-    "/home/yif/Documents/KTH/dynamicCage/evaluation/real-world/circle-pushes-concave/0/captured_images/color_image_149.png",
-]
+    "image_400.png",
+    # "image_100.png",
+    "image_0.png",
+    # "image_200.png",
+    # "image_300.png",
+    ]
 
 # Path to save the final image
-output_image_path = "/home/yif/Pictures/output.png"
+output_image_path = "output.png"
 
 create_timelapse(image_paths, output_image_path)

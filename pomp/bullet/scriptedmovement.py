@@ -31,7 +31,24 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         super().__init__(gui=gui)
         self.set_params(cage.params)
         self.create_shapes()
-    
+        self.setup_camera()
+
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 1280, 1280
+        fov = 35
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [1, 1, 4.3]  # Example values, adjust as needed
+        camera_target = [1, 1, 1]  # Point the camera is looking at
+        camera_up = [0, 1, 0]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+        
     def sample_init_state(self):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
         #                 5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
@@ -127,6 +144,13 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 self.task_success_label = 1
             if self.gui:
                 time.sleep(2/240)
+
+            # Save camera images
+            if t % 50 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'image_{t}.png')  # Save the image
+
         return via_points
 
 
@@ -135,6 +159,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         super().__init__(gui=gui)
         self.set_params(cage.params)
         self.create_shapes()
+        self.setup_camera()
     
     def sample_init_state(self):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
@@ -152,6 +177,22 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         init_state = [xo, yo, 0, vxo, vyo, 0,
                       xg, yg, 0, vxg, vyg, 0]
         return init_state
+
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 1280, 1280
+        fov = 35
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [5.5, 5.5, 4.3]  # Example values, adjust as needed
+        camera_target = [5.5, 5.5, 1]  # Point the camera is looking at
+        camera_up = [0, 1, 0]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
 
     def run_forward_sim(self, total_time=10, num_via_points=20, taulim=1):
         num_steps = int(total_time * 240)  # Number of time steps
@@ -213,6 +254,12 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
             if self.gui:
                 time.sleep(2/240)
 
+            # Save camera images
+            if t % 50 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'image_{t}.png')  # Save the image
+
         # Record cutoff time for the manual scripted movement dataset
         dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
         dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
@@ -224,7 +271,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         # if not do_cutdown_test and object_reached:
         if object_balanced:
             self.task_success_label = 1
-        
+
         return via_points
 
 
@@ -234,10 +281,29 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         self.cage = cage
         self.set_params(cage.params)
         self.create_shapes()
-    
+        self.setup_camera()
+
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 1280, 1280
+        fov = 40
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [3., -4, .7]  # Example values, adjust as needed
+        camera_target = [3., 1, .7]  # Point the camera is looking at
+        camera_up = [0, 0, 1]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
     def sample_init_state(self):
-        self.lateral_friction_coef = np.random.uniform(0.5,1.5)
-        print("lateral_friction_coef: ", self.lateral_friction_coef)
+        if self.for_paper_vis:
+            self.lateral_friction_coef = np.random.uniform(1.5,1.5)
+        else:
+            self.lateral_friction_coef = np.random.uniform(0.5,1.5)
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
@@ -256,7 +322,10 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         self.cutoff_t = total_time
         for t in range(num_steps):
             if do_cutdown_test:
-                rand_force = [random.uniform(1,7), 0, 0]
+                if self.for_paper_vis:
+                    rand_force = [random.uniform(1,2), 0, 0] 
+                else:
+                    rand_force = [random.uniform(1,7), 0, 0]
                 self.rand_forces.append(rand_force)
                 p.applyExternalForce(self.gripperUid1, -1, # push spring
                                     # [2,0,0], # force
@@ -330,6 +399,12 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
             if self.gui:
                 time.sleep(1/240)
         
+            # Save camera images
+            if t % 15 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix, lightDirection=[0,-1,0])[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'image_{t}.png')  # Save the image
+                
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
         self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
         if self.eul_object[1] > math.pi/2-self.cage.task_goal_margin:
@@ -343,18 +418,19 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
         self.cage = cage
         self.set_params(cage.params)
         self.create_shapes()
+        self.setup_camera()
     
     def setup_camera(self):
         # Camera settings
-        self.width_cam, self.height_cam = 640, 480
+        self.width_cam, self.height_cam = 1280, 1280
         fov = 60
         aspect = self.width_cam / self.height_cam
         near = 0.02
         far = 5
 
         # Camera position and orientation
-        camera_eye = [1, 1, 1]  # Example values, adjust as needed
-        camera_target = [0, 0, 0]  # Point the camera is looking at
+        camera_eye = [-1, 3.3, 1.3]  # Example values, adjust as needed
+        camera_target = [-.5, 0, 1]  # Point the camera is looking at
         camera_up = [0, 0, 1]  # Up direction
 
         self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
@@ -452,12 +528,12 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
 
             if self.gui:
                 time.sleep(1/240)
-            
+
             # Save camera images
-            if t % 100 == 0:
-                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+            if t % 50 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix, lightDirection=[0,1,0])[2]  # Capture the image
                 image = Image.fromarray(img_arr)
-                # image.save(f'image_{int(current_time)}.png')  # Save the image
+                image.save(f'image_{t}.png')  # Save the image
         
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
         self.vel_object, _ = p.getBaseVelocity(self.objectUid)

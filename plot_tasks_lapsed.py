@@ -5,17 +5,11 @@ from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
 from pomp.example_problems.gripper import *
 from pomp.bullet.scriptedmovement import *
-import time
-import csv
 
-problem_name = "Gripper" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+problem_name = "BoxPivot" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
 gui = 1
 num_via_points = 10
 num_trajs = 1
-# filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
-# filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
-# filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
-# filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
 
 if problem_name == 'PlanePush':
     total_time = 2.5
@@ -46,6 +40,8 @@ if problem_name == 'BoxPivot':
     cage = BoxPivot(fake_data, dynamics_sim)
     x_init = [6, 2, 0, 0, 0, 0,
               2, 3.7, 0, 0]
+    # x_init = [3, 0.5, 0, 0, 0, 0, # for_paper_vis
+    #           0, 1, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBoxPivot(cage, gui=gui)
 if problem_name == 'Gripper':
@@ -78,48 +74,4 @@ for i in range(num_trajs):
         x_news = sim.run_forward_sim(total_time, num_via_points)
     heuristics = sim.heuristics_traj
 
-    # for k in range(len(x_news)):
-    #     dataset.append([i, k,] + x_news[k])
-    #     heuriset.append([i, k,] + heuristics[k])
-    #     if problem_name == 'PlanePush':
-    #         cage = PlanePush(x_news[k], dynamics_sim)
-    #     elif problem_name == 'BalanceGrasp':
-    #         cage = BalanceGrasp(x_news[k], dynamics_sim)
-    #     elif problem_name == 'BoxPivot':
-    #         cage = BoxPivot(x_news[k], dynamics_sim)
-    #     elif problem_name == 'Gripper':
-    #         cage = Gripper(x_news[k], dynamics_sim)
-    #     man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:num_state_planner]) else 1
-    #     if problem_name == 'PlanePush':
-    #         maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
-    #     elif problem_name == 'BoxPivot':
-    #         maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef,])
-    #     elif problem_name == 'Gripper':
-    #         maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.mass_object])
-
-    # success_labelset.append([i, sim.task_success_label,])
 sim.finish_sim()
-
-# # Save data to a CSV file with headers
-# with open(filename, mode='w', newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(headers)
-#     writer.writerows(dataset)
-
-# # Save heuristics to a CSV file with headers
-# with open(filename_metric, mode='w', newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(headers_metric)
-#     writer.writerows(heuriset)
-
-# # Save labels to a CSV file with headers
-# with open(filename_suc_label, mode='w', newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(headers_success)
-#     writer.writerows(success_labelset)
-
-# # Save labels to a CSV file with headers
-# with open(filename_man_label, mode='w', newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(headers_maneuver)
-#     writer.writerows(maneuver_labelset)
