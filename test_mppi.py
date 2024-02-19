@@ -9,7 +9,7 @@ import random
 import csv
 
 if __name__ == "__main__":
-    cost_types = ['ours', ] # 'hou', 'ours', 'simple'
+    cost_types = ['hou', ] # 'hou', 'ours', 'simple'
 
     for t in cost_types:
         problem_name = 'PlanePush'
@@ -17,7 +17,7 @@ if __name__ == "__main__":
             fake_data = [0.0,]*12
             dynamics_sim = forwardSimulationPlanePushPlanner(gui=0)
             cage = PlanePush(fake_data, dynamics_sim)
-            goal_threshold = 0.4 # 0.2 # half of the width of the box
+            goal_threshold = 0.25 # 0.2 # half of the width of the box
             init_state = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                             5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
         elif problem_name == 'BalanceGrasp':
@@ -126,20 +126,21 @@ if __name__ == "__main__":
             data = []
             if randomize and problem_name == 'PlanePush':
                 xo = random.uniform(5,5)
-                yo = random.uniform(7,8)
+                yo = random.uniform(7.5,8)
                 vxo = random.uniform(-0.0, 0.0)
                 vyo = random.uniform(-0.0, 0.0)
                 omegao = random.uniform(-0.0, 0.0)
                 xg = xo + random.uniform(0.5, 0.8) # 1. push from right side
                 yg = yo + random.uniform(0, 0)
                 thetao = random.uniform(math.pi/3, 2*math.pi/3)
+                vxg = random.uniform(-0.1, 0.0)
+                vyg = random.uniform(0, 0.2)
                 # xg = xo + random.uniform(-0.3, 0.3) # 2. push from below
                 # yg = yo + random.uniform(-1, -0.5)
                 # thetao = random.uniform(-math.pi/6, math.pi/6)
-                vxg = random.uniform(-0.1, 0.0)
                 # vxg = random.uniform(-0.0, 0.0)
                 # vyg = random.uniform(0, 0.2)
-                vyg = random.uniform(0, 0.2)
+
                 init_state = [xo, yo, thetao, vxo, vyo, omegao,
                             xg, yg, 0, vxg, vyg, 0]
             mppi_gym._reset_start_goal(init_state)

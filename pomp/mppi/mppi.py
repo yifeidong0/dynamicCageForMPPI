@@ -63,7 +63,7 @@ def draw_object(corners, ax, alpha=0.5):
     x, y = points[:, 0], points[:, 1]
     for i in range(len(points)):
         next_i = (i + 1) % len(points)  # To loop back to the first point
-        ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'orange', alpha=alpha, linewidth=2)  # 'b-' for blue lines
+        ax.plot([x[i], x[next_i]], [y[i], y[next_i]], 'orange', alpha=alpha, linewidth=4)  # 'b-' for blue lines
 
 # Define the same model class used for training the cage stability network
 class NeuralNetwork2DOutput(nn.Module):
@@ -431,21 +431,21 @@ def visualize_mppi(mppi, xhist, uhist, object_hist, t, reached_goal=False, epi=0
         if not reached_goal:
             ax.plot(mppi.rollout_state[:mppi.num_vis_samples,:,0].T.cpu(), 
                     mppi.rollout_state[:mppi.num_vis_samples,:,1].T.cpu(), 
-                    'k', alpha=0.2, zorder=3, linewidth=1) # rollout obj states
-            ax.plot(mppi.rollout_state[0,:,0].cpu(), mppi.rollout_state[0,:,1].cpu(), 'k', alpha=0.2, label="rollout")
+                    'k', alpha=0.8, zorder=3, linewidth=1) # rollout obj states
+            ax.plot(mppi.rollout_state[0,:,0].cpu(), mppi.rollout_state[0,:,1].cpu(), 'k', alpha=0.1, label="rollout")
 
-        ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'b-', linewidth=1) # obj past trajectory
+        ax.plot(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), 'orange', linewidth=1) # obj past trajectory
         ax.scatter(xhist[:t+1,0].cpu().tolist(), xhist[:t+1,1].cpu().tolist(), c='orange', s=11, label="object") # obj past positions
         ax.scatter(xhist[0,6].cpu().tolist(), xhist[0,7].cpu().tolist(), c='g', s=8, label="gripper", alpha=1) # gripper past positions
-        ax.scatter(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', s=8, alpha=0.1)
-        for i in range(t+1): # gripper past positions
-            c1 = plt.Circle(xhist[i,6:8].cpu().tolist(), .1, color='g', linewidth=2, fill=False, zorder=7, alpha=float((i+1)/(t+1))**2.7)
+        ax.plot(xhist[:t+1,6].cpu().tolist(), xhist[:t+1,7].cpu().tolist(), c='g', linewidth=1)
+        for i in range(t+1): # gripper past positions (circle)
+            c1 = plt.Circle(xhist[i,6:8].cpu().tolist(), .1, color='g', linewidth=3, fill=0, zorder=7, alpha=float((i+1)/(t+1))**2.8)
             ax.add_patch(c1)
 
         for i in range(t+1):
             draw_object(object_hist[i].cpu(), ax, alpha=float((i+1)/(t+1))**2.7) # object past poses
 
-        rectangle = patches.Rectangle((0, 9), 10, 0.3, edgecolor='black', facecolor='black', fill=True, linewidth=1, alpha=0.6) # wall
+        rectangle = patches.Rectangle((0, 9), 10, 0.5, edgecolor='black', facecolor='black', fill=True, linewidth=1, alpha=0.6) # wall
         ax.add_patch(rectangle)
 
         ax.set_xlim([2,6])
@@ -454,7 +454,7 @@ def visualize_mppi(mppi, xhist, uhist, object_hist, t, reached_goal=False, epi=0
         ax.set_yticks([])
         ax.set_xticklabels([])
         ax.set_yticklabels([])
-        ax.legend(loc="upper left")
+        # ax.legend(loc="upper left")
         ax.set_aspect("equal")
         plt.tight_layout()
         # plt.show()
