@@ -3,7 +3,7 @@ import os
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 import matplotlib.pyplot as plt
-import time
+import random
 import csv
 
 # Function to calculate AUC and AP and plot ROC and PRC
@@ -69,7 +69,7 @@ def get_s_metric(labels, predictions, predict_id=60):
 
 ##################################
 
-prname = 'PlanePushReal' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'PlanePush' # 'BalanceGrasp', 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 100 if prname == 'PlanePushReal' else 10
 num_trajs = 12 if prname == 'PlanePushReal' else 50
 
@@ -143,14 +143,14 @@ with open(f_maneuver_labels, 'r') as file:
 #         success_metrics_aorrt.append(float(row[5]))
 #         maneuverability_metric_aorrt.append(float(row[6]))
 
-success_metrics_aoest = []
-maneuverability_metric_aoest = []
-with open(f_aoest_metrics, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)
-    for id, row in enumerate(csv_reader):
-        success_metrics_aoest.append(float(row[5]))
-        maneuverability_metric_aoest.append(float(row[6]))
+# success_metrics_aoest = []
+# maneuverability_metric_aoest = []
+# with open(f_aoest_metrics, 'r') as file:
+#     csv_reader = csv.reader(file)
+#     header = next(csv_reader)
+#     for id, row in enumerate(csv_reader):
+#         success_metrics_aoest.append(float(row[5]))
+#         maneuverability_metric_aoest.append(float(row[6]))
 
 # effort_aorrt_metrics = []
 # with open(f_effort_aorrt, 'r') as file:
@@ -189,25 +189,31 @@ with open(f_aoest_metrics, 'r') as file:
 #         success_metrics_quasistatic.append(float(row[5]))
 #         maneuverability_metrics_quasistatic.append(float(row[6]))
 
-# closeset_distance_metrics = []
-# s_stick_metrics = []
-# s_engage_metrics = []
-# with open(f_heuristics, 'r') as file:
-#     csv_reader = csv.reader(file)
-#     header = next(csv_reader)
-#     for id, row in enumerate(csv_reader):
-#         if prname == 'BoxPivot':
-#             closeset_distance_metrics.append(float(row[5]))
-#             s_stick_metrics.append(float(row[6]))
-#             s_engage_metrics.append(float(row[7]))
-#         elif prname == 'Gripper':
-#             closeset_distance_metrics.append(float(row[2])+float(row[5])+float(row[8]))
-#             s_stick_metrics.append(float(row[3])+float(row[6])+float(row[9]))
-#             s_engage_metrics.append(float(row[4])+float(row[7])+float(row[10]))
-#         else:
-#             closeset_distance_metrics.append(float(row[2]))
-#             s_stick_metrics.append(float(row[3]))
-#             s_engage_metrics.append(float(row[4]))
+randomize_forces = 1
+noise = 4
+closeset_distance_metrics = []
+s_stick_metrics = []
+s_engage_metrics = []
+with open(f_heuristics, 'r') as file:
+    csv_reader = csv.reader(file)
+    header = next(csv_reader)
+    for id, row in enumerate(csv_reader):
+        if prname == 'BoxPivot':
+            closeset_distance_metrics.append(float(row[5]))
+            s_stick_metrics.append(float(row[6]))
+            s_engage_metrics.append(float(row[7]))
+        elif prname == 'Gripper':
+            closeset_distance_metrics.append(float(row[2])+float(row[5])+float(row[8]))
+            s_stick_metrics.append(float(row[3])+float(row[6])+float(row[9]))
+            s_engage_metrics.append(float(row[4])+float(row[7])+float(row[10]))
+        else:
+            closeset_distance_metrics.append(float(row[2]))
+            if randomize_forces:
+                s_stick_metrics.append(float(row[3]) + random.uniform(-noise, noise))
+                s_engage_metrics.append(float(row[4]) + random.uniform(-noise, noise))
+            else:
+                s_stick_metrics.append(float(row[3]))
+                s_engage_metrics.append(float(row[4]))
 
 ##################################
 # print('######1. AO-RRT Maneuverability Metric######')
@@ -216,11 +222,11 @@ with open(f_aoest_metrics, 'r') as file:
 # print('######AO-RRT Success Metric######')
 # get_s_metric(success_labels, success_metrics_aorrt)
 
-print('######2. AO-EST Maneuverability Metric######')
-get_m_metric(maneuver_labels, maneuverability_metric_aoest)
+# print('######2. AO-EST Maneuverability Metric######')
+# get_m_metric(maneuver_labels, maneuverability_metric_aoest)
 
-print('######AO-EST Success Metric######')
-get_s_metric(success_labels, success_metrics_aoest)
+# print('######AO-EST Success Metric######')
+# get_s_metric(success_labels, success_metrics_aoest)
 
 # print('######3. RRT* Soft Fixture Maneuverability Metric######')
 # get_m_metric(maneuver_labels, soft_fixture_metrics)
@@ -243,13 +249,13 @@ get_s_metric(success_labels, success_metrics_aoest)
 # minval, maxval, thres, metric_original = 0., -1.0, dis_thres, closeset_distance_metrics
 # get_s_metric(minval, maxval, thres, metric_original)
 
-# print('######6. Baseline - Contact Force-related Score - Maneuverability ######')
-# w0, w1, w2 = -1, 1, 1
-# hybrid_score = [(w0*d + w1*s + w2*e) for d,s,e in zip(closeset_distance_metrics, s_stick_metrics, s_engage_metrics)]
-# get_m_metric(maneuver_labels, hybrid_score)
+print('######6. Baseline - Contact Force-related Score - Maneuverability ######')
+w0, w1, w2 = -1, 1, 1
+hybrid_score = [(w0*d + w1*s + w2*e) for d,s,e in zip(closeset_distance_metrics, s_stick_metrics, s_engage_metrics)]
+get_m_metric(maneuver_labels, hybrid_score)
 
-# print('######Heuristic - Contact Force - Success Metric######')
-# get_s_metric(success_labels, hybrid_score)
+print('######Heuristic - Contact Force - Success Metric######')
+get_s_metric(success_labels, hybrid_score)
 
 # print('######7. Escape Effort AO-RRT - Maneuverability Metric######')
 # get_m_metric(maneuver_labels, effort_aorrt_metrics)

@@ -64,3 +64,32 @@ ax[1, 1].legend()
 
 # Show the plot
 plt.show()
+
+
+########## Plot in a single figure
+normalized_e_max = np.array([0, 0.1, 0.2, 0.5, 1, 0, 0.1, 0.5, 1, 0, 0.2, 0.6, 1, 0, 0.2, 0.4, 0.7, 1])
+maneuverability_ap = np.array([0.99, 0.99, 0.99, 0.99, 1, 0.99, 0.98, 0.98, 0.95, 0.99, 0.99, 0.95, 0.9, 0.94, 0.902, 0.874, 0.864, .85])
+
+# Splitting the errors for different test conditions
+friction_errors = normalized_e_max[:5]
+velocity_errors = normalized_e_max[5:9]
+bias_errors = normalized_e_max[9:13]
+force_error = normalized_e_max[13:]
+
+# Plotting
+fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+
+# Friction Coefficient Noise
+ax.plot(friction_errors, maneuverability_ap[:5], marker='o', label='friction')
+ax.plot(velocity_errors, maneuverability_ap[5:9], marker='o', label='velocity')
+ax.plot(bias_errors, maneuverability_ap[9:13], marker='o', label='position')
+ax.plot(force_error, maneuverability_ap[13:], marker='o', label='force')
+# ax.set_title('Noise')
+ax.set_xlabel('Normalized max Magnitude')
+ax.set_ylabel('metric value')
+# ax[0, 0].set_xlim(0, friction_errors[-1])
+# ax[0, 0].set_ylim(0.5, 1.05)
+ax.legend()
+
+# Show the plot
+plt.show()
