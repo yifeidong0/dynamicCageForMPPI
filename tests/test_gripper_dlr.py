@@ -14,9 +14,9 @@ m_box = 30
 boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.3,]*3)
 boxId = p.createMultiBody(m_box, boxId, -1, [0, 0, 1.0])
 
-gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
-# gripperId = p.loadURDF(fileName='asset/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_articulated.urdf', 
-# gripperId = p.loadURDF(fileName='asset/linkage.urdf', 
+# gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
+# gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip_150_20.urdf', 
+gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip_60_60.urdf', 
                         basePosition=[0,0,0], 
                         baseOrientation=p.getQuaternionFromEuler([math.pi/2,0,0]),
                         globalScaling=10,
