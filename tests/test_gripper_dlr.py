@@ -16,7 +16,7 @@ boxId = p.createMultiBody(m_box, boxId, -1, [0, 0, 1.0])
 
 # gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
 # gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip_150_20.urdf', 
-gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip_60_60.urdf', 
+gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
                         basePosition=[0,0,0], 
                         baseOrientation=p.getQuaternionFromEuler([math.pi/2,0,0]),
                         globalScaling=10,
