@@ -519,7 +519,7 @@ class forwardSimulationBoxPivot():
             p.connect(p.DIRECT) # p.GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) # optionally
         self.g = -9.81
-        self.for_paper_vis = 0
+        self.for_paper_vis = 1
         # p.setGravity(0, 0, self.g)
 
         # self.set_params(params)
@@ -581,12 +581,17 @@ class forwardSimulationBoxPivot():
         # Add box
         if self.for_paper_vis:
             objectUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.5,]*3)
+            self.objectUid = p.createMultiBody(self.mass_object, 
+                                        objectUid, 
+                                        -1, 
+                                        [0,0,0.5])
         else:
             objectUid = p.createCollisionShape(p.GEOM_BOX, halfExtents=[2,2,2])
-        self.objectUid = p.createMultiBody(self.mass_object, 
-                                    objectUid, 
-                                    -1, 
-                                    [6,0,2])
+            self.objectUid = p.createMultiBody(self.mass_object, 
+                                        objectUid, 
+                                        -1, 
+                                        [6,0,2])
+            
         p.changeDynamics(self.gripperUid1, -1, lateralFriction=0, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
         p.changeDynamics(self.gripperUid2, -1, lateralFriction=0.2, spinningFriction=0, 

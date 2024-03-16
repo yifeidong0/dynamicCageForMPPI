@@ -46,6 +46,7 @@ if problem_name == 'BalanceGrasp':
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'BoxPivot':
+    for_paper_version = 1
     total_time = 2.5
     num_state_planner = 8
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
@@ -56,8 +57,12 @@ if problem_name == 'BoxPivot':
                  0.0, 0.0, 0.0, 0.0, ]
     dynamics_sim = forwardSimulationBoxPivot(gui=0)
     cage = BoxPivot(fake_data, dynamics_sim)
-    x_init = [6, 2, 0, 0, 0, 0,
-              2, 3.7, 0, 0]
+    if for_paper_version:
+        x_init = [2.5, 0.5, 0, 0, 0, 0,
+                1, 1.7, 0, 0]
+    else:
+        x_init = [6, 2, 0, 0, 0, 0,
+                  2, 3.7, 0, 0]
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimBoxPivot(cage, gui=gui)
 if problem_name == 'Gripper':

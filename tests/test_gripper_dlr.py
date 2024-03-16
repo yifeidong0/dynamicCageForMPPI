@@ -11,18 +11,19 @@ p.setGravity(0, 0, -10)
 planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,0])
 
 g = 9.81
-m_box = 30
-# boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.3,.3,.1,])
-# boxId = p.createMultiBody(m_box, boxId, -1, [0, 0, .1])
-boxId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=.5)
-boxId = p.createMultiBody(m_box,
-                            boxId,
-                            -1,
-                            [0, 0, 0.2],
-                            p.getQuaternionFromEuler([0.5*math.pi,0,0]))
+m_box = .2
 
-# gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
-# gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip_150_20.urdf', 
+# boxId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.3, height=.5)
+# boxId = p.createMultiBody(m_box,
+#                             boxId,
+#                             -1,
+#                             [0, 0, 0.3],
+#                             p.getQuaternionFromEuler([0.5*math.pi,0,0]))
+
+for i in range(10):
+    boxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.1,.1,.1,])
+    boxId = p.createMultiBody(m_box*0.2, boxId, -1, 0.3*np.random.rand(3) + np.array([0, 0, 0.3]))    
+
 gripperId = p.loadURDF(fileName='asset/lc_soft_enable_wide_grip/lc_soft_enable_wide_grip.urdf', 
                         basePosition=[0,0,2.6], 
                         baseOrientation=p.getQuaternionFromEuler([1*math.pi,0,0]),
@@ -37,16 +38,18 @@ constraint1 = p.createConstraint(gripperId, -1, -1, -1, p.JOINT_PRISMATIC, [0, 0
 # Define the initial positions for the joints and the stiffness (P) and damping (D) coefficients
 # num_joints = p.getNumJoints(gripperId)
 # jointIds = [0,2]
+# jointIds = [1,3]
 jointIds = [0,1,2,3]
-initial_positions = [.3,] * len(jointIds) # Adjust with your desired initial positions
-stiffness = [1e-2,] * len(jointIds)  # P gain for each joint
-damping = [1e-1,] * len(jointIds)  # D gain for each joint
+initial_positions = [0.5,] * len(jointIds) # Adjust with your desired initial positions
+stiffness = [1e1,] * len(jointIds)  # P gain for each joint
+damping = [1e9,] * len(jointIds)  # D gain for each joint
 # for i, jointId in enumerate(jointIds):
 #     p.resetJointState(gripperId, jointId, initial_positions[i])
 
 # Simulation loop
 # time.sleep(6)
 for i in range(80000):
+    print("i: ", i)
     # Read the current state of the gripper
     # joint_states = p.getJointStates(gripperId, jointIds)
     # target_torques = []
@@ -76,13 +79,7 @@ for i in range(80000):
                                 positionGains=stiffness,
                                 velocityGains=damping,
                                 # controlMode=p.TORQUE_CONTROL,
-                                forces=[.1,]*len(jointIds),)
-                                # forces=target_torques)
-    # p.setJointMotorControlArray(bodyUniqueId=gripperId,
-    #                             jointIndices=jointIds,
-    #                             controlMode=p.POSITION_CONTROL,
-    #                             targetPositions=initial_positions,
-    #                             forces=target_torques)
+                                forces=[1,]*len(jointIds),)
     
     # Reset gripper base position
     # p.resetBasePositionAndOrientation(gripperId, [0,0,2.-i/1000], p.getQuaternionFromEuler([1*math.pi,0,0]))
@@ -91,28 +88,23 @@ for i in range(80000):
     # pos_box, _ = p.getBasePositionAndOrientation(boxId)
     # p.applyExternalForce(objectUniqueId=boxId, linkIndex=-1, forceObj=[0,0,-m_box*g], posObj=pos_box, flags=p.WORLD_FRAME)
 
-    # apply upward force on the box
-    # if i > 600:
-    #     p.applyExternalForce(objectUniqueId=boxId, linkIndex=-1, forceObj=[-.3*m_box*g,0,1.18*m_box*g], posObj=pos_box, flags=p.WORLD_FRAME)
-    #     p.applyExternalTorque(objectUniqueId=boxId, linkIndex=-1, torqueObj=[-.3,.1,.18], flags=p.WORLD_FRAME)
+    # Get gripper joint positions
+    # Update initial_positions
+    if i == 300:
+        joint_states = p.getJointStates(gripperId, jointIds)
+        joint_positions = [state[0] for state in joint_states]
+        initial_positions = joint_positions
+    # print("joint_states: ", joint_positions)
 
-    # # Test reset functionalities
-    # if i % 10 == 0:
-    #     pos, quat_object = p.getBasePositionAndOrientation(boxId)
-    #     eul_object = p.getEulerFromQuaternion(quat_object) # rad
-    #     vel_object, vel_ang_object = p.getBaseVelocity(boxId)
-    #     joint_states = p.getJointStates(gripperId, jointIds)
-    #     pos_gripper = [state[0] for state in joint_states]
-    #     vel_gripper = [state[1] for state in joint_states]
-
-    #     p.resetBasePositionAndOrientation(boxId, pos, quat_object)
-    #     p.resetBaseVelocity(boxId, vel_object, vel_ang_object)
-    #     for i, jid in enumerate(jointIds):
-    #         p.resetJointState(gripperId, jid, targetValue=pos_gripper[i], targetVelocity=vel_gripper[i])
+    # apply upward force on the gripper
+    if i < 300:
+        p.applyExternalForce(objectUniqueId=gripperId, linkIndex=-1, forceObj=[0,0,-20], posObj=[0,0,0], flags=p.WORLD_FRAME)
+    else:
+        p.applyExternalForce(objectUniqueId=gripperId, linkIndex=-1, forceObj=[0,0,20], posObj=[0,0,0], flags=p.WORLD_FRAME)
 
     # Step simulation
     p.stepSimulation()
-    time.sleep(10./240.)
+    time.sleep(4./240.)
 
 # Disconnect from PyBullet
 p.disconnect()

@@ -70,7 +70,7 @@ class BoxPivot:
         self.moment_object = 8e-1 # moment of inertia.  Solid - (I) = (1/12) * m * (a^2 + b^2) - a=b=4
         self.moment_gripper = 3e-3 # (2/5) * mass_ball * radius_ball**2
         self.lateral_friction_coef = lateral_friction_coef
-        self.for_paper_vis = 0
+        self.for_paper_vis = 1
         if self.for_paper_vis:
             self.rest_length = 1
             self.k = 5 # Spring constant
