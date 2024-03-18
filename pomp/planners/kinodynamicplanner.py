@@ -1248,7 +1248,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self, iters, do_pruning=0):
+    def planMore(self, iters, do_pruning=1):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)
@@ -1330,6 +1330,9 @@ class CostSpaceEST:
         print("Count_success:", count_success, "Count_non_maneuver:", count_maneuver)
         return success_metric, maneuver_metric
         
+    def getBestPathCost(self):
+        return self.bestPathCost
+
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()

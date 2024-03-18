@@ -35,7 +35,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
 
     def setup_camera(self):
         # Camera settings
-        self.width_cam, self.height_cam = 1280, 1280
+        self.width_cam, self.height_cam = 640, 640
         fov = 35
         aspect = self.width_cam / self.height_cam
         near = 0.02
@@ -81,10 +81,11 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                             rollingFriction=0, linearDamping=0, angularDamping=0)        
         return init_state
 
-    def run_forward_sim(self, total_time=10, num_via_points=20, do_cutdown_test=False):
+    def run_forward_sim(self, total_time=10, num_via_points=20, id_traj=0, do_cutdown_test=False):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
+        save_img_id = 0
 
         # Step the simulation
         via_points = []
@@ -103,6 +104,7 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
 
             # Print object via-points along the trajectory for visualization
             if t % interval == 0 or t == int(t*240)-1:
+                print("t: ", t)
                 # Get the object and gripper states
                 self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
                 self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
@@ -132,6 +134,11 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                             ]
                 via_points.append(new_states)
 
+                # Save camera images
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-10-K-png/image_{id_traj}_{t:04d}.png')  # Save the image
+
             p.stepSimulation()
 
             # Record cutoff time for the manual scripted movement dataset
@@ -146,10 +153,11 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                 time.sleep(2/240)
 
             # Save camera images
-            if t % 50 == 0:
+            if t % 5 == 0:
                 img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
                 image = Image.fromarray(img_arr)
-                image.save(f'image_{t}.png')  # Save the image
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+                save_img_id += 1
 
         return via_points
 
@@ -194,7 +202,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
         self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
 
-    def run_forward_sim(self, total_time=10, num_via_points=20, taulim=1):
+    def run_forward_sim(self, total_time=10, num_via_points=20, id_traj=0, taulim=1):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -309,7 +317,7 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
 
-    def run_forward_sim(self, total_time=5, num_via_points=20, do_cutdown_test=False):
+    def run_forward_sim(self, total_time=5, num_via_points=20, id_traj=0, do_cutdown_test=False):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
         interval = 3 if interval==0 else interval
@@ -447,7 +455,7 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
             p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)
 
-    def run_forward_sim(self, total_time=5, num_via_points=10, clench_time=.05, lift_time=.3, lift_acc=-.7):
+    def run_forward_sim(self, total_time=5, num_via_points=10, id_traj=0, clench_time=.05, lift_time=.3, lift_acc=-.7):
         num_steps = int(total_time * 240)  # Number of time steps
         interval = int(num_steps/num_via_points)
 

@@ -38,8 +38,10 @@ fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     if traj_type == 'scripted':
-        filenames = ['data/paper_vis/plane_push/scripted_movement_viapoints_PlanePush.csv',]
-        filename_friction = 'data/paper_vis/plane_push/scripted_movement_maneuver_labels_PlanePush.csv'
+        # filenames = ['data/paper_vis/plane_push/scripted_movement_viapoints_PlanePush.csv',]
+        # filename_friction = 'data/paper_vis/plane_push/scripted_movement_maneuver_labels_PlanePush.csv'
+        filenames = ['/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-summary/scripted_movement_viapoints_PlanePush.csv',]
+        filename_friction = '/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-summary/scripted_movement_maneuver_labels_PlanePush.csv'
     if traj_type == 'mppi':
         filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
 if prname == 'PlanePushReal':
@@ -53,10 +55,10 @@ if prname == 'PlanePushReal':
         # filenames = ['data/evaluation/real-world/circle-pushes-triangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
         # filenames = ['data/evaluation/real-world/jaw-pushes-triangle/'+n+'/apriltag_results.csv' for n in formatted_numbers]
         # filenames = ['data/evaluation/real-world/circle-pushes-convex/'+n+'/apriltag_results.csv' for n in formatted_numbers]
-        # filenames = ['data/evaluation/real-world/jaw-pushes-convex/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        filenames = ['data/evaluation/real-world/jaw-pushes-convex/'+n+'/apriltag_results.csv' for n in formatted_numbers]
         # filenames = ['data/evaluation/real-world/circle-pushes-concave/'+n+'/apriltag_results.csv' for n in formatted_numbers]
         # filenames = ['data/evaluation/real-world/jaw-pushes-concave/'+n+'/apriltag_results.csv' for n in formatted_numbers]
-        filenames = ['data/evaluation/real-world/circle-pushes-irregular/'+n+'/apriltag_results.csv' for n in formatted_numbers]
+        # filenames = ['data/evaluation/real-world/circle-pushes-irregular/'+n+'/apriltag_results.csv' for n in formatted_numbers]
         # filenames = ['data/evaluation/real-world/jaw-pushes-irregular/'+n+'/apriltag_results.csv' for n in formatted_numbers]
 
 if prname == 'BalanceGrasp':
@@ -166,7 +168,7 @@ for file_id, filename in enumerate(filenames):
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
         if prname == 'PlanePushReal':
-            dynamics_sim = forwardSimulationPlanePushReal(gui=0)
+            dynamics_sim = forwardSimulationPlanePushReal(gui=1)
             problem = PlanePushRealTest(dynamics_sim, data_i, save_hyperparams=1)
             if record_mnv_labels:
                 num_state_planner = 9

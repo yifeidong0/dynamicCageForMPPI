@@ -74,8 +74,8 @@ class PlanePushReal:
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.cost_inv_coef = -5e-2
 
-        self.object_name = 'irregular' # 'rectangle', 'convex', 'concave', 'irregular', 'triangle'
-        self.gripper_name = 'circle' # 'circle', 'jaw'
+        self.object_name = 'convex' # 'rectangle', 'convex', 'concave', 'irregular', 'triangle'
+        self.gripper_name = 'jaw' # 'circle', 'jaw'
         self.mass_bodies = {'rectangle': 0.048, 'convex': 0.042, 'concave': 0.043, 'irregular': 0.024, 'triangle': 0.028, 'circle': 0.026, 'jaw': 0.026}
         self.mass_object = self.mass_bodies[self.object_name] * self.scale_factor**3
         self.mass_gripper = self.mass_bodies[self.gripper_name] * self.scale_factor**3 + 100 # robot arm weight added

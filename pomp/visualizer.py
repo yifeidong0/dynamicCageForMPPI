@@ -14,6 +14,7 @@ import os,errno
 import time
 import random
 from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 def mkdir_p(path):
     """Quiet path making"""
@@ -63,7 +64,8 @@ class PlanVisualizationProgram(GLProgram):
                     if self.just_animated:
                         self.just_animated = False
                     else:
-                        self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                        self.save_screen("/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/analysis-traj-id-1-and-2/escape/traj-2/state-6/image%04d.ppm"%(self.movie_frame))
+                        # self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                         self.movie_frame += 1
                 except Exception as e:
                     ex_type, ex, tb = sys.exc_info()
@@ -74,6 +76,7 @@ class PlanVisualizationProgram(GLProgram):
                 self.planner.planMore(100)
                 self.path = self.planner.getPath()
                 self.G = self.planner.getRoadmap()
+                self.planner.getMetric()
                 self.refresh()
                 self.painted = False
                
@@ -139,7 +142,26 @@ class PlanVisualizationProgram(GLProgram):
         elif key=='t':
             maxTime = 30
             # testPlanner(self.planner,10,maxTime,self.plannerFilePrefix+'.csv')
-       
+
+    def drawText(self, text, x, y):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        gluOrtho2D(0, self.width, 0, self.height)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+
+        glColor3f(0, 0, 0)  # Red color
+        glRasterPos2f(x, y)
+        for char in text:
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ord(char))
+
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        
     def display(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -226,10 +248,11 @@ class PlanVisualizationProgram(GLProgram):
         if self.G:
             V,E = self.G
 
-            # Draw gripper and rectangular object at random 5% nodes in V
+            # Draw random gripper and rectangular object from the nodes
             if hasattr(self.problem.controlSpace, "is_plane_push"):
                 total_num = len(V)
-                rand_num  = int(total_num * 0.03)
+                # rand_num  = int(total_num * 0.03)
+                rand_num  = 1
                 for i in random.sample(range(total_num), rand_num):
                     self.problem.visualizer.drawGripperGL(V[i][:3], [.6, .2], [1.0, 0.65, 0.0, 0.5*max(0,(7-V[i][-1])/7)]) # draw rectangluar object
                     self.problem.visualizer.drawRobotGL(V[i][6:8], [0,.6,0,0.5*max(0,(7-V[i][-1])/7)]) # draw robot gripper
@@ -263,6 +286,18 @@ class PlanVisualizationProgram(GLProgram):
             glColor4f(0,0,0,0.5)
             glPointSize(12.0)
             self.problem.visualizer.drawVerticesGL(V)
+
+            # Draw text box of metrics at last frame
+            # if self.movie_frame == 29:
+            #     success_metric, maneuver_metric = self.planner.getMetric()
+            #     success_metric = round(success_metric, 2)
+            #     maneuver_metric = round(maneuver_metric, 2)
+            #     self.drawText("("+str(success_metric)+", "+str(maneuver_metric)+")", self.width / 1.1 - 70, self.height / 1.1 + 10)
+
+            # # Draw text box of escape cost
+            # escape_cost = self.planner.getBestPathCost()
+            # escape_cost = "inf" if escape_cost is None else str(round(escape_cost, 3))
+            # self.drawText("Escape cost: "+escape_cost, self.width / 1.1 - 110, self.height / 1.1 + 10)
 
     def draw_solution_path(self):
         if self.path is not None:
@@ -348,15 +383,15 @@ class PlanVisualizationProgram(GLProgram):
         if self.path:
             # Plot path edges
             glColor3f(0,0.75,0)
-            glLineWidth(3.0)
+            glLineWidth(4.0)
             for q,u in zip(self.path[0][:-1],self.path[1]):
                 interpolator = self.problem.space.interpolator(q,u)
                 self.problem.visualizer.drawInterpolatorGL(interpolator)
 
             # Plot path nodes
-            glLineWidth(1)
-            for q in self.path[0]:
-                self.problem.visualizer.drawObjectGL(q)
+            # glLineWidth(1)
+            # for q in self.path[0]:
+            #     self.problem.visualizer.drawObjectGL(q)
 
     def displayfunc(self):
         GLProgram.displayfunc(self)

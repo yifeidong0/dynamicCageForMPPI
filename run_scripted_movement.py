@@ -8,10 +8,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "BoxPivot" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+problem_name = "PlanePush" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
 gui = 1
 num_via_points = 10
-num_trajs = 10
+num_trajs = 6
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -124,11 +124,11 @@ for i in range(num_trajs):
     
     sim.reset_states(x_init)
     if problem_name == 'BoxPivot':
-        _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1) # get cutdown time
+        _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1, id_traj=i,) # get cutdown time
         sim.reset_states(x_init)
-        x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points, do_cutdown_test=0)
+        x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points, i, do_cutdown_test=0)
     else:
-        x_news = sim.run_forward_sim(total_time, num_via_points)
+        x_news = sim.run_forward_sim(total_time, num_via_points, i)
     heuristics = sim.heuristics_traj
 
     for k in range(len(x_news)):
