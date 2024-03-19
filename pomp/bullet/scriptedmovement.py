@@ -172,11 +172,11 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
     def sample_init_state(self):
         # init_neutral = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                         # 5.0, 4, 0.0, 0.0, 0.0, 0]
-        xo = 5
-        yo = 5
+        xo = 5.5
+        yo = 4.8
         vxo = random.uniform(-0.01, 0.01)
         vyo = random.uniform(-0.01, 0.01)
-        xg = xo + random.uniform(-0.6, 0.6)
+        xg = xo + random.uniform(-0.3, 0.3)
         yg = yo - 0.3
         # thetag = random.uniform(-math.pi/15, math.pi/15)
         vxg = random.uniform(-0.01, 0.01)
@@ -188,7 +188,7 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
 
     def setup_camera(self):
         # Camera settings
-        self.width_cam, self.height_cam = 1280, 1280
+        self.width_cam, self.height_cam = 640, 640
         fov = 35
         aspect = self.width_cam / self.height_cam
         near = 0.02
@@ -211,6 +211,8 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
         via_points = []
         self.heuristics_traj = []
         self.task_success_label = 0
+        save_img_id = 0
+        save_img_id_k = 0
         for t in range(num_steps):
             self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
             p.applyExternalForce(self.gripperUid, -1, # gravity compensation
@@ -258,15 +260,23 @@ class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
                             ]
                 via_points.append(new_states)
 
+                # Save camera images
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/balance-grasp-sim/6-10-K-png/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
+                save_img_id_k += 1
+
             p.stepSimulation()
             if self.gui:
                 time.sleep(2/240)
 
             # Save camera images
-            if t % 50 == 0:
+            if t % 5 == 0:
                 img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
                 image = Image.fromarray(img_arr)
-                image.save(f'image_{t}.png')  # Save the image
+                # image.save(f'image_{t}.png')  # Save the image
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/balance-grasp-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+                save_img_id += 1
 
         # Record cutoff time for the manual scripted movement dataset
         dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
@@ -293,7 +303,7 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
 
     def setup_camera(self):
         # Camera settings
-        self.width_cam, self.height_cam = 1280, 1280
+        self.width_cam, self.height_cam = 640, 640
         fov = 40
         aspect = self.width_cam / self.height_cam
         near = 0.02
@@ -309,7 +319,7 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
 
     def sample_init_state(self):
         if self.for_paper_vis:
-            self.lateral_friction_coef = np.random.uniform(1.5,1.5)
+            self.lateral_friction_coef = np.random.uniform(0.6,1.5)
         else:
             self.lateral_friction_coef = np.random.uniform(0.5,1.5)
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
@@ -328,6 +338,8 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
         self.task_success_label = 0
         if do_cutdown_test: self.rand_forces = []
         self.cutoff_t = total_time
+        save_img_id = 0
+        save_img_id_k = 0
         for t in range(num_steps):
             if do_cutdown_test:
                 if self.for_paper_vis:
@@ -342,7 +354,8 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
                                     p.LINK_FRAME)
             else:
                 p.applyExternalForce(self.gripperUid1, -1, # push spring
-                                    self.rand_forces[t], # force
+                                    # self.rand_forces[t], # force
+                                    [random.uniform(1,1), 0, 0],
                                     [0,0,0], 
                                     p.LINK_FRAME)
             # Get positions of the boxes
@@ -398,6 +411,21 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
                             ]
                 via_points.append(new_states)
 
+                # Save camera images
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                # image.save(f'image_{t}.png')  # Save the image
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/box-pivot-sim/6-10-K-png/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
+                save_img_id_k += 1
+
+            # Save camera images
+            if t % 3 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                # image.save(f'image_{t}.png')  # Save the image
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/box-pivot-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+                save_img_id += 1
+
             self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
             self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
             object_reached = self.eul_object[1] > math.pi/2-0.5*self.cage.task_goal_margin
@@ -406,12 +434,6 @@ class scriptedMovementSimBoxPivot(forwardSimulationBoxPivot):
                 return via_points
             if self.gui:
                 time.sleep(1/240)
-        
-            # Save camera images
-            if t % 15 == 0:
-                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix, lightDirection=[0,-1,0])[2]  # Capture the image
-                image = Image.fromarray(img_arr)
-                image.save(f'image_{t}.png')  # Save the image
                 
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
         self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
@@ -430,7 +452,7 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
     
     def setup_camera(self):
         # Camera settings
-        self.width_cam, self.height_cam = 1280, 1280
+        self.width_cam, self.height_cam = 640, 640
         fov = 60
         aspect = self.width_cam / self.height_cam
         near = 0.02
@@ -464,6 +486,8 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
         via_points = []
         self.task_success_label = 0
         self.constraint_added = 0
+        save_img_id_k = 0
+        save_img_id = 0
         for t in range(num_steps):
             # Apply the calculated torques to all joints at once  
             if t > clench_time*240:
@@ -534,14 +558,22 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
                               + [pos_table[2],] + self.vel_gripper + [vel_table[2],])
                 via_points.append(new_states)
 
+                # Save camera images
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/gripper-sim/6-10-K-png/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
+                save_img_id_k += 1
+
             if self.gui:
                 time.sleep(1/240)
 
             # Save camera images
-            if t % 50 == 0:
-                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix, lightDirection=[0,1,0])[2]  # Capture the image
+            if t % 4 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
                 image = Image.fromarray(img_arr)
-                image.save(f'image_{t}.png')  # Save the image
+                # image.save(f'image_{t}.png')  # Save the image
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/gripper-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+                save_img_id += 1
         
         self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
         self.vel_object, _ = p.getBaseVelocity(self.objectUid)

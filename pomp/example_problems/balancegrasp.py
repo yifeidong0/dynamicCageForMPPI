@@ -65,7 +65,7 @@ class BalanceGrasp:
         self.y_obstacle = 0 # the lower rim y_pos of the obstacle
         self.obstacle_borderline = [[-self.offset, self.y_obstacle], [self.x_range+self.offset, self.y_obstacle]]
         self.angle_slope = 6/12 * math.pi  # equivalent to on a slope
-        self.lateral_friction_coef = .8
+        self.lateral_friction_coef = .4
         self.task_goal_margin = 0.2
         self.maneuver_goal_margin = .6
         self.maneuver_goal_tmax = 1.5

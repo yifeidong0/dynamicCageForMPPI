@@ -8,7 +8,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePush" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+problem_name = "Gripper" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
 gui = 1
 num_via_points = 10
 num_trajs = 6
@@ -32,7 +32,7 @@ if problem_name == 'PlanePush':
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
 if problem_name == 'BalanceGrasp':
-    total_time = 3
+    total_time = 2.5
     num_state_planner = 9
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
@@ -47,7 +47,7 @@ if problem_name == 'BalanceGrasp':
     sim = scriptedMovementSimBalanceGrasp(cage, gui=gui)
 if problem_name == 'BoxPivot':
     for_paper_version = 1
-    total_time = 2.5
+    total_time = 1.5
     num_state_planner = 8
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance_spring', 'S_stick_spring', 'S_engage_spring', 'shortest_distance_ground', 'S_stick_ground', 'S_engage_ground']
@@ -124,9 +124,10 @@ for i in range(num_trajs):
     
     sim.reset_states(x_init)
     if problem_name == 'BoxPivot':
-        _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1, id_traj=i,) # get cutdown time
-        sim.reset_states(x_init)
-        x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points, i, do_cutdown_test=0)
+        # _ = sim.run_forward_sim(num_via_points=1, do_cutdown_test=1, id_traj=i,) # get cutdown time
+        # sim.reset_states(x_init)
+        # x_news = sim.run_forward_sim(sim.cutoff_t, num_via_points, i, do_cutdown_test=0)
+        x_news = sim.run_forward_sim(total_time, num_via_points, i, do_cutdown_test=0)
     else:
         x_news = sim.run_forward_sim(total_time, num_via_points, i)
     heuristics = sim.heuristics_traj
