@@ -4,6 +4,7 @@ import time
 import math
 import numpy as np
 
+
 # Physics simulation setup
 p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
