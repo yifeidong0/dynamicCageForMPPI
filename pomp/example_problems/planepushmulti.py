@@ -10,8 +10,9 @@ from ..bullet.forwardsimulator import *
 from ..structures.toolfunc import *
 import math
 import csv
+"""Planar push problem with a gripper and multiple objects."""
 
-class PlanePushControlSpace(ControlSpace):
+class PlanePushMultiControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
         self.dynamics_sim = cage.dynamics_sim
@@ -32,30 +33,30 @@ class PlanePushControlSpace(ControlSpace):
     
     def eval(self, x, u, amount, print_via_points=False, is_planner=False):
         # x_i, y_i, theta_i, vx_i, vy_i, alpha_i, xr_i, yr_i, thetar_i = x # state space, 9D (3+3: cage, 3: robot gripper)
-        t, ax, ay, omega = u # control space
+        t = u[0] # control space
         tc = t * amount
-        mu = [tc, ax, ay, omega]
+        mu = [tc,] + u[1:]
 
         xaug = x if is_planner else (x + self.cage.gripper_vel)
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
 
         # Make theta fall in [-pi, pi]
-        x_new[2] = limit_angle_to_pi(x_new[2])
-        x_new[8] = limit_angle_to_pi(x_new[8])
+        # x_new[2] = limit_angle_to_pi(x_new[2])
+        # x_new[8] = limit_angle_to_pi(x_new[8])
 
-        if print_via_points: # TODO
+        if print_via_points:
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
 
         if is_planner:
             return x_new
         else:
-            return x_new[:9]
+            return x_new[:-3]
     
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class PlanePush:
+class PlanePushMulti:
     def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0, paper_version=1):
         self.nx = 9 # state space dimension
         self.nu = 4 # control space dimension
@@ -149,7 +150,7 @@ class PlanePush:
 
     def controlSpace(self):
         # System dynamics
-        return PlanePushControlSpace(self)
+        return PlanePushMultiControlSpace(self)
 
     def workspace(self):
         # For visualization
@@ -242,7 +243,7 @@ class PlanePush:
                         BoxSet(bmin, bmax))
 
 
-class PlanePushObjectiveFunction(ObjectiveFunction):
+class PlanePushMultiObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -274,7 +275,7 @@ class PlanePushObjectiveFunction(ObjectiveFunction):
         return max(c, 1e-5)
 
 
-def PlanePushTest(dynamics_sim, 
+def PlanePushMultiTest(dynamics_sim, 
                 # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                 #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 data = [1, .4, 0., 0.0, 0.0, 0, # for paper visualization
@@ -282,12 +283,12 @@ def PlanePushTest(dynamics_sim,
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
                 ):
-    p = PlanePush(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
+    p = PlanePushMulti(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
 
     # if p.checkStartFeasibility():
     #     print('In collision!')
     #     return False
-    objective = PlanePushObjectiveFunction(p)
+    objective = PlanePushMultiObjectiveFunction(p)
     return PlanningProblem(objective.space,
                            p.startState(),
                            p.goalSet(),

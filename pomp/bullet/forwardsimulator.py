@@ -279,6 +279,99 @@ class forwardSimulationPlanePushReal(forwardSimulationPlanePush):
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
 
+class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
+    def set_params(self, params):
+        self.angle_slope = params[5] # equivalent to on a slope
+        p.setGravity(0, 
+                     self.g*math.sin(self.angle_slope),
+                     self.g*math.cos(self.angle_slope),)
+
+        # Kinodynamics
+        self.mass_object = params[0]
+        self.moment_object = params[1] # moment of inertia
+        self.pos_object = [1000,0,0]
+        self.quat_object = p.getQuaternionFromEuler([math.pi/2,0,0])
+        self.vel_object = [.1,0,0]
+        
+        self.mass_gripper = params[2]
+        self.moment_gripper = params[3]
+        self.y_obstacle = params[4]
+        self.object_name = params[6] # 'box', 'cylinder'
+        self.gripper_name = params[7] # 'box', 'cylinder', 'bowl'
+        self.lateral_friction_coef = params[8]
+        self.scale_factor = params[9]
+
+        self.pos_gripper = [1000,0,2]
+        self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
+        self.vel_gripper = [0,0,0]
+        self.vel_ang_gripper = [0,0,0]
+
+        self.z_bodies = 0.03/2 * self.scale_factor
+        self.half_extent_obstacle = [7, .5, self.z_bodies]
+        self.pos_obstacle = [5,self.y_obstacle-self.half_extent_obstacle[1],0]
+        self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
+
+    def create_shapes(self):
+        # Create a plane
+        #  The default frictional coefficients used by PyBullet are 0.5 for the lateral friction and 0 for both the rolling and spinning.
+        self.planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        
+        # Create an object
+        if self.object_name == 'rectangle':
+            self.objectUid = p.loadURDF("asset/real-world/rectangle-object/rectangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'triangle':
+            self.objectUid = p.loadURDF("asset/real-world/triangle-object/triangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'convex':
+            self.objectUid = p.loadURDF("asset/real-world/convex-object/convex-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'concave':
+            self.objectUid = p.loadURDF("asset/real-world/concave-object/concave-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        elif self.object_name == 'irregular':
+            self.objectUid = p.loadURDF("asset/real-world/irregular-object/irregular-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
+        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        
+        # Create a robot
+        if self.gripper_name == 'circle':
+            self.gripperUid = p.loadURDF("asset/real-world/circle-gripper/circle-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        elif self.gripper_name == 'jaw':
+            self.gripperUid = p.loadURDF("asset/real-world/jaw-gripper/jaw-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        
+        # Create a static obstacle
+        obstacleId = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.half_extent_obstacle)
+        self.obstacleUid = p.createMultiBody(0, 
+                                       obstacleId, 
+                                       self.visualShapeId, 
+                                       self.pos_obstacle,
+                                       self.quat_obstacle)
+        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        
+    def reset_states(self, states):
+        xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
+
+        # Object kinematics
+        self.pos_object = [xo, yo, 0.0]
+        self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
+        self.vel_object = [vxo, vyo, 0.0]
+        self.vel_ang_object = [0.0, 0.0, omegao]
+
+        # Gripper kinematics
+        self.pos_gripper = [xg, yg, 0.0]
+        self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
+        self.vel_gripper = [vxg, vyg, 0.0]
+        self.vel_ang_gripper = [0.0, 0.0, omegag]
+
+        # Reset the kinematics
+        p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+        p.resetBasePositionAndOrientation(self.gripperUid, self.pos_gripper, self.quat_gripper)
+        p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
+        p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
+
+
 class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):
     def __init__(self, gui=False):
         super().__init__(gui=gui)
