@@ -245,7 +245,7 @@ class Geometric2DCSpace(BoxConfigurationSpace):
 
     def drawRobotGL(self,q, color=[0,.6,0,1]):
         glColor4f(*color)
-        glPointSize(85.0)
+        glPointSize(90.0)
         self.beginDraw()
         glBegin(GL_POINTS)
         glVertex2f(q[0],q[1])

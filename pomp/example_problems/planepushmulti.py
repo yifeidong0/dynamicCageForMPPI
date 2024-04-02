@@ -15,12 +15,13 @@ import csv
 class PlanePushMultiControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
+        self.num_objects = cage.num_objects
         self.dynamics_sim = cage.dynamics_sim
         self.dynamics_sim.set_params(cage.params)
         self.dynamics_sim.create_shapes()
         self.obstacles = self.cage.obstacles
         self.cost_inv_coef = self.cage.cost_inv_coef
-        self.is_plane_push = True
+        self.is_plane_push_multi = True
 
     def configurationSpace(self):
         return self.cage.configurationSpace()
@@ -93,7 +94,7 @@ class PlanePushMulti:
             self.cost_inv_coef = -1e0
             self.maneuver_goal_tmax = 1
 
-        self.obstacle_borderline = [[-self.offset,self.y_obstacle+0.1], [self.x_range+self.offset, self.y_obstacle+0.1]] # for OpenGL vis, 0.1 for offset
+        self.obstacle_borderline = [[-self.offset, self.y_obstacle+0.1], [self.x_range+self.offset, self.y_obstacle+0.1]] # for OpenGL vis, 0.1 for offset
 
         self.object_name = 'cylinder' # 'box', 'cylinder'
         self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
@@ -225,12 +226,12 @@ class PlanePushMulti:
 
             # Calculate arc center
             if self.gripper_vel_theta >= 0:
-                arc_center = self.start_state[6:8] + perp_direction * arc_radius
+                arc_center = self.start_state[-3:-1] + perp_direction * arc_radius
             else:
-                arc_center = self.start_state[6:8] - perp_direction * arc_radius
+                arc_center = self.start_state[-3:-1] - perp_direction * arc_radius
         else:
             # Handle linear motion case or set a default large radius
-            arc_center = self.start_state[6:8]
+            arc_center = self.start_state[-3:-1]
             arc_radius = 0.5 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
             return MultiSet(*[ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
@@ -238,7 +239,7 @@ class PlanePushMulti:
                             BoxSet(bmin_ee, bmax_ee),)
         
         # Calculate arc angle range
-        angle_to_point = np.arctan2(self.start_state[7] - arc_center[1], self.start_state[6] - arc_center[0])
+        angle_to_point = np.arctan2(self.start_state[-2] - arc_center[1], self.start_state[-3] - arc_center[0])
 
         # Normalize the angle_to_point within the range [0, 2π)
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
@@ -308,7 +309,7 @@ def PlanePushMultiTest(dynamics_sim,
                 # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                 #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # for paper visualization
-                        1.3, 0.4, 0.0, 0.0, 0.0, 0.0, 
+                        1.2, 1.5, 0.0, 0.0, 0.0, 0.0, 
                         1.0, 0.1, 0.0, 0.0, 1.0, 0.2,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,

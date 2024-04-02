@@ -1149,7 +1149,7 @@ class CostSpaceRRT:
         success_prob = 0
         non_maneuverability_prob = 0
         count_success = 0
-        count_maneuver = 0
+        count_non_maneuver = 0
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
@@ -1157,7 +1157,7 @@ class CostSpaceRRT:
                 count_success += 1
                 success_prob += prob_density
             if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
-                count_maneuver += 1
+                count_non_maneuver += 1
                 non_maneuverability_prob += prob_density
 
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
@@ -1167,7 +1167,7 @@ class CostSpaceRRT:
         success_metric = success_prob / total_prob
 
         print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
-        print("Count_success:", count_success, "Count_non_maneuver:", count_maneuver)
+        print("Count_success:", count_success, "Count_non_maneuver:", count_non_maneuver)
         return success_metric, maneuver_metric
     
     def getBestPath(self,obj,goal=None):
@@ -1248,7 +1248,7 @@ class CostSpaceEST:
         if self.est.pruner:
             self.est.pruner.costMax = self.bestPathCost
             
-    def planMore(self, iters, do_pruning=1):
+    def planMore(self, iters, do_pruning=0):
         foundNewPath = False
         for n in range(iters):
             self.numIters.add(1)
@@ -1313,7 +1313,7 @@ class CostSpaceEST:
         success_prob = 0
         non_maneuverability_prob = 0
         count_success = 0
-        count_maneuver = 0
+        count_non_maneuver = 0
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
@@ -1321,13 +1321,13 @@ class CostSpaceEST:
                 count_success += 1
                 success_prob += prob_density
             if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
-                count_maneuver += 1
+                count_non_maneuver += 1 # for multi-object scenario, it means none of the objects are captured. TODO: at least one of the objects is not captured.
                 non_maneuverability_prob += prob_density
 
         maneuver_metric = 1 - non_maneuverability_prob / total_prob
         success_metric = success_prob / total_prob
         print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
-        print("Count_success:", count_success, "Count_non_maneuver:", count_maneuver)
+        print("Count_success:", count_success, "Count_non_maneuver:", count_non_maneuver)
         return success_metric, maneuver_metric
         
     def getBestPathCost(self):

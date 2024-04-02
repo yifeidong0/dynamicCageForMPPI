@@ -304,9 +304,9 @@ class BoxSet(Set):
         glColor4f(*c)  # White color with 50% transparency
 
         glBegin(GL_QUADS)
-        glVertex2f(*self.bmin)
+        glVertex2f(*self.bmin[:2])
         glVertex2f(self.bmax[0],self.bmin[1])
-        glVertex2f(*self.bmax)
+        glVertex2f(*self.bmax[:2])
         glVertex2f(self.bmin[0],self.bmax[1])
         glEnd()
 

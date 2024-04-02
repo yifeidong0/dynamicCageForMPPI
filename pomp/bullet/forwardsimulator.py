@@ -309,7 +309,7 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         # self.z_bodies = 0.03/2 * self.scale_factor
         self.z_bodies = 0.03/2
         self.half_extent_obstacle = [7, .5, self.z_bodies]
-        self.pos_obstacle = [5,self.y_obstacle-self.half_extent_obstacle[1],0]
+        self.pos_obstacle = [5,self.y_obstacle+self.half_extent_obstacle[1],0]
         self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
     def create_shapes(self):
@@ -338,7 +338,7 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
                                                         self.quat_object))
             elif self.object_name == 'cylinder':
                 # objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
-                objectId.append(p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies))
+                objectId.append(p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies))
                 self.objectUid.append(p.createMultiBody(self.mass_object, 
                                                         objectId[i], 
                                                         self.visualShapeId, 

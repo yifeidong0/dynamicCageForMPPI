@@ -188,6 +188,15 @@ class PlanVisualizationProgram(GLProgram):
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[:3], [.6, .2]) # draw rectangluar object
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
+        elif hasattr(self.problem.controlSpace, "is_plane_push_multi"):
+            self.problem.visualizer.drawGripperGL([2,2,0], [10,10], [79/255.0, 198/255.0, 1, 1]) # draw background color (safe set)
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_plane_push", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_plane_push", color='taskGoal')
+            for i in range(self.problem.controlSpace.num_objects):
+                self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6*i:6*i+2]) # draw circular objects
+            self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[-3:], [.6, .1]) # draw rectangular manipulator
+            self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar", color='maneuverGoal')
             self.problem.visualizer.drawLineGL(*self.problem.space.obstacle_borderline) # obstacle border represented by a line
