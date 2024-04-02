@@ -299,77 +299,180 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         self.object_name = params[6] # 'box', 'cylinder'
         self.gripper_name = params[7] # 'box', 'cylinder', 'bowl'
         self.lateral_friction_coef = params[8]
-        self.scale_factor = params[9]
+        self.num_objects = params[9]
 
         self.pos_gripper = [1000,0,2]
         self.quat_gripper = p.getQuaternionFromEuler([0,0,0])
         self.vel_gripper = [0,0,0]
         self.vel_ang_gripper = [0,0,0]
 
-        self.z_bodies = 0.03/2 * self.scale_factor
+        # self.z_bodies = 0.03/2 * self.scale_factor
+        self.z_bodies = 0.03/2
         self.half_extent_obstacle = [7, .5, self.z_bodies]
         self.pos_obstacle = [5,self.y_obstacle-self.half_extent_obstacle[1],0]
         self.quat_obstacle = p.getQuaternionFromEuler([0,0,0])
 
     def create_shapes(self):
         # Create a plane
-        #  The default frictional coefficients used by PyBullet are 0.5 for the lateral friction and 0 for both the rolling and spinning.
-        self.planeUid = p.loadURDF("plane.urdf", basePosition=[0,0,-self.z_bodies])
+        planeId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[10, 10, self.z_bodies])
+        self.planeUid = p.createMultiBody(0, 
+                                            planeId, 
+                                            self.visualShapeId, 
+                                            [0,0,-2*self.z_bodies],
+                                            p.getQuaternionFromEuler([0,0,0]))
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
-        
+        # p.changeVisualShape(self.planeUid, -1, rgbaColor=[193/255, 193/255, 193/255, 1])
+
         # Create an object
-        if self.object_name == 'rectangle':
-            self.objectUid = p.loadURDF("asset/real-world/rectangle-object/rectangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
-        elif self.object_name == 'triangle':
-            self.objectUid = p.loadURDF("asset/real-world/triangle-object/triangle-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
-        elif self.object_name == 'convex':
-            self.objectUid = p.loadURDF("asset/real-world/convex-object/convex-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
-        elif self.object_name == 'concave':
-            self.objectUid = p.loadURDF("asset/real-world/concave-object/concave-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
-        elif self.object_name == 'irregular':
-            self.objectUid = p.loadURDF("asset/real-world/irregular-object/irregular-object.urdf", self.pos_object, self.quat_object, globalScaling=1)
-        p.changeDynamics(self.objectUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
-                         rollingFriction=0, linearDamping=0, angularDamping=0)
+        objectId = []
+        self.objectUid = []
+        for i in range(self.num_objects):
+            if self.object_name == 'box':
+                # objectId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .2, self.z_bodies])
+                objectId.append(p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .2, self.z_bodies]))
+                self.objectUid.append(p.createMultiBody(self.mass_object, 
+                                                        objectId[i], 
+                                                        self.visualShapeId, 
+                                                        self.pos_object,
+                                                        self.quat_object))
+            elif self.object_name == 'cylinder':
+                # objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
+                objectId.append(p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies))
+                self.objectUid.append(p.createMultiBody(self.mass_object, 
+                                                        objectId[i], 
+                                                        self.visualShapeId, 
+                                                        self.pos_object,
+                                                        self.quat_object))
+            p.changeDynamics(self.objectUid[i], -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+            p.changeVisualShape(self.objectUid[i], -1, rgbaColor=[247/255, 143/255, 0/255, 1])
         
         # Create a robot
-        if self.gripper_name == 'circle':
-            self.gripperUid = p.loadURDF("asset/real-world/circle-gripper/circle-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
-        elif self.gripper_name == 'jaw':
-            self.gripperUid = p.loadURDF("asset/real-world/jaw-gripper/jaw-gripper.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
+        if self.gripper_name == 'box':
+            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
+            self.gripperUid = p.createMultiBody(self.mass_gripper, 
+                                           gripperId, 
+                                           self.visualShapeId, 
+                                           self.pos_gripper,
+                                           self.quat_gripper)
+        elif self.gripper_name == 'cylinder':
+            gripperId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies)
+            self.gripperUid = p.createMultiBody(self.mass_gripper,
+                                                gripperId,
+                                                self.visualShapeId,
+                                                self.pos_gripper,
+                                                self.quat_gripper)
+        elif self.gripper_name == 'bowl':
+            self.gripperUid = p.loadURDF("asset/bowl/2d-bowl.urdf", self.pos_gripper, self.quat_gripper, globalScaling=1)
         p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.gripperUid, -1, rgbaColor=[112/255, 190/255, 83/255, 1])
         
         # Create a static obstacle
         obstacleId = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.half_extent_obstacle)
         self.obstacleUid = p.createMultiBody(0, 
-                                       obstacleId, 
-                                       self.visualShapeId, 
-                                       self.pos_obstacle,
-                                       self.quat_obstacle)
+                                            obstacleId, 
+                                            self.visualShapeId, 
+                                            self.pos_obstacle,
+                                            self.quat_obstacle)
         p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                          rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeVisualShape(self.obstacleUid, -1, rgbaColor=[.3,.3,.3,1])
         
     def reset_states(self, states):
-        xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
+        # xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
 
         # Object kinematics
-        self.pos_object = [xo, yo, 0.0]
-        self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
-        self.vel_object = [vxo, vyo, 0.0]
-        self.vel_ang_object = [0.0, 0.0, omegao]
+        # self.pos_object = [xo, yo, 0.0]
+        # self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
+        # self.vel_object = [vxo, vyo, 0.0]
+        # self.vel_ang_object = [0.0, 0.0, omegao]
+        self.pos_object = [[states[6*i], states[6*i+1], 0.0] for i in range(self.num_objects)]
+        self.eul_object = [[0.0, 0.0, states[6*i+2]] for i in range(self.num_objects)]
+        self.quat_object = [p.getQuaternionFromEuler([0.0, 0.0, states[6*i+2]]) for i in range(self.num_objects)]
+        self.vel_object = [[states[6*i+3], states[6*i+4], 0.0] for i in range(self.num_objects)]
+        self.vel_ang_object = [[0.0, 0.0, states[6*i+5]] for i in range(self.num_objects)]
 
         # Gripper kinematics
-        self.pos_gripper = [xg, yg, 0.0]
-        self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, thetag])
-        self.vel_gripper = [vxg, vyg, 0.0]
-        self.vel_ang_gripper = [0.0, 0.0, omegag]
+        self.pos_gripper = [states[-6], states[-5], 0.0]
+        self.quat_gripper = p.getQuaternionFromEuler([0.0, 0.0, states[-4]])
+        self.vel_gripper = [states[-3], states[-2], 0.0]
+        self.vel_ang_gripper = [0.0, 0.0, states[-1]]
 
         # Reset the kinematics
-        p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+        # p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
+        # p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
+        for i in range(self.num_objects):
+            p.resetBasePositionAndOrientation(self.objectUid[i], self.pos_object[i], self.quat_object[i])
+            p.resetBaseVelocity(self.objectUid[i], self.vel_object[i], self.vel_ang_object[i])
         p.resetBasePositionAndOrientation(self.gripperUid, self.pos_gripper, self.quat_gripper)
-        p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
+
+    def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
+        # t, ax, ay, omega = inputs
+        t = inputs[0]
+        interval = int(int(t*240)/num_via_points)
+        interval = 3 if interval==0 else interval
+
+        # Step the simulation
+        via_points = []
+        # force_on_object = [self.mass_object*ax, self.mass_object*ay, 0.0]
+        # torque_on_object = [0.0, 0.0, self.moment_object*omega]
+        force_on_object = [[self.mass_object*inputs[3*i+1], self.mass_object*inputs[3*i+2], 0.0] for i in range(self.num_objects)]
+        torque_on_object = [[0.0, 0.0, self.moment_object*inputs[3*i+3],] for i in range(self.num_objects)]
+        for i in range(int(t*240)):
+            # Apply external force on object
+            for i in range(self.num_objects):
+                self.pos_object[i],_ = p.getBasePositionAndOrientation(self.objectUid[i])
+                p.applyExternalForce(self.objectUid[i], -1, 
+                                    force_on_object[i], # gravity compensated 
+                                    self.pos_object[i], 
+                                    p.WORLD_FRAME)
+                p.applyExternalTorque(self.objectUid[i], -1,
+                                    torque_on_object[i],
+                                    p.WORLD_FRAME)
+            # p.applyExternalForce(self.objectUid, -1, 
+            #                     force_on_object, # gravity compensated 
+            #                     self.pos_object, 
+            #                     p.WORLD_FRAME)
+            # p.applyExternalTorque(self.objectUid, -1, 
+            #                     torque_on_object,
+            #                     p.WORLD_FRAME)
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if print_via_points and (i % interval == 0 or i == int(t*240)-1):
+                via_points.append([self.pos_object[0][0], self.pos_object[0][1]])
+
+            if self.gui:
+                time.sleep(10/240)
+
+        # Get the object and gripper states
+        # self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+        # self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+        # self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+        self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
+        self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
+        self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
+        for i in range(self.num_objects):
+            self.pos_object[i], self.quat_object[i] = p.getBasePositionAndOrientation(self.objectUid[i])
+            self.eul_object[i] = p.getEulerFromQuaternion(self.quat_object[i]) # rad
+            self.vel_object[i], self.vel_ang_object[i] = p.getBaseVelocity(self.objectUid[i])
+
+        # new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
+        #               self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
+        #               self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
+        #               self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
+        #               ]
+        new_states = []
+        for i in range(self.num_objects):
+            new_states = new_states + [self.pos_object[i][0], self.pos_object[i][1], self.eul_object[i][2],
+                                    self.vel_object[i][0], self.vel_object[i][1], self.vel_ang_object[i][2],]
+        new_states = new_states + [self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
+                                   self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2],]
+        
+        return new_states, via_points
 
 
 class forwardSimulationPlanePushPlanner(forwardSimulationPlanePush):

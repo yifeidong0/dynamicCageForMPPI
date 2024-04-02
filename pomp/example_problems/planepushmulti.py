@@ -58,8 +58,10 @@ class PlanePushMultiControlSpace(ControlSpace):
 
 class PlanePushMulti:
     def __init__(self, data, dynamics_sim, save_hyperparams=False, lateral_friction_coef=0.3, quasistatic_motion=0, paper_version=1):
-        self.nx = 9 # state space dimension
-        self.nu = 4 # control space dimension
+        self.dim_se2 = 3
+        self.num_objects = int(len(data) / (2*self.dim_se2)) - 1
+        self.nx = len(data) - self.dim_se2 # state space dimension
+        self.nu = 1 + self.num_objects*self.dim_se2 # control space dimension
         self.dynamics_sim = dynamics_sim
         self.max_velocity = 100
         self.max_ang_velocity = 10 # 2
@@ -93,8 +95,8 @@ class PlanePushMulti:
 
         self.obstacle_borderline = [[-self.offset,self.y_obstacle+0.1], [self.x_range+self.offset, self.y_obstacle+0.1]] # for OpenGL vis, 0.1 for offset
 
-        self.object_name = 'box' # 'box', 'cylinder'
-        self.gripper_name = 'cylinder' # 'box', 'cylinder', 'bowl'
+        self.object_name = 'cylinder' # 'box', 'cylinder'
+        self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
         self.mass_object = 1
         self.mass_gripper = 4
         factor_object = 1e-1 if self.object_name == 'box' else 1e-3
@@ -104,26 +106,27 @@ class PlanePushMulti:
         self.half_extents_object = [0.6, 0.2,] # for box
 
         self.params = [self.mass_object, self.moment_object, self.mass_gripper, self.moment_gripper, self.y_obstacle, self.angle_slope,
-                       self.object_name, self.gripper_name, self.lateral_friction_coef,]
+                       self.object_name, self.gripper_name, self.lateral_friction_coef, self.num_objects]
         self.c_space_boundary = [[0, self.x_range], [0, self.y_range], [-0.8*math.pi, 0.8*math.pi], 
                                  [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  [-self.x_range, self.x_range], [-self.y_range, self.y_range], [-0.8*math.pi, 0.8*math.pi],
                                  [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_velocity, 0.8*self.max_velocity], [-0.8*self.max_ang_velocity, 0.8*self.max_ang_velocity], 
                                  ] # shrink the c-space a bit for MPPI
-        
+        self.c_space_boundary = self.c_space_boundary[:2*self.dim_se2] * self.num_objects + self.c_space_boundary[2*self.dim_se2:]
+
         # Gripper moving velocity (constant)
         if not quasistatic_motion:
-            self.gripper_vel = data[9:]
-            self.gripper_vel_x = data[9]
-            self.gripper_vel_y = data[10]
-            self.gripper_vel_theta = data[11]
+            self.gripper_vel = data[-3:]
+            self.gripper_vel_x = data[-3]
+            self.gripper_vel_y = data[-2]
+            self.gripper_vel_theta = data[-1]
         else:
             self.gripper_vel = [0, 0, 0]
             self.gripper_vel_x = 0
             self.gripper_vel_y = 0
             self.gripper_vel_theta = 0
 
-        self.start_state = data[:9]
+        self.start_state = data[:-3]
         self.obstacles = []
         self.gravity = -9.81
 
@@ -145,8 +148,8 @@ class PlanePushMulti:
                 csv_writer.writerow([header, data])
 
     def controlSet(self):
-        return BoxSet([-self.max_acceleration, -self.max_acceleration, -self.max_ang_acceleration], 
-                      [self.max_acceleration, self.max_acceleration, self.max_ang_acceleration])
+        return BoxSet([-self.max_acceleration, -self.max_acceleration, -self.max_ang_acceleration] * self.num_objects, 
+                      [self.max_acceleration, self.max_acceleration, self.max_ang_acceleration] * self.num_objects)
 
     def controlSpace(self):
         # System dynamics
@@ -164,11 +167,12 @@ class PlanePushMulti:
         wspace.box.bmin = [-self.offset,-self.offset]
         wspace.box.bmax = [self.x_range+self.offset, self.y_range+self.offset]
         wspace.addObstacleParam(self.obstacles)
-        res =  MultiConfigurationSpace(wspace,
+        res =  MultiConfigurationSpace(
+                                       *[wspace,
                                        BoxConfigurationSpace([-math.pi],[math.pi]),
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]), 
                                        BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),
-                                       BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),
+                                       BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),]*self.num_objects,
                                        BoxConfigurationSpace([-2.5*self.x_range],[2.5*self.x_range]),
                                        BoxConfigurationSpace([-2.5*self.y_range],[2.5*self.y_range]),
                                        BoxConfigurationSpace([-math.pi],[math.pi])
@@ -180,21 +184,34 @@ class PlanePushMulti:
 
     def taskGoalSet(self, box_thickness=0.2):
         wsbmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin,]
-        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         wsbmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin,]
-        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        return MultiSet(BoxSet(wsbmin, wsbmax), BoxSet(bmin, bmax)) # multiset: consistent with other sets
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
+        bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
+        bmax_ee = [2.5*self.x_range, 2.5*self.y_range, math.pi,]
+        return MultiSet(*[BoxSet(wsbmin+bmin, wsbmax+bmax),]*self.num_objects, 
+                        BoxSet(bmin_ee, bmax_ee)) # multiset: consistent with other sets
 
     def goalSet(self):
         # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
-        # return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
-        #                 BoxSet(bmin, bmax))
-        return self.maneuverGoalSet()
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
+        bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
+        bmax_ee = [2.5*self.x_range, 2.5*self.y_range, math.pi,]
+        return MultiSet(*[RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
+                          BoxSet(bmin, bmax),]*self.num_objects,
+                        BoxSet(bmin_ee, bmax_ee)
+                        )
+        # return self.maneuverGoalSet()
     
     def maneuverGoalSet(self, default_radius=1000):
-        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
+        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
+        bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
+        bmax_ee = [2.5*self.x_range, 2.5*self.y_range, math.pi,]
         arcbmin = [-self.offset, -self.offset]
         arcbmax = [self.x_range+self.offset, self.y_range+self.offset]
 
@@ -216,8 +233,9 @@ class PlanePushMulti:
             arc_center = self.start_state[6:8]
             arc_radius = 0.5 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
-                            BoxSet(bmin, bmax))
+            return MultiSet(*[ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+                              BoxSet(bmin, bmax),]*self.num_objects,
+                            BoxSet(bmin_ee, bmax_ee),)
         
         # Calculate arc angle range
         angle_to_point = np.arctan2(self.start_state[7] - arc_center[1], self.start_state[6] - arc_center[0])
@@ -239,9 +257,11 @@ class PlanePushMulti:
             arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
-                        BoxSet(bmin, bmax))
-
+        # return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        #                 BoxSet(bmin, bmax))
+        return MultiSet(*[ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+                          BoxSet(bmin, bmax),]*self.num_objects,
+                        BoxSet(bmin_ee, bmax_ee),)
 
 class PlanePushMultiObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
@@ -260,26 +280,36 @@ class PlanePushMultiObjectiveFunction(ObjectiveFunction):
         xnext = self.space.nextState(x,u)
         self.xnext = xnext
 
-        # Calculating change in position and orientation
-        delta_x = xnext[0] - x[0]
-        delta_y = xnext[1] - x[1]
-        delta_theta = math.atan2(math.sin(xnext[2] - x[2]), math.cos(xnext[2] - x[2]))  # More robust angle difference
+        W = 0
+        for i in range(self.cage.num_objects):
+            # Calculating change in position and orientation
+            delta_x = xnext[2*self.cage.dim_se2*i] - x[2*self.cage.dim_se2*i]
+            delta_y = xnext[2*self.cage.dim_se2*i+1] - x[2*self.cage.dim_se2*i+1]
+            delta_theta = math.atan2(math.sin(xnext[2*self.cage.dim_se2*i+2] - x[2*self.cage.dim_se2*i+2]), 
+                                     math.cos(xnext[2*self.cage.dim_se2*i+2] - x[2*self.cage.dim_se2*i+2]))
+            W += abs(m * u[3*i+1] * delta_x + m * u[3*i+2] * delta_y + I * u[3*i+3] * delta_theta)
 
-        # Work done by forces and torque
-        W = m * u[1] * delta_x + m * u[2] * delta_y + I * u[3] * delta_theta
+        # # Calculating change in position and orientation
+        # delta_x = xnext[0] - x[0]
+        # delta_y = xnext[1] - x[1]
+        # delta_theta = math.atan2(math.sin(xnext[2] - x[2]), math.cos(xnext[2] - x[2]))  # More robust angle difference
 
-        # Considering both positive and negative work
-        c = abs(W)
+        # # Work done by forces and torque
+        # W = m * u[1] * delta_x + m * u[2] * delta_y + I * u[3] * delta_theta
+
+        # # Considering both positive and negative work
+        # c = abs(W)
         
         # Include a small positive value to avoid zero cost in cases where it's needed
-        return max(c, 1e-5)
+        return max(W, 1e-9)
 
 
 def PlanePushMultiTest(dynamics_sim, 
                 # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                 #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                data = [1, .4, 0., 0.0, 0.0, 0, # for paper visualization
-                        1, .1, 0.0, 0.0, 1, 0.2],
+                data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # for paper visualization
+                        1.3, 0.4, 0.0, 0.0, 0.0, 0.0, 
+                        1.0, 0.1, 0.0, 0.0, 1.0, 0.2,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
                 ):
