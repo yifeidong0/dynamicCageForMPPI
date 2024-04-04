@@ -162,6 +162,156 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
         return via_points
 
 
+class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
+    def __init__(self, cage, gui=False):
+        super().__init__(gui=gui)
+        self.set_params(cage.params)
+        self.create_shapes()
+        self.setup_camera()
+
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 640, 640
+        fov = 35
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [1, 1, 4.3]  # Example values, adjust as needed
+        camera_target = [1, 1, 1]  # Point the camera is looking at
+        camera_up = [0, 1, 0]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
+    # Function to calculate the Euclidean distance between two points
+    def distance(self, p1, p2):
+        return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
+
+    def sample_init_state(self, min_distance = 0.25):
+        # init_neutral = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,
+                        # 1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
+                        # 1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
+                        # 1.0, 0.1, 0.0, 0.0, 1.0, 0.2,]
+        # Generate points
+        points = []
+        while len(points) < self.num_objects:
+            # Generate a new point
+            new_point = [random.uniform(0.7, 1.3), random.uniform(0.5, 1.0), 0.0,
+                         random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0.0]
+            
+            # Check if the new point is far enough from all existing points
+            if all(self.distance(new_point, existing_point) > min_distance for existing_point in points):
+                points.append(new_point)
+
+        # xo = random.uniform(-0.9,1.1) # paper_version
+        # yo = random.uniform(.4,.4)
+        # thetao = random.uniform(-math.pi/18, math.pi/18)
+        # vxo = random.uniform(-0.0, 0.0)
+        # vyo = random.uniform(-0.0, 0.0)
+        # omegao = random.uniform(-0.0, 0.0)
+        xg = (points[0][0]+points[1][0]+points[2][0])/3 + random.uniform(-0.3, 0.3)
+        yg = min(points[0][1], points[1][1], points[2][1]) + random.uniform(-0.35, -0.25)
+        vxg = random.uniform(-0.05, 0.05)
+        vyg = random.uniform(0.2, .5)
+        init_state = [xo, yo, thetao, vxo, vyo, omegao,
+                      xg, yg, 0, vxg, vyg, 0] # TODO!!
+
+        self.lateral_friction_coef = np.random.uniform(0.2,0.4)
+        # self.lateral_friction_coef_perturb = self.lateral_friction_coef + np.random.uniform(-0.1,0.1)
+        p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        for i in range(self.num_objects):
+            p.changeDynamics(self.objectUid[i], -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                                rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.gripperUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        p.changeDynamics(self.obstacleUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)        
+        return init_state
+
+    def run_forward_sim(self, total_time=10, num_via_points=20, id_traj=0, do_cutdown_test=False):
+        num_steps = int(total_time * 240)  # Number of time steps
+        interval = int(num_steps/num_via_points)
+        interval = 3 if interval==0 else interval
+        save_img_id = 0
+
+        # Step the simulation
+        via_points = []
+        self.heuristics_traj = []
+        self.task_success_label = 0
+        for t in range(num_steps):
+            # Apply external force
+            self.pos_object,_ = p.getBasePositionAndOrientation(self.objectUid)
+            self.pos_gripper,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            rand_force = [random.uniform(-0.4,0.4), self.lateral_friction_coef/0.3*random.uniform(7,11), 0]
+            p.applyExternalForce(self.gripperUid, -1, 
+                                rand_force,
+                                #  [0,10,0] ,
+                                self.pos_gripper, 
+                                p.WORLD_FRAME)
+
+            # Print object via-points along the trajectory for visualization
+            if t % interval == 0 or t == int(t*240)-1:
+                print("t: ", t)
+                # Get the object and gripper states
+                self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
+                self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
+                self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
+                self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
+                self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
+                self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
+
+                # Get contact forces
+                res = p.getContactPoints(self.gripperUid, self.objectUid)
+                all_contact_normal_forces = [contact[9] for contact in res]
+                contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+                s_engage = contact_normal_force
+                contact_friction_force_xy = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0 # friction along z is not considered
+                # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+                s_stick = (self.lateral_friction_coef*contact_normal_force - abs(contact_friction_force_xy)) * math.cos(np.arctan(self.lateral_friction_coef))
+                
+                # Get bodies closest points distance
+                dist = p.getClosestPoints(self.gripperUid, self.objectUid, 100)
+                dist = np.linalg.norm(np.array(dist[0][5]) - np.array(dist[0][6])) if len(dist)>0 else 0
+                
+                self.heuristics_traj.append([dist, s_stick, s_engage,])
+                new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
+                            self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
+                            self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
+                            self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
+                            ]
+                via_points.append(new_states)
+
+                # Save camera images
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-10-K-png/image_{id_traj}_{t:04d}.png')  # Save the image
+
+            p.stepSimulation()
+
+            # Record cutoff time for the manual scripted movement dataset
+            object_reached = (abs(self.pos_object[1]-self.y_obstacle) < 0.2 + 0.01)
+            gripper_reached = (abs(self.pos_gripper[1]-self.y_obstacle) < (0.1+0.01))
+            if do_cutdown_test and (gripper_reached or object_reached):
+                self.cutoff_t = t / 240.0 + 0.2
+                return via_points
+            if not do_cutdown_test and object_reached:
+                self.task_success_label = 1
+            if self.gui:
+                time.sleep(2/240)
+
+            # Save camera images
+            if t % 5 == 0:
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+                save_img_id += 1
+
+        return via_points
+
+
 class scriptedMovementSimBalanceGrasp(forwardSimulationBalanceGrasp):
     def __init__(self, cage, gui=False):
         super().__init__(gui=gui)

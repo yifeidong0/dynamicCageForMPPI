@@ -381,13 +381,6 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         p.changeVisualShape(self.obstacleUid, -1, rgbaColor=[.3,.3,.3,1])
         
     def reset_states(self, states):
-        # xo, yo, thetao, vxo, vyo, omegao, xg, yg, thetag, vxg, vyg, omegag = states # 12 DoF
-
-        # Object kinematics
-        # self.pos_object = [xo, yo, 0.0]
-        # self.quat_object = p.getQuaternionFromEuler([0.0, 0.0, thetao])
-        # self.vel_object = [vxo, vyo, 0.0]
-        # self.vel_ang_object = [0.0, 0.0, omegao]
         self.pos_object = [[states[6*i], states[6*i+1], 0.0] for i in range(self.num_objects)]
         self.eul_object = [[0.0, 0.0, states[6*i+2]] for i in range(self.num_objects)]
         self.quat_object = [p.getQuaternionFromEuler([0.0, 0.0, states[6*i+2]]) for i in range(self.num_objects)]
@@ -401,8 +394,6 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         self.vel_ang_gripper = [0.0, 0.0, states[-1]]
 
         # Reset the kinematics
-        # p.resetBasePositionAndOrientation(self.objectUid, self.pos_object, self.quat_object)
-        # p.resetBaseVelocity(self.objectUid, self.vel_object, self.vel_ang_object)
         for i in range(self.num_objects):
             p.resetBasePositionAndOrientation(self.objectUid[i], self.pos_object[i], self.quat_object[i])
             p.resetBaseVelocity(self.objectUid[i], self.vel_object[i], self.vel_ang_object[i])
@@ -410,15 +401,12 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         p.resetBaseVelocity(self.gripperUid, self.vel_gripper, self.vel_ang_gripper) # linear and angular vels both in world coordinates
 
     def run_forward_sim(self, inputs, print_via_points=True, num_via_points=10):
-        # t, ax, ay, omega = inputs
         t = inputs[0]
         interval = int(int(t*240)/num_via_points)
         interval = 3 if interval==0 else interval
 
         # Step the simulation
         via_points = []
-        # force_on_object = [self.mass_object*ax, self.mass_object*ay, 0.0]
-        # torque_on_object = [0.0, 0.0, self.moment_object*omega]
         force_on_object = [[self.mass_object*inputs[3*i+1], self.mass_object*inputs[3*i+2], 0.0] for i in range(self.num_objects)]
         torque_on_object = [[0.0, 0.0, self.moment_object*inputs[3*i+3],] for i in range(self.num_objects)]
         for i in range(int(t*240)):
@@ -432,13 +420,6 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
                 p.applyExternalTorque(self.objectUid[i], -1,
                                     torque_on_object[i],
                                     p.WORLD_FRAME)
-            # p.applyExternalForce(self.objectUid, -1, 
-            #                     force_on_object, # gravity compensated 
-            #                     self.pos_object, 
-            #                     p.WORLD_FRAME)
-            # p.applyExternalTorque(self.objectUid, -1, 
-            #                     torque_on_object,
-            #                     p.WORLD_FRAME)
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
@@ -449,9 +430,6 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
                 time.sleep(10/240)
 
         # Get the object and gripper states
-        # self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
-        # self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
-        # self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
         self.pos_gripper, self.quat_gripper = p.getBasePositionAndOrientation(self.gripperUid)
         self.eul_gripper = p.getEulerFromQuaternion(self.quat_gripper)
         self.vel_gripper,self.vel_ang_gripper = p.getBaseVelocity(self.gripperUid)
@@ -460,11 +438,6 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
             self.eul_object[i] = p.getEulerFromQuaternion(self.quat_object[i]) # rad
             self.vel_object[i], self.vel_ang_object[i] = p.getBaseVelocity(self.objectUid[i])
 
-        # new_states = [self.pos_object[0], self.pos_object[1], self.eul_object[2],
-        #               self.vel_object[0], self.vel_object[1], self.vel_ang_object[2],
-        #               self.pos_gripper[0], self.pos_gripper[1], self.eul_gripper[2], 
-        #               self.vel_gripper[0], self.vel_gripper[1], self.vel_ang_gripper[2]
-        #               ]
         new_states = []
         for i in range(self.num_objects):
             new_states = new_states + [self.pos_object[i][0], self.pos_object[i][1], self.eul_object[i][2],

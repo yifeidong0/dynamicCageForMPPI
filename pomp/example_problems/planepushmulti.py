@@ -356,7 +356,8 @@ def PlanePushMultiTest(dynamics_sim,
                 # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                 #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # for paper visualization
-                        1.2, 1.2, 0.0, 0.0, 0.0, 0.0, 
+                        1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
+                        1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
                         1.0, 0.1, 0.0, 0.0, 1.0, 0.2,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,

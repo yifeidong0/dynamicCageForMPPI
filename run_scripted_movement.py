@@ -1,5 +1,6 @@
 from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.planepush import *
+from pomp.example_problems.planepushmulti import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
@@ -8,7 +9,7 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "Gripper" # "PlanePush", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+problem_name = "Gripper" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
 gui = 1
 num_via_points = 10
 num_trajs = 6
@@ -28,6 +29,27 @@ if problem_name == 'PlanePush':
                  5.0, 6.0, 0.0, 0.0, 2.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
     cage = PlanePush(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimPlanePush(cage, gui=gui)
+if problem_name == 'PlanePushMulti':
+    total_time = 2.5
+    num_object = 3
+    num_state_planner = 3 + 6*num_object
+    headers = ['num_traj', 'data_id', 
+               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
+               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
+               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
+               'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
+    headers_success = ['num_traj', 'label']
+    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'lateral_friction_coef_perturb']
+    fake_data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,
+                1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
+                1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
+                1.0, 0.1, 0.0, 0.0, 1.0, 0.2,]
+    dynamics_sim = forwardSimulationPlanePushMulti(gui=0)
+    cage = PlanePushMulti(fake_data, dynamics_sim)
     x_init = fake_data
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
