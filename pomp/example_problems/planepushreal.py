@@ -167,7 +167,7 @@ class PlanePushReal:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self): # TODO
+    def successSet(self): # TODO
         wsbmin = [-self.offset, self.y_obstacle+self.object_thickness-self.task_goal_margin,]
         wsbmax = [self.x_range+self.offset, self.y_obstacle+self.object_thickness+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
@@ -179,9 +179,9 @@ class PlanePushReal:
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         return MultiSet(RingSet([self.start_state[0], self.start_state[1]], 1.0*self.x_range, 1.0*self.x_range+self.offset), # arbitrarily far away
                         BoxSet(bmin, bmax))
-        # return self.maneuverGoalSet()
+        # return self.complementCaptureSet()
     
-    def maneuverGoalSet(self, default_radius=1000):
+    def complementCaptureSet(self, default_radius=1000):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         arcbmin = [-self.offset, -self.offset]
@@ -205,7 +205,7 @@ class PlanePushReal:
             arc_center = self.start_state[6:8]
             arc_radius = 1 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+            return MultiSet(ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))
         
         # Calculate arc angle range
@@ -228,7 +228,7 @@ class PlanePushReal:
             arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        return MultiSet(ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
 
 
@@ -277,8 +277,8 @@ def PlanePushRealTest(dynamics_sim,
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean=True,
-                           taskGoal=p.taskGoalSet(),
-                           maneuverGoal=p.maneuverGoalSet(),
+                           successSet=p.successSet(),
+                           complementCaptureSet=p.complementCaptureSet(),
                            )
 
 

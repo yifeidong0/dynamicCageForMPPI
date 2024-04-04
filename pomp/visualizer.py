@@ -64,8 +64,8 @@ class PlanVisualizationProgram(GLProgram):
                     if self.just_animated:
                         self.just_animated = False
                     else:
-                        self.save_screen("/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/analysis-traj-id-1-and-2/escape/traj-2/state-6/image%04d.ppm"%(self.movie_frame))
-                        # self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
+                        # self.save_screen("/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/analysis-traj-id-1-and-2/escape/traj-2/state-6/image%04d.ppm"%(self.movie_frame))
+                        self.save_screen("%s/image%04d.ppm"%(self.plannerFilePrefix,self.movie_frame))
                         self.movie_frame += 1
                 except Exception as e:
                     ex_type, ex, tb = sys.exc_info()
@@ -76,7 +76,7 @@ class PlanVisualizationProgram(GLProgram):
                 self.planner.planMore(100)
                 self.path = self.planner.getPath()
                 self.G = self.planner.getRoadmap()
-                self.planner.getMetric()
+                self.planner.getScores()
                 self.refresh()
                 self.painted = False
                
@@ -97,7 +97,7 @@ class PlanVisualizationProgram(GLProgram):
             self.planner.planMore(100)
             self.path = self.planner.getPath()
             self.G = self.planner.getRoadmap()
-            self.planner.getMetric()
+            self.planner.getScores()
             self.planner.stats.pretty_print()
             self.refresh()
         elif key=='p':
@@ -105,7 +105,7 @@ class PlanVisualizationProgram(GLProgram):
             self.planner.planMore(1000)
             self.path = self.planner.getPath()
             self.G = self.planner.getRoadmap()
-            self.planner.getMetric()
+            self.planner.getScores()
             self.planner.stats.pretty_print()
             self.refresh()
         elif key=='o':
@@ -183,33 +183,33 @@ class PlanVisualizationProgram(GLProgram):
         elif hasattr(self.problem.controlSpace, "is_plane_push"):
             self.problem.visualizer.drawGripperGL([2,2,0], [10,10], [79/255.0, 198/255.0, 1, 1]) # draw background color (safe set)
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_plane_push", color='maneuverGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_plane_push", color='taskGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.complementCaptureSet, example_name="is_plane_push", color='complementCaptureSet')
+            self.problem.visualizer.drawGoalGL(self.problem.successSet, example_name="is_plane_push", color='successSet')
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[:3], [.6, .2]) # draw rectangluar object
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.controlSpace, "is_plane_push_multi"):
             self.problem.visualizer.drawGripperGL([2,2,0], [10,10], [79/255.0, 198/255.0, 1, 1]) # draw background color (safe set)
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_plane_push", color='maneuverGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_plane_push", color='taskGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.complementCaptureSet, example_name="is_plane_push", color='complementCaptureSet')
+            self.problem.visualizer.drawGoalGL(self.problem.successSet, example_name="is_plane_push", color='successSet')
             for i in range(self.problem.controlSpace.num_objects):
                 self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6*i:6*i+2]) # draw circular objects
             self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[-3:], [.6, .1]) # draw rectangular manipulator
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.space, "is_plane_push_rrtstar"):
-            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push_rrtstar", color='complementCaptureSet')
             self.problem.visualizer.drawLineGL(*self.problem.space.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.controlSpace, "is_balance_grasp"):
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_balance_grasp", color='escapeGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_balance_grasp", color='maneuverGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.taskGoal, example_name="is_balance_grasp", color='taskGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.complementCaptureSet, example_name="is_balance_grasp", color='complementCaptureSet')
+            self.problem.visualizer.drawGoalGL(self.problem.successSet, example_name="is_balance_grasp", color='successSet')
             self.problem.visualizer.drawLineGL(*self.problem.controlSpace.cage.obstacle_borderline) # obstacle border represented by a line
         elif hasattr(self.problem.controlSpace, "is_box_pivot"):
             self.problem.visualizer.drawObjectGL(self.problem.controlSpace.cage.start_state[:2])
         elif hasattr(self.problem.controlSpace, "is_herding"):
-            self.problem.visualizer.drawGoalGL(self.problem.maneuverGoal, example_name="is_herding", color='maneuverGoal')
+            self.problem.visualizer.drawGoalGL(self.problem.complementCaptureSet, example_name="is_herding", color='complementCaptureSet')
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_herding", color='escapeGoal')
         else:
             self.problem.visualizer.drawGoalGL(self.problem.goal)
@@ -298,7 +298,7 @@ class PlanVisualizationProgram(GLProgram):
 
             # Draw text box of metrics at last frame
             # if self.movie_frame == 29:
-            #     success_metric, maneuver_metric = self.planner.getMetric()
+            #     success_metric, maneuver_metric = self.planner.getScores()
             #     success_metric = round(success_metric, 2)
             #     maneuver_metric = round(maneuver_metric, 2)
             #     self.drawText("("+str(success_metric)+", "+str(maneuver_metric)+")", self.width / 1.1 - 70, self.height / 1.1 + 10)

@@ -143,7 +143,7 @@ for i in range(num_trajs):
             cage = BoxPivot(x_news[k], dynamics_sim)
         elif problem_name == 'Gripper':
             cage = Gripper(x_news[k], dynamics_sim)
-        man_label = 0 if cage.maneuverGoalSet().contains(x_news[k][:num_state_planner]) else 1
+        man_label = 0 if cage.complementCaptureSet().contains(x_news[k][:num_state_planner]) else 1
         if problem_name == 'PlanePush':
             maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
         elif problem_name == 'BoxPivot':

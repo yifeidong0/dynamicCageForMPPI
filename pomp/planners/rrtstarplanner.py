@@ -190,7 +190,7 @@ class RRTStar(TreePlanner):
                         #nn.c = newcost
                         self.rewire(nn,k=k,rad=rad,first=False,recursive=recursive)
         
-    def getMetric(self):
+    def getScores(self):
         return None, None
     
     def getRoadmap(self):
@@ -212,7 +212,7 @@ class RRTStar(TreePlanner):
                 q.append((c,j))
         return (V,E)
     
-    def getMetric(self):
+    def getScores(self):
         pass
 
     def pickNode(self,xrand):

@@ -138,14 +138,14 @@ class Herding:
         return MultiSet(RingSet(self.start_state[:2], self.cage_radius+5, 0.5*self.x_range+self.offset), 
                         BoxSet(bmin, bmax))
     
-    def taskGoalSet(self): # TODO
+    def successSet(self): # TODO
         # bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         # bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
         # return MultiSet(BoxSet([-self.offset, self.task_goal_y], [self.x_range+self.offset, self.y_range+self.offset]), 
         #                 BoxSet(bmin, bmax))
-        return self.maneuverGoalSet()
+        return self.complementCaptureSet()
     
-    def maneuverGoalSet(self): # TODO
+    def complementCaptureSet(self): # TODO
         """This is literally the maneuverable set rather than non-maneuverable set."""
         bmin = [-self.max_velocity, -self.max_velocity,] + [-self.offset, -self.offset,]*self.num_robot
         bmax = [self.max_velocity, self.max_velocity,] + [self.x_range+self.offset, self.y_range+self.offset,]*self.num_robot
@@ -206,8 +206,8 @@ def HerdingTest(dynamics_sim, data=None, num_robots=5, cage_radius=2.0, save_hyp
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean=True,
-                           taskGoal=p.taskGoalSet(),
-                           maneuverGoal=p.maneuverGoalSet(),
+                           successSet=p.successSet(),
+                           complementCaptureSet=p.complementCaptureSet(),
                            )
 
 

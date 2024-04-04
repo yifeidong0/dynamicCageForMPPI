@@ -173,7 +173,7 @@ for file_id, filename in enumerate(filenames):
             if record_mnv_labels:
                 num_state_planner = 9
                 cage = PlanePush(data_i, dynamics_sim)
-                man_label = 0 if cage.maneuverGoalSet().contains(data_i[:num_state_planner]) else 1
+                man_label = 0 if cage.complementCaptureSet().contains(data_i[:num_state_planner]) else 1
                 mnv_labels.append([file_id, i, man_label])
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)

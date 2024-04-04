@@ -1019,8 +1019,10 @@ class CostSpaceRRT:
         self.stats = Profiler()
         self.stats.items['rrt'] = self.rrt.stats
         self.numIters = self.stats.count('numIters')
-        self.taskGoal = None
-        self.maneuverGoal = None
+        self.successSet = None
+        self.complementSuccessSet = None
+        self.captureSet = None
+        self.complementCaptureSet = None
 
     def destroy(self):
         """To be nice to the GC, call this to free up memory after you're
@@ -1040,11 +1042,17 @@ class CostSpaceRRT:
         self.costGoal = CostGoal(goal,self.objective,self.bestPathCost)
         self.rrt.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
 
-    def setTaskGoal(self, taskGoal):
-        self.taskGoal = taskGoal
+    def setSuccessSet(self, successSet):
+        self.successSet = successSet
 
-    def setManeuverGoal(self, maneuverGoal):
-        self.maneuverGoal = maneuverGoal
+    def setComplementSuccessSet(self, complementSuccessSet):
+        self.complementSuccessSet = complementSuccessSet
+
+    def setCaptureSet(self, captureSet):
+        self.captureSet = captureSet
+        
+    def setComplementCaptureSet(self, complementCaptureSet):
+        self.complementCaptureSet = complementCaptureSet
 
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.costSpaceSampler = HeuristicCostSpaceSampler(Sampler(self.baseSpace),heuristicCostToCome,heuristicCostToGo,self.bestPathCost)
@@ -1142,33 +1150,44 @@ class CostSpaceRRT:
         # return ([x[:-1] for x in V],E) # do not include cost dimension
         return (V,E) # include cost dimension
 
-    def getMetric(self):
-        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+    def getScores(self):
+        """Returns the scores of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
         success_prob = 0
-        non_maneuverability_prob = 0
+        fail_prob = 0
+        capture_prob = 0
+        non_capture_prob = 0
         count_success = 0
-        count_non_maneuver = 0
+        count_fail = 0
+        count_capture = 0
+        count_non_capture = 0
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
-            if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
+            if self.successSet is not None and self.successSet.contains(v[:-1]):
                 count_success += 1
                 success_prob += prob_density
-            if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
-                count_non_maneuver += 1
-                non_maneuverability_prob += prob_density
+            if self.complementSuccessSet is not None and self.complementSuccessSet.contains(v[:-1]):
+                count_fail += 1
+                fail_prob += prob_density
+            if self.captureSet is not None and self.captureSet.contains(v[:-1]):
+                count_capture += 1 # all objects are captured.
+                capture_prob += prob_density
+            if self.complementCaptureSet is not None and self.complementCaptureSet.contains(v[:-1]):
+                count_non_capture += 1 # for multi-object scenario, it means none of the objects are captured.
+                non_capture_prob += prob_density
 
-        maneuver_metric = 1 - non_maneuverability_prob / total_prob
-        # if hasattr(self.baseControlSpace, "is_balance_grasp"):
-        # success_metric = maneuver_metric
-        # count_success = None
-        success_metric = success_prob / total_prob
-
-        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
-        print("Count_success:", count_success, "Count_non_maneuver:", count_non_maneuver)
-        return success_metric, maneuver_metric
+        capture_score = capture_prob / total_prob
+        capture_score_exists = 1 - non_capture_prob / total_prob
+        success_score = success_prob / total_prob
+        success_score_exists = 1 - fail_prob / total_prob
+        print("Success score (all objects reach success):", success_score)
+        print("Success score (at least one object reaches success):", success_score_exists)
+        print("Capture score (all objects are captured):", capture_score)
+        print("Capture score (at least one is captured):", capture_score_exists)
+        # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
+        return success_score, capture_score
     
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
@@ -1196,8 +1215,10 @@ class CostSpaceEST:
         self.stats.items['est'] = self.est.stats
         self.numIters = self.stats.count('numIters')
         self.lastPruneCost = None
-        self.taskGoal = None
-        self.maneuverGoal = None
+        self.successSet = None
+        self.complementSuccessSet = None
+        self.captureSet = None
+        self.complementCaptureSet = None
 
     def destroy(self):
         """To be nice to the GC, call this to free up memory after you're
@@ -1218,11 +1239,17 @@ class CostSpaceEST:
         self.est.generateDefaultBases(list(range(len(x0))))
         self.est.setBoundaryConditions(self.costSpace.makeState(x0,0.0),self.costGoal)
 
-    def setTaskGoal(self, taskGoal):
-        self.taskGoal = taskGoal
+    def setSuccessSet(self, successSet):
+        self.successSet = successSet
 
-    def setManeuverGoal(self, maneuverGoal):
-        self.maneuverGoal = maneuverGoal
+    def setComplementSuccessSet(self, complementSuccessSet):
+        self.complementSuccessSet = complementSuccessSet
+
+    def setCaptureSet(self, captureSet):
+        self.captureSet = captureSet
+
+    def setComplementCaptureSet(self, complementCaptureSet):
+        self.complementCaptureSet = complementCaptureSet
 
     def setHeuristic(self,heuristicCostToCome=None,heuristicCostToGo=None):
         self.est.pruner = HeuristicCostSpacePruner(heuristicCostToGo,self.bestPathCost)
@@ -1306,29 +1333,46 @@ class CostSpaceEST:
         # return ([x[:-1] for x in V],[e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # do not include cost dimension
         return (V, [e for e in E if (not pruner(V[e[0]]) and not pruner(V[e[1]]))]) # include cost dimension
 
-    def getMetric(self):
-        """Returns the metric of nodes that have successfully reached the task goal region or the goal region."""
+    def getScores(self):
+        """Returns the scores of nodes that have successfully reached the task goal region or the goal region."""
         (V,_) = self.getRoadmap()
         total_prob = 0
         success_prob = 0
-        non_maneuverability_prob = 0
+        fail_prob = 0
+        capture_prob = 0
+        non_capture_prob = 0
         count_success = 0
-        count_non_maneuver = 0
+        count_fail = 0
+        count_capture = 0
+        count_non_capture = 0
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
-            if self.taskGoal is not None and self.taskGoal.contains(v[:-1]):
+            if self.successSet is not None and self.successSet.contains(v[:-1]):
                 count_success += 1
                 success_prob += prob_density
-            if self.maneuverGoal is not None and self.maneuverGoal.contains(v[:-1]):
-                count_non_maneuver += 1 # for multi-object scenario, it means none of the objects are captured. TODO: at least one of the objects is not captured.
-                non_maneuverability_prob += prob_density
+            if self.complementSuccessSet is not None and self.complementSuccessSet.contains(v[:-1]):
+                count_fail += 1
+                fail_prob += prob_density
+            if self.captureSet is not None and self.captureSet.contains(v[:-1]):
+                count_capture += 1 # all objects are captured.
+                capture_prob += prob_density
+            if self.complementCaptureSet is not None and self.complementCaptureSet.contains(v[:-1]):
+                count_non_capture += 1 # for multi-object scenario, it means none of the objects are captured.
+                non_capture_prob += prob_density
 
-        maneuver_metric = 1 - non_maneuverability_prob / total_prob
-        success_metric = success_prob / total_prob
-        print("Success metric:", success_metric, "Maneuverability metric:", maneuver_metric)
-        print("Count_success:", count_success, "Count_non_maneuver:", count_non_maneuver)
-        return success_metric, maneuver_metric
+        capture_score = capture_prob / total_prob
+        if self.complementCaptureSet is not None:
+            capture_score_exists = 1 - non_capture_prob / total_prob
+            print("Capture score (at least one is captured):", capture_score_exists)
+        success_score = success_prob / total_prob
+        if self.complementSuccessSet is not None:
+            success_score_exists = 1 - fail_prob / total_prob
+            print("Success score (at least one object reaches success):", success_score_exists)
+        print("Success score (all objects reach success):", success_score)
+        print("Capture score (all objects are captured):", capture_score)
+        # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
+        return success_score, capture_score
         
     def getBestPathCost(self):
         return self.bestPathCost

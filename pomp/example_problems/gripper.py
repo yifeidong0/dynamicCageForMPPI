@@ -180,10 +180,10 @@ class Gripper:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self):
+    def successSet(self):
         return GripperSuccessSet(self.bmin, self.bmax, self.success_z_thres, self.success_vz_thres)
     
-    def maneuverGoalSet(self):
+    def complementCaptureSet(self):
         return GripperNonManeuverableSet(self.bmin, self.bmax, self.success_z_thres, self.success_vz_thres)
     
     def goalSet(self):
@@ -199,7 +199,7 @@ class Gripper:
                        self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
                        *[math.pi/2,]*(self.num_joints-1), 1,
                        ])
-        # return self.taskGoalSet()
+        # return self.successSet()
     
 class GripperObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
@@ -249,8 +249,8 @@ def GripperTest(dynamics_sim,
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean=True,
-                           taskGoal=p.taskGoalSet(),
-                           maneuverGoal=p.maneuverGoalSet(),
+                           successSet=p.successSet(),
+                           complementCaptureSet=p.complementCaptureSet(),
                            )
 
 

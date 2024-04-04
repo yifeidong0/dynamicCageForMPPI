@@ -69,7 +69,7 @@ class PlanePushMulti:
         self.max_ang_acceleration = .5 * lateral_friction_coef/0.3
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = lateral_friction_coef
-        self.task_goal_margin = 0.2
+        self.task_goal_margin = 0.05
         self.maneuver_goal_margin = .57
 
         if paper_version:
@@ -183,9 +183,9 @@ class PlanePushMulti:
     def startState(self):
         return self.start_state
 
-    def taskGoalSet(self, box_thickness=0.2):
-        wsbmin = [-self.offset, self.y_obstacle-box_thickness-self.task_goal_margin,]
-        wsbmax = [self.x_range+self.offset, self.y_obstacle-box_thickness+self.task_goal_margin,]
+    def successSet(self, ball_rad=0.1):
+        wsbmin = [-self.offset, self.y_obstacle-ball_rad-self.task_goal_margin,]
+        wsbmax = [self.x_range+self.offset, self.y_obstacle-ball_rad+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
         bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
@@ -193,9 +193,17 @@ class PlanePushMulti:
         return MultiSet(*[BoxSet(wsbmin+bmin, wsbmax+bmax),]*self.num_objects, 
                         BoxSet(bmin_ee, bmax_ee)) # multiset: consistent with other sets
 
+    def complementSuccessSet(self, ball_rad=0.1):
+        wsbmin = [-self.offset, -self.offset,]
+        wsbmax = [self.x_range+self.offset, self.y_obstacle-ball_rad-self.task_goal_margin,]
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
+        bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
+        bmax_ee = [2.5*self.x_range, 2.5*self.y_range, math.pi,]
+        return MultiSet(*[BoxSet(wsbmin+bmin, wsbmax+bmax),]*self.num_objects, 
+                        BoxSet(bmin_ee, bmax_ee)) # multiset: consistent with other sets
+    
     def goalSet(self):
-        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
         bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
@@ -204,11 +212,9 @@ class PlanePushMulti:
                           BoxSet(bmin, bmax),]*self.num_objects,
                         BoxSet(bmin_ee, bmax_ee)
                         )
-        # return self.maneuverGoalSet()
-    
-    def maneuverGoalSet(self, default_radius=1000):
-        # bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.y_range, -math.pi]
-        # bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.y_range, math.pi]
+        # return self.complementCaptureSet()
+
+    def captureSet(self, default_radius=1000):
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
         bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
         bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
@@ -234,7 +240,7 @@ class PlanePushMulti:
             arc_center = self.start_state[-3:-1]
             arc_radius = 0.5 * self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(*[ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+            return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                               BoxSet(bmin, bmax),]*self.num_objects,
                             BoxSet(bmin_ee, bmax_ee),)
         
@@ -258,9 +264,61 @@ class PlanePushMulti:
             arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        # return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
-        #                 BoxSet(bmin, bmax))
-        return MultiSet(*[ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+                          BoxSet(bmin, bmax),]*self.num_objects,
+                        BoxSet(bmin_ee, bmax_ee),)
+
+    def complementCaptureSet(self, default_radius=1000):
+        bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
+        bmax = [math.pi, self.max_velocity, self.max_velocity, self.max_ang_velocity,]
+        bmin_ee = [-2.5*self.x_range, -2.5*self.y_range, -math.pi,]
+        bmax_ee = [2.5*self.x_range, 2.5*self.y_range, math.pi,]
+        arcbmin = [-self.offset, -self.offset]
+        arcbmax = [self.x_range+self.offset, self.y_range+self.offset]
+
+        # Calculate arc center and radius
+        gripper_velocity = np.linalg.norm(np.array([self.gripper_vel_x, self.gripper_vel_y]))
+        arc_radius = gripper_velocity / abs(self.gripper_vel_theta) if self.gripper_vel_theta != 0 else default_radius
+        if gripper_velocity >= 3e-1:
+            # Calculate perpendicular direction to velocity
+            perp_direction = [-self.gripper_vel_y, self.gripper_vel_x]
+            perp_direction = perp_direction / np.linalg.norm(perp_direction)
+
+            # Calculate arc center
+            if self.gripper_vel_theta >= 0:
+                arc_center = self.start_state[-3:-1] + perp_direction * arc_radius
+            else:
+                arc_center = self.start_state[-3:-1] - perp_direction * arc_radius
+        else:
+            # Handle linear motion case or set a default large radius
+            arc_center = self.start_state[-3:-1]
+            arc_radius = 0.5 * self.maneuver_goal_margin
+            arc_angle_range = [0.0, 2*np.pi-1e-9]
+            return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+                              BoxSet(bmin, bmax),]*self.num_objects,
+                            BoxSet(bmin_ee, bmax_ee),)
+        
+        # Calculate arc angle range
+        angle_to_point = np.arctan2(self.start_state[-2] - arc_center[1], self.start_state[-3] - arc_center[0])
+
+        # Normalize the angle_to_point within the range [0, 2π)
+        initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
+
+        offset = 0.1*self.maneuver_goal_margin/arc_radius
+        if self.gripper_vel_theta > 0:
+            # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
+            arc_angle_range = [(initial_pos_angle - offset) % (2*np.pi), 
+                               (initial_pos_angle + offset + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi)]
+        elif self.gripper_vel_theta < 0:
+            # If the gripper is rotating clockwise, the arc angle range is [initial_pos_angle - π, initial_pos_angle]
+            arc_angle_range = [(initial_pos_angle - offset + self.gripper_vel_theta*self.maneuver_goal_tmax) % (2*np.pi), 
+                               (initial_pos_angle + offset) % (2*np.pi),]
+        else:
+            # If the gripper is not rotating
+            arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
+                               (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
+
+        return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                           BoxSet(bmin, bmax),]*self.num_objects,
                         BoxSet(bmin_ee, bmax_ee),)
 
@@ -289,17 +347,6 @@ class PlanePushMultiObjectiveFunction(ObjectiveFunction):
             delta_theta = math.atan2(math.sin(xnext[2*self.cage.dim_se2*i+2] - x[2*self.cage.dim_se2*i+2]), 
                                      math.cos(xnext[2*self.cage.dim_se2*i+2] - x[2*self.cage.dim_se2*i+2]))
             W += abs(m * u[3*i+1] * delta_x + m * u[3*i+2] * delta_y + I * u[3*i+3] * delta_theta)
-
-        # # Calculating change in position and orientation
-        # delta_x = xnext[0] - x[0]
-        # delta_y = xnext[1] - x[1]
-        # delta_theta = math.atan2(math.sin(xnext[2] - x[2]), math.cos(xnext[2] - x[2]))  # More robust angle difference
-
-        # # Work done by forces and torque
-        # W = m * u[1] * delta_x + m * u[2] * delta_y + I * u[3] * delta_theta
-
-        # # Considering both positive and negative work
-        # c = abs(W)
         
         # Include a small positive value to avoid zero cost in cases where it's needed
         return max(W, 1e-9)
@@ -309,7 +356,7 @@ def PlanePushMultiTest(dynamics_sim,
                 # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
                 #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
                 data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # for paper visualization
-                        1.2, 1.5, 0.0, 0.0, 0.0, 0.0, 
+                        1.2, 1.2, 0.0, 0.0, 0.0, 0.0, 
                         1.0, 0.1, 0.0, 0.0, 1.0, 0.2,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
@@ -326,8 +373,10 @@ def PlanePushMultiTest(dynamics_sim,
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean=True,
-                           taskGoal=p.taskGoalSet(),
-                           maneuverGoal=p.maneuverGoalSet(),
+                           successSet=p.successSet(),
+                           complementSuccessSet=p.complementSuccessSet(),
+                           captureSet=p.captureSet(),
+                           complementCaptureSet=p.complementCaptureSet(),
                            )
 
 

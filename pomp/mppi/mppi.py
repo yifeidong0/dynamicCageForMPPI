@@ -381,7 +381,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         
         # Save maneuverability labels
         cage = PlanePush(state.tolist(), mppi.dynamics_sim)
-        man_label = 0 if cage.maneuverGoalSet().contains(state[:9].tolist()) else 1
+        man_label = 0 if cage.complementCaptureSet().contains(state[:9].tolist()) else 1
         maneuver_labelset.append([episode, t,] + [man_label,])
 
         # Check if goal is reached

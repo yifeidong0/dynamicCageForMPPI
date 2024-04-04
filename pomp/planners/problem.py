@@ -13,8 +13,10 @@ class PlanningProblem:
                  costLowerBound=None,
                  goalRadius=None,
                  euclidean=False,
-                 taskGoal=None,
-                 maneuverGoal=None,
+                 successSet=None,
+                 complementSuccessSet=None,
+                 captureSet=None,
+                 complementCaptureSet=None,
                  ):
         self.space = space
         if isinstance(space,ControlSpace):
@@ -32,8 +34,10 @@ class PlanningProblem:
         self.heuristic = heuristic
         self.costLowerBound = costLowerBound
         self.euclidean = euclidean
-        self.taskGoal = taskGoal
-        self.maneuverGoal = maneuverGoal
+        self.successSet = successSet
+        self.complementSuccessSet = complementSuccessSet
+        self.captureSet = captureSet
+        self.complementCaptureSet = complementCaptureSet
 
     def cartesian(self):
         return self.euclidean
@@ -51,6 +55,8 @@ class PlanningProblem:
                                        heuristic=self.heuristic,
                                        metric=d,
                                        costLowerBound=self.costLowerBound,
-                                       taskGoal=self.taskGoal,
-                                       maneuverGoal=self.maneuverGoal,
+                                       successSet=self.successSet,
+                                       complementSuccessSet=self.complementSuccessSet,
+                                       captureSet=self.captureSet,
+                                       complementCaptureSet=self.complementCaptureSet,
                                        **params)

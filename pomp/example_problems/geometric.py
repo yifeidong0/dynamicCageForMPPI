@@ -257,9 +257,9 @@ class Geometric2DCSpace(BoxConfigurationSpace):
         # Set the colors for the goals
         if color == 'escapeGoal':
             c = [1, 0, 0, 0.2]
-        elif color == 'maneuverGoal':
+        elif color == 'complementCaptureSet':
             c = [255/255, 220/255, 255/255, 1]
-        elif color == 'taskGoal':
+        elif color == 'successSet':
             c = [105/255, 130/255, 126/255, .4]
 
         self.beginDraw()

@@ -51,7 +51,7 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
             temp.items["Stats:"] = planner.stats
             temp.pretty_print()
         print()
-        metric = planner.getMetric()
+        metric = planner.getScores()
         if metric is None:
             success_metric, maneuverability_metric = None, None
         else:

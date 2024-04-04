@@ -107,7 +107,7 @@ class PlanePushRrtstar:
             arc_center = self.gripper_pose[:2]
             arc_radius = self.maneuver_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+            return MultiSet(ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                             BoxSet(bmin, bmax))
         
         # Calculate arc angle range
@@ -129,7 +129,7 @@ class PlanePushRrtstar:
             arc_angle_range = [(initial_pos_angle-self.maneuver_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        return MultiSet(ArcErasedSet([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        return MultiSet(ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
                         BoxSet(bmin, bmax))
         # return MultiSet(BoxSet([0,0], [10,1]),
         #                 BoxSet(bmin, bmax))

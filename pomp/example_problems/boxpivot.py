@@ -149,9 +149,9 @@ class BoxPivot:
         # restset = BoxSet([-self.max_velocity, -self.max_velocity, -self.max_ang_velocity, -2.5*self.x_range, -2.5*self.x_range],
         #                  [self.max_velocity, self.max_velocity, self.max_ang_velocity, 2.5*self.x_range, 2.5*self.x_range])
         # return MultiSet(workspaceset, thetaset, restset)
-        return self.maneuverGoalSet()
+        return self.complementCaptureSet()
     
-    def taskGoalSet(self):
+    def successSet(self):
         return BoxSet([-self.offset, -self.offset, math.pi/2-self.task_goal_margin,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -self.x_range-self.offset, -self.x_range-self.offset],
@@ -159,7 +159,7 @@ class BoxPivot:
                        self.max_velocity, self.max_velocity, self.max_ang_velocity,
                        self.x_range+self.offset, self.x_range+self.offset])
     
-    def maneuverGoalSet(self):
+    def complementCaptureSet(self):
         """The object is maneuverable if the pivot point velocity is not too large."""
         return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
@@ -207,8 +207,8 @@ def BoxPivotTest(dynamics_sim,
                            objective=objective,
                            visualizer=p.workspace(),
                            euclidean=True,
-                           taskGoal=p.taskGoalSet(),
-                           maneuverGoal=p.maneuverGoalSet(),
+                           successSet=p.successSet(),
+                           complementCaptureSet=p.complementCaptureSet(),
                            )
 
 
