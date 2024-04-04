@@ -1369,8 +1369,8 @@ class CostSpaceEST:
         if self.complementSuccessSet is not None:
             success_score_exists = 1 - fail_prob / total_prob
             print("Success score (at least one object reaches success):", success_score_exists)
-        print("Success score (all objects reach success):", success_score)
         print("Capture score (all objects are captured):", capture_score)
+        print("Success score (all objects reach success):", success_score)
         # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
         return success_score, capture_score
         

@@ -183,7 +183,7 @@ class PlanVisualizationProgram(GLProgram):
         elif hasattr(self.problem.controlSpace, "is_plane_push"):
             self.problem.visualizer.drawGripperGL([2,2,0], [10,10], [79/255.0, 198/255.0, 1, 1]) # draw background color (safe set)
             self.problem.visualizer.drawGoalGL(self.problem.goal, example_name="is_plane_push", color='escapeGoal')
-            self.problem.visualizer.drawGoalGL(self.problem.complementCaptureSet, example_name="is_plane_push", color='complementCaptureSet')
+            self.problem.visualizer.drawGoalGL(self.problem.captureSet, example_name="is_plane_push", color='complementCaptureSet')
             self.problem.visualizer.drawGoalGL(self.problem.successSet, example_name="is_plane_push", color='successSet')
             self.problem.visualizer.drawRobotGL(self.problem.controlSpace.cage.start_state[6:8])
             self.problem.visualizer.drawGripperGL(self.problem.controlSpace.cage.start_state[:3], [.6, .2]) # draw rectangluar object

@@ -162,7 +162,7 @@ for file_id, filename in enumerate(filenames):
             data_i = new_pose_5d[:3] + data_i[3:6] + new_pose_5d[3:] + data_i[8:12]
 
         if prname == 'PlanePush':
-            dynamics_sim = forwardSimulationPlanePush(gui=0)
+            dynamics_sim = forwardSimulationPlanePush(gui=1)
             problem = PlanePushTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)

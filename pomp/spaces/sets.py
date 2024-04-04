@@ -510,7 +510,41 @@ class CaptureSetClass(Set):
             return True
 
         return False
-    
+
+    def drawGL(self, color=[1,0,0,0.2], res=0.01):
+        # Draw the square canvas
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(*color)
+        glBegin(GL_QUADS)
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[0][1])
+        glVertex2f(self.canvas_limits[1][0], self.canvas_limits[1][1])
+        glVertex2f(self.canvas_limits[0][0], self.canvas_limits[1][1])
+        glEnd()
+
+        # Draw the erased arc region
+        glColor3f(212/255.0, 241/255.0, 255/255)  # blue color to represent the erased area
+        if self.arc_angle_range[0] <= self.arc_angle_range[1]:
+            self.draw_triangle_strips(self.arc_angle_range[0], self.arc_angle_range[1], res)
+        else:
+            range_list = [[self.arc_angle_range[0], 2*np.pi-1e-9], [0.0, self.arc_angle_range[1]]]
+            for i in range(len(range_list)):
+                self.draw_triangle_strips(range_list[i][0], range_list[i][1], res)
+                
+    def draw_triangle_strips(self, lowb, upb, res=0.01):
+        numdivs = int(math.ceil((upb - lowb) * self.arc_radius / res))
+        glBegin(GL_TRIANGLE_STRIP)
+        for i in range(numdivs + 1):
+            u = lowb + float(i) / float(numdivs) * (upb - lowb)
+            inner_x = self.arc_center[0] + (self.arc_radius - self.eraser_radius) * math.cos(u)
+            inner_y = self.arc_center[1] + (self.arc_radius - self.eraser_radius) * math.sin(u)
+            outer_x = self.arc_center[0] + (self.arc_radius + self.eraser_radius) * math.cos(u)
+            outer_y = self.arc_center[1] + (self.arc_radius + self.eraser_radius) * math.sin(u)
+            glVertex2f(inner_x, inner_y)
+            glVertex2f(outer_x, outer_y)
+        glEnd()
+
 
 class ComplementCaptureSetClass(Set):
     """Represents the shape remaining on a square canvas after erasing along an arc trajectory."""
