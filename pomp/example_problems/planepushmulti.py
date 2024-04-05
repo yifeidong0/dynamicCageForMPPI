@@ -70,7 +70,7 @@ class PlanePushMulti:
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = lateral_friction_coef
         self.task_goal_margin = 0.05
-        self.maneuver_goal_margin = .57
+        self.capture_goal_margin = .3
 
         if paper_version:
             self.x_range = 2
@@ -132,10 +132,10 @@ class PlanePushMulti:
         self.gravity = -9.81
 
         self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
-                            self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.maneuver_goal_margin,
+                            self.max_ang_acceleration, self.time_range, self.gravity, self.task_goal_margin, self.capture_goal_margin,
                             self.maneuver_goal_tmax, self.cost_inv_coef] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
-                                   'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'maneuver_goal_margin', 'maneuver_goal_tmax',
+                                   'max_ang_acceleration', 'time_range', 'gravity', 'task_goal_margin', 'capture_goal_margin', 'maneuver_goal_tmax',
                                    'cost_inv_coef',
                                    'mass_object', 'moment_object', 'mass_gripper', 'moment_gripper', 'y_obstacle', 'angle_slope',
                                    'object_name', 'gripper_name', 'lateral_friction_coef']
@@ -238,9 +238,9 @@ class PlanePushMulti:
         else:
             # Handle linear motion case or set a default large radius
             arc_center = self.start_state[-3:-1]
-            arc_radius = 0.5 * self.maneuver_goal_margin
+            arc_radius = 0.5 * self.capture_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+            return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.capture_goal_margin, arc_center, arc_radius, arc_angle_range),
                               BoxSet(bmin, bmax),]*self.num_objects,
                             BoxSet(bmin_ee, bmax_ee),)
         
@@ -250,7 +250,7 @@ class PlanePushMulti:
         # Normalize the angle_to_point within the range [0, 2π)
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
-        offset = 0.1*self.maneuver_goal_margin/arc_radius
+        offset = 0.1*self.capture_goal_margin/arc_radius
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
             arc_angle_range = [(initial_pos_angle - offset) % (2*np.pi), 
@@ -261,10 +261,10 @@ class PlanePushMulti:
                                (initial_pos_angle + offset) % (2*np.pi),]
         else:
             # If the gripper is not rotating
-            arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle-0.15*self.capture_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        return MultiSet(*[CaptureSetClass([arcbmin, arcbmax], self.capture_goal_margin, arc_center, arc_radius, arc_angle_range),
                           BoxSet(bmin, bmax),]*self.num_objects,
                         BoxSet(bmin_ee, bmax_ee),)
 
@@ -292,9 +292,9 @@ class PlanePushMulti:
         else:
             # Handle linear motion case or set a default large radius
             arc_center = self.start_state[-3:-1]
-            arc_radius = 0.5 * self.maneuver_goal_margin
+            arc_radius = 0.5 * self.capture_goal_margin
             arc_angle_range = [0.0, 2*np.pi-1e-9]
-            return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+            return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.capture_goal_margin, arc_center, arc_radius, arc_angle_range),
                               BoxSet(bmin, bmax),]*self.num_objects,
                             BoxSet(bmin_ee, bmax_ee),)
         
@@ -304,7 +304,7 @@ class PlanePushMulti:
         # Normalize the angle_to_point within the range [0, 2π)
         initial_pos_angle = (angle_to_point + 2 * np.pi) % (2 * np.pi)
 
-        offset = 0.1*self.maneuver_goal_margin/arc_radius
+        offset = 0.1*self.capture_goal_margin/arc_radius
         if self.gripper_vel_theta > 0:
             # If the gripper is rotating counterclockwise, the arc angle range is [initial_pos_angle, initial_pos_angle + π]
             arc_angle_range = [(initial_pos_angle - offset) % (2*np.pi), 
@@ -315,10 +315,10 @@ class PlanePushMulti:
                                (initial_pos_angle + offset) % (2*np.pi),]
         else:
             # If the gripper is not rotating
-            arc_angle_range = [(initial_pos_angle-0.15*self.maneuver_goal_margin/default_radius) % (2*np.pi), 
+            arc_angle_range = [(initial_pos_angle-0.15*self.capture_goal_margin/default_radius) % (2*np.pi), 
                                (initial_pos_angle+gripper_velocity*self.maneuver_goal_tmax/default_radius) % (2*np.pi)]
 
-        return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.maneuver_goal_margin, arc_center, arc_radius, arc_angle_range),
+        return MultiSet(*[ComplementCaptureSetClass([arcbmin, arcbmax], self.capture_goal_margin, arc_center, arc_radius, arc_angle_range),
                           BoxSet(bmin, bmax),]*self.num_objects,
                         BoxSet(bmin_ee, bmax_ee),)
 

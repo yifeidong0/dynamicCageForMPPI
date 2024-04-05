@@ -58,7 +58,7 @@ if problem_name == 'Gripper':
 dataset = []
 heuriset = []
 success_labelset = []
-maneuver_labelset = []
+capture_labelset = []
 for i in range(num_trajs):
     if problem_name == 'BoxPivot' or problem_name == 'Gripper':
         sim.sample_init_state()

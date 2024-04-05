@@ -350,7 +350,7 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         
         # Create a robot
         if self.gripper_name == 'box':
-            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.6, .1, self.z_bodies])
+            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.3, .1, self.z_bodies])
             self.gripperUid = p.createMultiBody(self.mass_gripper, 
                                            gripperId, 
                                            self.visualShapeId, 

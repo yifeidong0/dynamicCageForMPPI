@@ -104,23 +104,23 @@ if __name__ == "__main__":
             writer.writerow(headers_success)
 
         # Save to a CSV file with headers
-        filename_man_label = "states_traj_maneuver_labels_{}.csv".format(cost_type)
-        headers_maneuver = ['n_episode', 'n_iteration', 'label',]
-        with open(filename_man_label, mode='w', newline='') as file:
+        filename_capture_label = "states_traj_maneuver_labels_{}.csv".format(cost_type)
+        headers_capture = ['n_episode', 'n_iteration', 'label',]
+        with open(filename_capture_label, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(headers_maneuver)
+            writer.writerow(headers_capture)
 
         # Save final traj states to a CSV file with headers
         filename_traj = "states_traj_mppi_{}.csv".format(cost_type)
-        headers_maneuver = ['n_episode', 'n_iteration', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',
+        headers_capture = ['n_episode', 'n_iteration', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',
                             'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag',]
         with open(filename_traj, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(headers_maneuver)
+            writer.writerow(headers_capture)
 
         # Randomize start and goal
         success_labelset = []
-        maneuver_labelset = []
+        capture_labelset = []
         for e in range(N_EPISODE):
             print('##############iter#############', e)
             data = []
@@ -148,7 +148,7 @@ if __name__ == "__main__":
             if is_in_collsion:
                 continue
 
-            rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, maneuver_labelset, final_traj = run_mppi(mppi_gym, iter=N_ITER, episode=e, do_bullet_vis=do_bullet_vis)
+            rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, capture_labelset, final_traj = run_mppi(mppi_gym, iter=N_ITER, episode=e, do_bullet_vis=do_bullet_vis)
 
             # Process roll-out data to save
             for i in range(cutdown_iter):
@@ -172,9 +172,9 @@ if __name__ == "__main__":
                 writer.writerows(success_labelset)
 
             # Save maneuver labels to a CSV file
-            with open(filename_man_label, mode='a', newline='') as file:
+            with open(filename_capture_label, mode='a', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerows(maneuver_labelset)
+                writer.writerows(capture_labelset)
 
             # Save final traj states to a CSV file
             traj = [[e,i,]+t for i,t in enumerate(final_traj[:cutdown_iter+2, :].tolist())]

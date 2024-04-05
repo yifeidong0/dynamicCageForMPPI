@@ -359,7 +359,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     mppi._initialize_rollout_container()
     xhist[0] = torch.tensor(state)
     object_hist[0] = get_object_corners(state[:3], mppi.half_extents_object).clone().detach()
-    maneuver_labelset = []
+    capture_labelset = []
     success_labelset = []
     for t in range(iter):
         print('')
@@ -381,8 +381,8 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
         
         # Save maneuverability labels
         cage = PlanePush(state.tolist(), mppi.dynamics_sim)
-        man_label = 0 if cage.complementCaptureSet().contains(state[:9].tolist()) else 1
-        maneuver_labelset.append([episode, t,] + [man_label,])
+        capture_exists_label = 0 if cage.complementCaptureSet().contains(state[:9].tolist()) else 1
+        capture_labelset.append([episode, t,] + [capture_exists_label,])
 
         # Check if goal is reached
         curr = state[1] # object position
@@ -408,7 +408,7 @@ def run_mppi(mppi, iter=10, episode=0, do_bullet_vis=0):
     if dist_to_goal > mppi.goal_thres:
         print('NOT REACHED!')
 
-    return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, maneuver_labelset, final_traj
+    return rollouts_hist, cutdown_hist, cutdown_iter, rollouts_quality_hist, success_labelset, capture_labelset, final_traj
 
 
 def visualize_mppi(mppi, xhist, uhist, object_hist, t, reached_goal=False, epi=0, do_bullet_vis=0):

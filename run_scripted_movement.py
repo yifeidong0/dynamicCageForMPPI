@@ -9,14 +9,14 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "Gripper" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
+problem_name = "PlanePushMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
 gui = 1
 num_via_points = 10
-num_trajs = 6
+num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
-filename_man_label = "scripted_movement_maneuver_labels_{}.csv".format(problem_name)
+filename_capture_label = "scripted_movement_capture_labels_{}.csv".format(problem_name)
 
 if problem_name == 'PlanePush':
     total_time = 2.5
@@ -24,7 +24,7 @@ if problem_name == 'PlanePush':
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'lateral_friction_coef_perturb']
+    headers_capture = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'lateral_friction_coef_perturb']
     fake_data = [5.0, 6.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 6.0, 0.0, 0.0, 2.0, 0.0]
     dynamics_sim = forwardSimulationPlanePush(gui=0)
@@ -36,14 +36,12 @@ if problem_name == 'PlanePushMulti':
     total_time = 2.5
     num_object = 3
     num_state_planner = 3 + 6*num_object
-    headers = ['num_traj', 'data_id', 
-               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
-               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
-               'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 
-               'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
-    headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'lateral_friction_coef_perturb']
+    headers = ['num_traj', 'data_id', ] + \
+               ['xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',]*num_object + \
+               ['xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
+    headers_metric = ['num_traj', 'data_id',] + ['shortest_distance', 'S_stick', 'S_engage']*num_object
+    headers_success = ['num_traj', 'success_all_label', 'success_exists_label']
+    headers_capture = ['num_traj', 'data_id', 'capture_exists_label', 'capture_all_label', 'lateral_friction_coef']
     fake_data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,
                 1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
                 1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
@@ -52,14 +50,14 @@ if problem_name == 'PlanePushMulti':
     cage = PlanePushMulti(fake_data, dynamics_sim)
     x_init = fake_data
     dynamics_sim.finish_sim()
-    sim = scriptedMovementSimPlanePush(cage, gui=gui)
+    sim = scriptedMovementSimPlanePushMulti(cage, gui=gui)
 if problem_name == 'BalanceGrasp':
     total_time = 2.5
     num_state_planner = 9
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance', 'S_stick', 'S_engage']
     headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label',]
+    headers_capture = ['num_traj', 'data_id', 'label',]
     fake_data = [5.0, 4.3, 0.0, 0.0, 0.0, 0.0, 
                  5.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
@@ -74,7 +72,7 @@ if problem_name == 'BoxPivot':
     headers = ['num_traj', 'data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg1', 'xg2', 'vxg1', 'vxg2']
     headers_metric = ['num_traj', 'data_id', 'shortest_distance_spring', 'S_stick_spring', 'S_engage_spring', 'shortest_distance_ground', 'S_stick_ground', 'S_engage_ground']
     headers_success = ['num_traj', 'label',]
-    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef']
+    headers_capture = ['num_traj', 'data_id', 'label', 'lateral_friction_coef']
     fake_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                  0.0, 0.0, 0.0, 0.0, ]
     dynamics_sim = forwardSimulationBoxPivot(gui=0)
@@ -98,7 +96,7 @@ if problem_name == 'Gripper':
     headers_metric = ['num_traj', 'data_id', 'shortest_distance_3', 'S_stick_3', 'S_engage_3', 
                       'shortest_distance_7', 'S_stick_7', 'S_engage_7', 'shortest_distance_11', 'S_stick_11', 'S_engage_11',]
     headers_success = ['num_traj', 'label']
-    headers_maneuver = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'mass_object']
+    headers_capture = ['num_traj', 'data_id', 'label', 'lateral_friction_coef', 'mass_object']
     fake_data = [-0.99, 0.6, 0.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [0*math.pi/12]*9 + [0.0,] + [0.0]*9 + [0.0,]
     dynamics_sim = forwardSimulationGripper(gui=0)
     cage = Gripper(fake_data, dynamics_sim)
@@ -137,11 +135,11 @@ if problem_name == 'Shuffling':
 dataset = []
 heuriset = []
 success_labelset = []
-maneuver_labelset = []
+capture_labelset = []
 for i in range(num_trajs):
     if problem_name == 'BoxPivot' or problem_name == 'Gripper':
         sim.sample_init_state()
-    elif problem_name == 'PlanePush' or problem_name == 'BalanceGrasp':
+    elif problem_name == 'PlanePush' or problem_name == 'PlanePushMulti' or problem_name == 'BalanceGrasp':
         x_init = sim.sample_init_state()
     
     sim.reset_states(x_init)
@@ -159,21 +157,29 @@ for i in range(num_trajs):
         heuriset.append([i, k,] + heuristics[k])
         if problem_name == 'PlanePush':
             cage = PlanePush(x_news[k], dynamics_sim)
+        if problem_name == 'PlanePushMulti':
+            cage = PlanePushMulti(x_news[k], dynamics_sim)
         elif problem_name == 'BalanceGrasp':
             cage = BalanceGrasp(x_news[k], dynamics_sim)
         elif problem_name == 'BoxPivot':
             cage = BoxPivot(x_news[k], dynamics_sim)
         elif problem_name == 'Gripper':
             cage = Gripper(x_news[k], dynamics_sim)
-        man_label = 0 if cage.complementCaptureSet().contains(x_news[k][:num_state_planner]) else 1
+        capture_exists_label = 0 if cage.complementCaptureSet().contains(x_news[k][:num_state_planner]) else 1
         if problem_name == 'PlanePush':
-            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
+            capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
+        if problem_name == 'PlanePushMulti':
+            capture_all_label = 1 if cage.captureSet().contains(x_news[k][:num_state_planner]) else 0
+            capture_labelset.append([i, k,] + [capture_exists_label, capture_all_label, sim.lateral_friction_coef])
         elif problem_name == 'BoxPivot':
-            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef,])
+            capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef,])
         elif problem_name == 'Gripper':
-            maneuver_labelset.append([i, k,] + [man_label, sim.lateral_friction_coef, sim.mass_object])
+            capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef, sim.mass_object])
 
-    success_labelset.append([i, sim.task_success_label,])
+    if problem_name == 'PlanePushMulti':
+        success_labelset.append([i, sim.success_all_label, sim.success_exists_label,])
+    else:
+        success_labelset.append([i, sim.success_all_label,])
 sim.finish_sim()
 
 # Save data to a CSV file with headers
@@ -195,7 +201,7 @@ with open(filename_suc_label, mode='w', newline='') as file:
     writer.writerows(success_labelset)
 
 # Save labels to a CSV file with headers
-with open(filename_man_label, mode='w', newline='') as file:
+with open(filename_capture_label, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(headers_maneuver)
-    writer.writerows(maneuver_labelset)
+    writer.writerow(headers_capture)
+    writer.writerows(capture_labelset)
