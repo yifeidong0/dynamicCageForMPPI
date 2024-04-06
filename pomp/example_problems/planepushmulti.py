@@ -33,7 +33,6 @@ class PlanePushMultiControlSpace(ControlSpace):
         return self.eval(x, u, 1.0, is_planner=is_planner)
     
     def eval(self, x, u, amount, print_via_points=False, is_planner=False):
-        # x_i, y_i, theta_i, vx_i, vy_i, alpha_i, xr_i, yr_i, thetar_i = x # state space, 9D (3+3: cage, 3: robot gripper)
         t = u[0] # control space
         tc = t * amount
         mu = [tc,] + u[1:]
@@ -41,10 +40,6 @@ class PlanePushMultiControlSpace(ControlSpace):
         xaug = x if is_planner else (x + self.cage.gripper_vel)
         self.dynamics_sim.reset_states(xaug)
         x_new, xo_via_points = self.dynamics_sim.run_forward_sim(mu, 1)
-
-        # Make theta fall in [-pi, pi]
-        # x_new[2] = limit_angle_to_pi(x_new[2])
-        # x_new[8] = limit_angle_to_pi(x_new[8])
 
         if print_via_points:
             self.xo_via_points = [[q[0], q[1]] for q in xo_via_points]
@@ -82,7 +77,7 @@ class PlanePushMulti:
             self.offset = 0.1 # extend the landscape
             self.time_range = .5
             self.cost_inv_coef = -5e0
-            self.maneuver_goal_tmax = 1.5
+            self.maneuver_goal_tmax = 1
         else:
             self.x_range = 10
             self.y_range = 10
@@ -353,21 +348,20 @@ class PlanePushMultiObjectiveFunction(ObjectiveFunction):
 
 
 def PlanePushMultiTest(dynamics_sim, 
-                # data = [5.0, 4.3, 0.0, 0.0, 0.0, 0, # point gripper with cylinder/box object
-                #         5.0, 4, 0.0, 0.0, 1.0, 0.0],
-                data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # for paper visualization
+                data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0, # object 1, 2,..
                         1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
                         1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
-                        1.0, 0.1, 0.0, 0.0, 1.0, 0.2,],
+                        # 1.4, 0.5, 0.0, 0.0, 0.0, 0.0, 
+                        # 1.4, 0.3, 0.0, 0.0, 0.0, 0.0, 
+                        # 1.4, 0.9, 0.0, 0.0, 0.0, 0.0, 
+                        # 1.4, 1.3, 0.0, 0.0, 0.0, 0.0, 
+                        1.0, 0.1, 0.0, 0.0, 1.0, 0.2,], # gripper
                 save_hyperparams=False,
                 lateral_friction_coef=0.3,
                 ):
     p = PlanePushMulti(data, dynamics_sim, save_hyperparams, lateral_friction_coef)
-
-    # if p.checkStartFeasibility():
-    #     print('In collision!')
-    #     return False
     objective = PlanePushMultiObjectiveFunction(p)
+
     return PlanningProblem(objective.space,
                            p.startState(),
                            p.goalSet(),
