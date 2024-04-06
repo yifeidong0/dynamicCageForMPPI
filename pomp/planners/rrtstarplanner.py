@@ -191,7 +191,7 @@ class RRTStar(TreePlanner):
                         self.rewire(nn,k=k,rad=rad,first=False,recursive=recursive)
         
     def getScores(self):
-        return None, None
+        return None, None, None, None
     
     def getRoadmap(self):
         """Returns a graph (V,E) where V contains states and E contains
@@ -213,7 +213,7 @@ class RRTStar(TreePlanner):
         return (V,E)
     
     def getScores(self):
-        pass
+        return None, None, None, None
 
     def pickNode(self,xrand):
         """Picks a node closest to xrand.  If dynamicDomain is True,

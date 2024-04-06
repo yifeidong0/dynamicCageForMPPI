@@ -3,6 +3,7 @@ from pomp.example_problems.cageplanner import *
 from pomp.example_problems.waterswing import *
 from pomp.example_problems.planepush import *
 from pomp.example_problems.planepushreal import *
+from pomp.example_problems.planepushmulti import *
 from pomp.example_problems.planepushrrtstar import *
 from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.boxpivot import *
@@ -18,13 +19,13 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePush' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+prname = 'PlanePushMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # 'mppi', "scripted", "realworld"
-vis = 1
+vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 500
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
-record_mnv_labels = 0
+record_capture_labels = 0
 use_default_friction = 0
 default_friction = 0.3
 
@@ -36,12 +37,12 @@ randomize_position = 0
 randomize_all = 0
 fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
-if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
+if prname == 'PlanePush' or prname == 'PlanePushRrtstar' or prname == 'PlanePushMulti':
     if traj_type == 'scripted':
         # filenames = ['data/paper_vis/plane_push/scripted_movement_viapoints_PlanePush.csv',]
         # filename_friction = 'data/paper_vis/plane_push/scripted_movement_maneuver_labels_PlanePush.csv'
-        filenames = ['/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-summary/scripted_movement_viapoints_PlanePush.csv',]
-        filename_friction = '/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-summary/scripted_movement_maneuver_labels_PlanePush.csv'
+        filenames = ['scripted_movement_viapoints_PlanePushMulti.csv',]
+        filename_friction = 'scripted_movement_capture_labels_PlanePushMulti.csv'
     if traj_type == 'mppi':
         filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
 if prname == 'PlanePushReal':
@@ -84,7 +85,7 @@ def move_along_longer_side(pose, d):
     
     return [xo, yo, thetao, new_xg, new_yg]
 
-mnv_labels = []
+capture_exists_labels = []
 for file_id, filename in enumerate(filenames):
     # Read from the CSV file
     rows = []
@@ -119,6 +120,13 @@ for file_id, filename in enumerate(filenames):
                 header = next(csv_reader)
                 for id, row in enumerate(csv_reader):
                     fri_coeffs.append(float(row[3]))
+    if prname == 'PlanePushMulti':
+        fri_coeffs = []
+        with open(filename_friction, 'r') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+            for id, row in enumerate(csv_reader):
+                fri_coeffs.append(float(row[4]))
     if prname == 'BoxPivot':
         fri_coeffs = []
         with open(filename_friction, 'r') as file:
@@ -167,14 +175,17 @@ for file_id, filename in enumerate(filenames):
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
             problem = PlanePushRrtstarTest(dynamics_sim, data_i, save_hyperparams=1)
+        if prname == 'PlanePushMulti':
+            dynamics_sim = forwardSimulationPlanePushMulti(gui=0)
+            problem = PlanePushMultiTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
         if prname == 'PlanePushReal':
             dynamics_sim = forwardSimulationPlanePushReal(gui=1)
             problem = PlanePushRealTest(dynamics_sim, data_i, save_hyperparams=1)
-            if record_mnv_labels:
+            if record_capture_labels:
                 num_state_planner = 9
                 cage = PlanePush(data_i, dynamics_sim)
                 capture_exists_label = 0 if cage.complementCaptureSet().contains(data_i[:num_state_planner]) else 1
-                mnv_labels.append([file_id, i, capture_exists_label])
+                capture_exists_labels.append([file_id, i, capture_exists_label])
         if prname == 'BalanceGrasp':
             dynamics_sim = forwardSimulationBalanceGrasp(gui=0)
             problem = BalanceGraspTest(dynamics_sim, data_i, save_hyperparams=1)
@@ -196,9 +207,9 @@ for file_id, filename in enumerate(filenames):
     print('Time elapsed: ', t_elapsed)
 
 # Save labels to a CSV file with headers
-if record_mnv_labels:
-    filename_mnv_label = 'maneuver_labels_'+prname+'.csv'
+if record_capture_labels:
+    filename_mnv_label = 'capture_labels_'+prname+'.csv'
     with open(filename_mnv_label, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['traj_id', 'data_id', 'maneuver_label',])
-        writer.writerows(mnv_labels)
+        writer.writerow(['traj_id', 'data_id', 'capture_label',])
+        writer.writerows(capture_exists_labels)

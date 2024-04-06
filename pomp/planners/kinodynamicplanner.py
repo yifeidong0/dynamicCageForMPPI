@@ -1162,6 +1162,8 @@ class CostSpaceRRT:
         count_fail = 0
         count_capture = 0
         count_non_capture = 0
+        capture_exists_score = None
+        success_exists_score = None
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
@@ -1179,16 +1181,18 @@ class CostSpaceRRT:
                 non_capture_prob += prob_density
 
         capture_score = capture_prob / total_prob
-        capture_score_exists = 1 - non_capture_prob / total_prob
+        if self.complementCaptureSet is not None:
+            capture_exists_score = 1 - non_capture_prob / total_prob
+            print("Capture score (at least one is captured):", capture_exists_score)
         success_score = success_prob / total_prob
-        success_score_exists = 1 - fail_prob / total_prob
-        print("Success score (all objects reach success):", success_score)
-        print("Success score (at least one object reaches success):", success_score_exists)
+        if self.complementSuccessSet is not None:
+            success_exists_score = 1 - fail_prob / total_prob
+            print("Success score (at least one object reaches success):", success_exists_score)
         print("Capture score (all objects are captured):", capture_score)
-        print("Capture score (at least one is captured):", capture_score_exists)
+        print("Success score (all objects reach success):", success_score)
         # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
-        return success_score, capture_score
-    
+        return capture_exists_score, capture_score, success_exists_score, success_score
+        
     def getBestPath(self,obj,goal=None):
         if obj is self.objective and goal is self.baseGoal and self.bestPath is not None:
             return self.getPath()
@@ -1345,6 +1349,8 @@ class CostSpaceEST:
         count_fail = 0
         count_capture = 0
         count_non_capture = 0
+        capture_exists_score = None
+        success_exists_score = None
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
@@ -1363,16 +1369,16 @@ class CostSpaceEST:
 
         capture_score = capture_prob / total_prob
         if self.complementCaptureSet is not None:
-            capture_score_exists = 1 - non_capture_prob / total_prob
-            print("Capture score (at least one is captured):", capture_score_exists)
+            capture_exists_score = 1 - non_capture_prob / total_prob
+            print("Capture score (at least one is captured):", capture_exists_score)
         success_score = success_prob / total_prob
         if self.complementSuccessSet is not None:
-            success_score_exists = 1 - fail_prob / total_prob
-            print("Success score (at least one object reaches success):", success_score_exists)
+            success_exists_score = 1 - fail_prob / total_prob
+            print("Success score (at least one object reaches success):", success_exists_score)
         print("Capture score (all objects are captured):", capture_score)
         print("Success score (all objects reach success):", success_score)
         # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
-        return success_score, capture_score
+        return capture_exists_score, capture_score, success_score, success_exists_score
         
     def getBestPathCost(self):
         return self.bestPathCost

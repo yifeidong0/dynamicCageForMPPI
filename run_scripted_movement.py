@@ -10,9 +10,9 @@ import time
 import csv
 
 problem_name = "PlanePushMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
-gui = 1
+gui = 0
 num_via_points = 10
-num_trajs = 1
+num_trajs = 2
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)

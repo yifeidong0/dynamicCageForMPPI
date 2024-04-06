@@ -13,7 +13,7 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
     print("Saving to",filename)
     if id == 0:
         f = open(filename,'a')
-        f.write("data_id,trial,plan_iters,plan_time,best_cost,success_metric,maneuverability_metric\n")
+        f.write("data_id,trial,plan_iters,plan_time,best_cost,capture_exists_score,capture_score,success_exists_score,success_score\n")
     elif id > 0:
         f = open(filename,'a')
     for trial in range(numTrials):
@@ -44,7 +44,6 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
                 numupdates += 1
                 curCost = planner.bestPathCost
                 t1 = time.time()
-                # f.write(str(id)+","+str(trial)+","+str(iters)+","+str(t1-t0)+","+str(curCost)+'\n')
         if hasattr(planner,'stats'):
             print
             temp = Profiler()
@@ -53,11 +52,11 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
         print()
         metric = planner.getScores()
         if metric is None:
-            success_metric, maneuverability_metric = None, None
+            capture_exists_score, capture_score, success_score, success_exists_score = None, None, None, None
         else:
-            success_metric, maneuverability_metric = metric
+            capture_exists_score, capture_score, success_score, success_exists_score = metric
         print("Final cost:",curCost)
         print()
-
-        f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+","+str(success_metric)+","+str(maneuverability_metric)+'\n')
+        f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+","+str(capture_exists_score)+","+str(capture_score)
+                +","+str(success_exists_score)+","+str(success_score)+'\n')
     f.close()
