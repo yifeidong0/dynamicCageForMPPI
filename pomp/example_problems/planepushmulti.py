@@ -327,7 +327,7 @@ class PlanePushMultiObjectiveFunction(ObjectiveFunction):
         self.timestep = timestep
         self.xnext = None
 
-    def incremental(self, x, u, uparent=None):
+    def incremental(self, x, u):
         m = self.cage.mass_object
         I = self.cage.moment_object
 

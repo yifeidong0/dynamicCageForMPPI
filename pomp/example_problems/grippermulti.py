@@ -43,7 +43,7 @@ def calculate_work(alpha, I, x, xnext):
 
     return work
 
-class GripperControlSpace(ControlSpace):
+class GripperMultiControlSpace(ControlSpace):
     def __init__(self, cage):
         self.cage = cage
         self.dynamics_sim = cage.dynamics_sim
@@ -64,9 +64,9 @@ class GripperControlSpace(ControlSpace):
         return self.eval(x, u, 1.0)
     
     def eval(self, x, u, amount, print_via_points=False):
-        t, ax, ay, az, alphax, alphay, alphaz = u # control space
+        t = u[0] # control space
         tc = t * amount
-        mu = [tc, ax, ay, az, alphax, alphay, alphaz]
+        mu = [tc,] + u[1:]
 
         xaug = x + self.cage.gripper_vel
         self.dynamics_sim.reset_states(xaug)
@@ -80,99 +80,101 @@ class GripperControlSpace(ControlSpace):
     def interpolator(self, x, u, xnext=None):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
-class Gripper:
+class GripperMulti:
     def __init__(self, data, dynamics_sim, save_hyperparams=1, quasistatic_motion=0, lateral_friction_coef=0.1, mass_object=3.0):
         self.dynamics_sim = dynamics_sim
-        self.movable_joints = [1,2,3,5,6,7,9,10,11]
-        self.num_joints = len(self.movable_joints) + 1 # 9+1, plus z-axis movement of the table
+        self.dim_se3 = 6
+        self.movable_joints = [0,1,2,3,]
+        self.num_joints = len(self.movable_joints) + 1 # 4+1, plus z-axis movement of the gripper
         self.dim_workspace = 3
-        self.dim_object = 6 + 6
-        self.dim_state = self.dim_object + self.num_joints # 6+6+9+1
+        self.dim_object = 6
+        self.num_objects = int((len(data) - 2*self.num_joints) / (2*self.dim_object))
+        self.dim_state = 2*self.dim_object*self.num_objects + self.num_joints # 6+(4+1)
         self.x_range = 4
-        self.z_range = 4
         self.y_range = 4
+        self.z_range = 4
         self.offset = 0.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 100
         self.max_acceleration = 3
         self.max_ang_acceleration = .3
-        self.length_object = .3
+        self.length_object = .1
         self.mass_object = mass_object
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
         self.lateral_friction_coef = lateral_friction_coef
 
         # Gripper joints velocity and table z-axis velocity
         if quasistatic_motion:
-            self.gripper_vel = [0.0,] * self.num_joints # list[9+1,]
+            self.gripper_vel = [0.0,] * self.num_joints # list[4+1,]
         else:
-            self.gripper_vel = data[self.dim_state:] # list[9+1,]
+            self.gripper_vel = data[self.dim_state:] # list[4+1,]
 
-        self.start_state = data[:self.dim_state] # list[6+6+9+1,]
-        self.start_gripper_pos = self.start_state[-self.num_joints:] # list[9+1,]
+        self.start_state = data[:self.dim_state] # list[6n+4+1,]
+        self.start_gripper_pos = self.start_state[-self.num_joints:] # list[4+1,]
+        self.target_gripper_joint_pos = [0,1.1,0,1.1] # list[4+1,]
         self.time_range = 1e-1
-        self.params = [self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.start_gripper_pos, self.lateral_friction_coef]
+        self.params = [self.mass_object, self.moment_object, self.length_object, self.movable_joints, 
+                       self.target_gripper_joint_pos, self.lateral_friction_coef, self.num_objects]
         self.obstacles = []
         self.gravity = -9.81
 
-        self.success_vz_thres = -0.5
-        self.success_z_thres = 0.25
+        self.capture_z_thres = 0.1
+        self.capture_vz_thres = 0.3
+        self.success_z_thres = 0.3
         self.cost_inv_coef = -3e0
-        self.hyperparams = [self.x_range, self.y_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
-                            self.max_ang_acceleration, self.time_range, self.gravity, self.success_vz_thres, self.success_z_thres,
-                            self.cost_inv_coef] + self.params
-        self.hyperparams_header = ['x_range', 'y_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration',
-                                   'max_ang_acceleration', 'time_range', 'gravity', 'success_vz_thres', 'success_z_thres', 
-                                   'cost_inv_coef',
-                                   'mass_object', 'moment_object', 'length_object', 'movable_joints', 'start_gripper_pos', 'lateral_friction_coef']
+        self.hyperparams = [self.x_range, self.y_range, self.z_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
+                            self.max_ang_acceleration, self.time_range, self.gravity, self.capture_z_thres, self.capture_vz_thres,
+                            self.success_z_thres, self.cost_inv_coef] + self.params
+        self.hyperparams_header = ['x_range', 'y_range', 'z_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration', 'max_ang_acceleration', 
+                                   'time_range', 'gravity', 'capture_z_thres', 'capture_vz_thres', 'success_z_thres', 'cost_inv_coef',
+                                   'mass_object', 'moment_object', 'length_object', 'movable_joints', 'target_gripper_joint_pos', 'lateral_friction_coef']
         if save_hyperparams:
             self.saveHyperparams()
 
-        self.bmin = [-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
+        self.bmin = [-(self.x_range+self.offset)/2, -(self.y_range+self.offset)/2, -(self.z_range+self.offset)/2,
                     -math.pi, -math.pi, -math.pi,
                     -self.max_velocity, -self.max_velocity, -self.max_velocity,
-                    -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,
-                    *[-5e-2,]*(self.num_joints-1), -1e3,
-                    ]
-        self.bmax = [(self.x_range+self.offset)/2, (self.z_range+self.offset)/2, (self.y_range+self.offset)/2,
+                    -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,] * self.num_objects + \
+                    [*[-5e-2,]*(self.num_joints-1), -1e3,]
+        self.bmax = [(self.x_range+self.offset)/2, (self.y_range+self.offset)/2, (self.z_range+self.offset)/2,
                     math.pi, math.pi, math.pi,
                     self.max_velocity, self.max_velocity, self.max_velocity,
-                    self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
-                    *[math.pi/2,]*(self.num_joints-1), 1,
-                    ]
+                    self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,] * self.num_objects + \
+                    [*[math.pi/2,]*(self.num_joints-1), 1,]
 
-    def saveHyperparams(self, filename='gripper_hyperparams.csv'):
+    def saveHyperparams(self, filename='gripper_multi_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
             csv_writer = csv.writer(file)
             for header, data in zip(self.hyperparams_header, self.hyperparams):
                 csv_writer.writerow([header, data])
 
     def controlSet(self):
-        return BoxSet([-self.max_acceleration,-0.*self.max_acceleration,-self.max_acceleration,] + [-0.0*self.max_ang_acceleration,]*self.dim_workspace, 
-                      [self.max_acceleration,0.*self.max_acceleration,+self.max_acceleration,] + [0.0*self.max_ang_acceleration,]*self.dim_workspace)
+        return BoxSet(([-self.max_acceleration,-0.*self.max_acceleration,-self.max_acceleration,]+[-0.0*self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects,
+                      ([self.max_acceleration,0.*self.max_acceleration,+self.max_acceleration,]+[0.0*self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects)
 
     def controlSpace(self):
         # System dynamics
-        return GripperControlSpace(self)
+        return GripperMultiControlSpace(self)
 
     def workspace(self):
         # For visualization. Order of x,z,y for better OpenGL visualization
         wspace = Geometric2DCSpace()
-        wspace.box.bmin = [-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2]
-        wspace.box.bmax = [(self.x_range+self.offset)/2, (self.z_range+self.offset)/2]
+        wspace.box.bmin = [-(self.x_range+self.offset)/2, -(self.y_range+self.offset)/2]
+        wspace.box.bmax = [(self.x_range+self.offset)/2, (self.y_range+self.offset)/2]
         return wspace
     
     def configurationSpace(self):
         wspace = Geometric2DCSpace()
-        wspace.box.bmin = [-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2]
-        wspace.box.bmax = [(self.x_range+self.offset)/2, (self.z_range+self.offset)/2]
+        wspace.box.bmin = [-(self.x_range+self.offset)/2, -(self.y_range+self.offset)/2]
+        wspace.box.bmax = [(self.x_range+self.offset)/2, (self.y_range+self.offset)/2]
         wspace.addObstacleParam(self.obstacles)
 
-        res =  MultiConfigurationSpace(wspace, 
-                                       BoxConfigurationSpace([-(self.y_range+self.offset)/2],[(self.y_range+self.offset)/2]), 
+        res =  MultiConfigurationSpace(*[wspace, 
+                                       BoxConfigurationSpace([-(self.z_range+self.offset)/2],[(self.z_range+self.offset)/2]), 
                                        *[BoxConfigurationSpace([-math.pi],[math.pi]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),]*self.dim_workspace,
-                                       *[BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),]*self.dim_workspace,
-                                       *[BoxConfigurationSpace([-5e-2],[math.pi/2]),]*(self.num_joints-1),
+                                       *[BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),]*self.dim_workspace,] * self.num_objects,
+                                       *[BoxConfigurationSpace([-5e-2],[0.06]), BoxConfigurationSpace([-5e-2],[1.05]),] * 2,
                                        BoxConfigurationSpace([-1e3],[1]), 
                                        )
         return res
@@ -180,28 +182,34 @@ class Gripper:
     def startState(self):
         return self.start_state
 
-    def successSet(self):
-        return GripperSuccessSet(self.bmin, self.bmax, self.success_z_thres, self.success_vz_thres)
-    
+    def captureSet(self):
+        return GripperMultiCaptureSet(self.bmin, self.bmax, self.capture_z_thres, self.capture_vz_thres, self.num_objects)
+        
     def complementCaptureSet(self):
-        return GripperNonCaptureSet(self.bmin, self.bmax, self.success_z_thres, self.success_vz_thres)
+        return GripperMultiComplementCaptureSet(self.bmin, self.bmax, self.capture_z_thres, self.capture_vz_thres, self.num_objects)
+    
+    def successSet(self):
+        return GripperMultiSuccessSet(self.bmin, self.bmax, self.success_z_thres, self.num_objects)
+
+    def complementSuccessSet(self):
+        return GripperMultiComplementSuccessSet(self.bmin, self.bmax, self.success_z_thres, self.num_objects)
     
     def goalSet(self):
-        return BoxSet([-(self.x_range+self.offset)/2, -(self.z_range+self.offset)/2, -(self.y_range+self.offset)/2,
+        return BoxSet([*[-(self.x_range+self.offset)/2, -(self.y_range+self.offset)/2, -(self.z_range+self.offset)/2,
                        -math.pi, -math.pi, -math.pi,
                        -self.max_velocity, -self.max_velocity, -self.max_velocity,
-                       -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,
+                       -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,] * self.num_objects,
                        *[-5e-2,]*(self.num_joints-1), -1e3,
                        ],
-                      [(self.x_range+self.offset)/2, 1.-(self.z_range+self.offset)/2, (self.y_range+self.offset)/2,
+                      [*[(self.x_range+self.offset)/2, 1.-(self.y_range+self.offset)/2, (self.z_range+self.offset)/2,
                        math.pi, math.pi, math.pi,
                        self.max_velocity, self.max_velocity, self.max_velocity,
-                       self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,
-                       *[math.pi/2,]*(self.num_joints-1), 1,
+                       self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,] * self.num_objects,
+                       *[0.06,1.05]*2, 1,
                        ])
         # return self.successSet()
     
-class GripperObjectiveFunction(ObjectiveFunction):
+class GripperMultiObjectiveFunction(ObjectiveFunction):
     """Given a function pointwise(x,u), produces the incremental cost
     by incrementing over the interpolator's length.
     """
@@ -221,29 +229,33 @@ class GripperObjectiveFunction(ObjectiveFunction):
         self.xnext = xnext
 
         # Calculate the work done by the applied force and torque
-        alpha = np.array(u[4:])
-        W_SO3 = calculate_work(alpha, I, np.array(x[3:6]), np.array(xnext[3:6]))
-        W_R3 = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[2]-x[2]) + m*(u[3])*(xnext[1]-x[1]) # u[1:4] - x,y,z, x[:3] - x,z,y, TODO: g???
-        W_R3 = m*u[1]*(xnext[0]-x[0]) + m*u[2]*(xnext[2]-x[2]) + m*(u[3]-g)*(xnext[1]-x[1]) # u[1:4] - x,y,z, x[:3] - x,z,y
+        W = 0
+        for i in range(self.cage.num_objects):
+            alpha = np.array(u[4+6*i:4+6*i+3])
+            W_SO3 = calculate_work(alpha, I, np.array(x[3+12*i:6+12*i]), np.array(xnext[3+12*i:6+12*i]))
+            W_R3 = m*u[1+6*i]*(xnext[12*i]-x[12*i]) + m*u[2+6*i]*(xnext[1+12*i]-x[1+12*i]) + m*u[3+6*i]*(xnext[2+12*i]-x[2+12*i]) # u[1:4] - x,y,z, x[:3] - x,z,y
 
-        # Work (applied force, torque and friction)
-        W = W_R3 + W_SO3
-        c = max(abs(W), 1e-5)
-        return c
+            # Work (applied force, torque and friction)
+            W += abs(W_R3 + W_SO3)
+            # c = max(abs(W), 1e-9)
 
-def GripperTest(dynamics_sim, 
-                data=[0.0, 1.0, 1.0, 0.0, 0.0, 0.0] + [0.0,]*6 + [math.pi/12]*9 + [0.0,] + [0.0]*9 + [0.0,],
+        return max(W, 1e-9)
+
+def GripperMultiTest(dynamics_sim, 
+                data=[0.0, 0.0, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
+                     [0.0, 0.2, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
+                     [0,1,0,1,] + [2.2,] + [0.0]*4 + [0.0,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.1,
                 mass_object=3.0,
                 ):
-    p = Gripper(data, 
+    p = GripperMulti(data, 
                 dynamics_sim, 
                 save_hyperparams=save_hyperparams,
                 lateral_friction_coef=lateral_friction_coef,
                 mass_object=mass_object,
                 )
-    objective = GripperObjectiveFunction(p)
+    objective = GripperMultiObjectiveFunction(p)
     return PlanningProblem(objective.space,
                            p.startState(),
                            p.goalSet(),

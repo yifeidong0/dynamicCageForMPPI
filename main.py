@@ -54,7 +54,7 @@ rrt_planners = ['ao-rrt','anytime-rrt','r-rrt','r-rrt-prune','stable-sparse-rrt'
 est_planners = ['ao-est','r-est','r-est-prune']
 
 all_problems = {'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'BalanceGrasp', 'PlanePushMulti',
-                'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'Shuffling'}
+                'WaterSwing', 'BoxPivot', 'Herding', 'Gripper', 'GripperMulti', 'Shuffling'}
 
 defaultParameters = {'maxTime':30, 'maxIters':200000}
 customParameters = {
@@ -67,6 +67,7 @@ customParameters = {
                     'BoxPivot':{'maxTime':20},
                     'Herding':{'maxTime':3000, 'maxIters':3000},
                     'Gripper':{'maxTime':10},
+                    'GripperMulti':{'maxTime':10},
                     'Shuffling':{'maxTime':20},
                     }
 
@@ -182,6 +183,9 @@ if __name__=="__main__":
     if problem_name == 'Gripper':
         dynamics_sim = forwardSimulationGripper(gui=0)
         problem = gripper.GripperTest(dynamics_sim)
+    if problem_name == 'GripperMulti':
+        dynamics_sim = forwardSimulationGripperMulti(gui=1)
+        problem = grippermulti.GripperMultiTest(dynamics_sim)
     if problem_name == 'Shuffling':
         dynamics_sim = forwardSimulationShuffling(gui=0)
         problem = shuffling.ShufflingTest(dynamics_sim)

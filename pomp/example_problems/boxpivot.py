@@ -161,7 +161,7 @@ class BoxPivot:
     
     def complementCaptureSet(self):
         """The object is maneuverable if the pivot point velocity is not too large."""
-        return BoxPivotNonManeuverableSet([-self.offset, -self.offset, 0.0,
+        return BoxPivotNonCaptureSet([-self.offset, -self.offset, 0.0,
                        -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,
                        -self.x_range-self.offset, -self.x_range-self.offset],
                     #    -2.5*self.x_range, -2.5*self.x_range],

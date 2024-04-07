@@ -162,7 +162,7 @@ class FiniteSet(Set):
         return 2*(x-minv)
 
 
-class BoxPivotNonManeuverableSet(Set):
+class BoxPivotNonCaptureSet(Set):
     """Represents a non-maneuverable set of state that the pivoting point has a high velocity."""
     def __init__(self,bmin,bmax):
         self.bmin = bmin
@@ -186,8 +186,8 @@ class BoxPivotNonManeuverableSet(Set):
             return False
     
 
-class GripperNonManeuverableSet(Set):
-    """Represents a non-maneuverable set of state that the box is not inside the hand."""
+class GripperNonCaptureSet(Set):
+    """Represents a non-capture set of state that the box is not inside the hand."""
     def __init__(self, bmin, bmax, success_z_thres, success_vz_thres):
         self.bmin = bmin
         self.bmax = bmax
@@ -200,16 +200,14 @@ class GripperNonManeuverableSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        # assert len(x)==len(self.bmin)
-        # linear_velocity = np.linal.norm(linear_velocity)
         if x[8] < self.success_vz_thres or x[1] < self.success_z_thres: # high velocity or under the hand
-            return True # non-maneuverable
+            return True # non-capture
         else:
             return False
     
 
 class GripperSuccessSet(Set):
-    """Represents a non-maneuverable set of state that the box is not inside the hand."""
+    """Represents a success set of state."""
     def __init__(self, bmin, bmax, success_z_thres, success_vz_thres):
         self.bmin = bmin
         self.bmax = bmax
@@ -222,8 +220,91 @@ class GripperSuccessSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        if x[8] > self.success_vz_thres and x[1] > self.success_z_thres: # low velocity or inside the hand
+        if x[8] > self.success_vz_thres and x[1] > self.success_z_thres: # low velocity and inside the hand
             return True # successfully grasped
+        else:
+            return False
+
+
+class GripperMultiCaptureSet(Set):
+    """Represents a capture set of state."""
+    def __init__(self, bmin, bmax, z_thres, vz_thres, num_objects):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.z_thres = z_thres
+        self.vz_thres = vz_thres
+        self.num_objects = num_objects
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin, self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        if all((x[1+12*i] > self.z_thres and abs(x[8+12*i]) < self.vz_thres) for i in range(self.num_objects)):
+            return True # capture indicated by the z-position over tabletop and small absolute z-velocity
+        else:
+            return False
+
+
+class GripperMultiComplementCaptureSet(Set):
+    """Represents a capture set of state."""
+    def __init__(self, bmin, bmax, z_thres, vz_thres, num_objects):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.z_thres = z_thres
+        self.vz_thres = vz_thres
+        self.num_objects = num_objects
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin, self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        if all((x[1+12*i] < self.z_thres or abs(x[8+12*i]) > self.vz_thres) for i in range(self.num_objects)):
+            return True # non-capture indicated by the z-position on/below tabletop or large absolute z-velocity
+        else:
+            return False
+
+
+class GripperMultiSuccessSet(Set):
+    """Represents a success set of state."""
+    def __init__(self, bmin, bmax, success_z_thres, num_objects):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.success_z_thres = success_z_thres
+        # self.success_vz_thres = success_vz_thres
+        self.num_objects = num_objects
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin, self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        if all(x[1+12*i] > self.success_z_thres for i in range(self.num_objects)): # above a level
+            return True # successfully lifted above a horizontal plane
+        else:
+            return False
+
+
+class GripperMultiComplementSuccessSet(Set):
+    """Represents a non-success set of state."""
+    def __init__(self, bmin, bmax, success_z_thres, num_objects):
+        self.bmin = bmin
+        self.bmax = bmax
+        self.success_z_thres = success_z_thres
+        self.num_objects = num_objects
+    def dimension(self):
+        return len(self.bmin)
+    def bounds(self):
+        return (self.bmin, self.bmax)
+    def sample(self):
+        pass
+    def contains(self, x):
+        if all(x[1+12*i] < self.success_z_thres for i in range(self.num_objects)): # above a level
+            return True # successfully lifted above a horizontal plane
         else:
             return False
         

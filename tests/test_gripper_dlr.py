@@ -95,7 +95,7 @@ for i in range(80000):
         joint_states = p.getJointStates(gripperId, jointIds)
         joint_positions = [state[0] for state in joint_states]
         initial_positions = joint_positions
-    # print("joint_states: ", joint_positions)
+        print("joint_states: ", joint_positions)
 
     # apply upward force on the gripper
     if i < 300:
