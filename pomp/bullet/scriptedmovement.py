@@ -205,18 +205,10 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
             if all(self.distance(new_point, existing_point) > min_distance for existing_point in points):
                 points.append(new_point)
 
-        # xo = random.uniform(-0.9,1.1) # paper_version
-        # yo = random.uniform(.4,.4)
-        # thetao = random.uniform(-math.pi/18, math.pi/18)
-        # vxo = random.uniform(-0.0, 0.0)
-        # vyo = random.uniform(-0.0, 0.0)
-        # omegao = random.uniform(-0.0, 0.0)
         xg = (points[0][0]+points[1][0]+points[2][0])/3 + random.uniform(-0.3, 0.3)
         yg = min(points[0][1], points[1][1], points[2][1]) + random.uniform(-0.35, -0.25)
         vxg = random.uniform(-0.05, 0.05)
         vyg = random.uniform(0.2, 0.5)
-        # init_state = [xo, yo, thetao, vxo, vyo, omegao,
-        #               xg, yg, 0, vxg, vyg, 0] # TODO!!
         init_state = points[0] + points[1] + points[2] + [xg, yg, 0, vxg, vyg, 0]
 
         self.lateral_friction_coef = np.random.uniform(0.2,0.4)
@@ -257,9 +249,6 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
             # Print object via-points along the trajectory for visualization
             if t % interval == 0 or t == int(t*240)-1:
                 # Get the object and gripper states
-                # self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
-                # self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
-                # self.vel_object, self.vel_ang_object = p.getBaseVelocity(self.objectUid)
                 for i in range(self.num_objects):
                     self.pos_object[i], self.quat_object[i] = p.getBasePositionAndOrientation(self.objectUid[i])
                     self.eul_object[i] = p.getEulerFromQuaternion(self.quat_object[i]) # rad
@@ -304,10 +293,6 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
             # Record cutoff time for the manual scripted movement dataset
             all_objects_reached = 1 if all(abs(self.pos_object[i][1]-self.y_obstacle) < 0.1 + 0.03 for i in range(self.num_objects)) else 0
             exists_objects_reached = 0 if all(abs(self.pos_object[i][1]-self.y_obstacle) > 0.1 + 0.03 for i in range(self.num_objects)) else 1
-            # gripper_reached = (abs(self.pos_gripper[1]-self.y_obstacle) < (0.1+0.01))
-            # if do_cutdown_test and (gripper_reached or object_reached):
-            #     self.cutoff_t = t / 240.0 + 0.2
-            #     return via_points
             if all_objects_reached:
                 self.success_all_label = 1
             if exists_objects_reached:
@@ -697,7 +682,7 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
 
                 # Get contact forces
                 heuristics = []
-                for id in self.fingertip_ids:
+                for id in self.fingertip_link_ids:
                     res = p.getContactPoints(self.gripperUid, self.objectUid, id, -1)
                     all_contact_normal_forces = [contact[9] for contact in res]
                     contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
@@ -744,6 +729,167 @@ class scriptedMovementSimGripper(forwardSimulationGripper):
             self.success_all_label = 1
         return via_points
     
+
+class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
+    def __init__(self, cage, gui=False):
+        super().__init__(gui=gui)
+        self.cage = cage
+        self.set_params(cage.params)
+        self.create_shapes()
+        self.setup_camera()
+    
+    def setup_camera(self):
+        # Camera settings
+        self.width_cam, self.height_cam = 640, 640
+        fov = 60
+        aspect = self.width_cam / self.height_cam
+        near = 0.02
+        far = 5
+
+        # Camera position and orientation
+        camera_eye = [-1, 3.3, 1.3]  # Example values, adjust as needed
+        camera_target = [-.5, 0, 1]  # Point the camera is looking at
+        camera_up = [0, 0, 1]  # Up direction
+
+        self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
+    def distance(self, p1, p2):
+        """Function to calculate the Euclidean distance between two points."""
+        return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)**0.5
+
+    def sample_init_state(self):
+        # TODO: randomize object positions
+        min_distance = self.length_object * 1.5
+        points = []
+        while len(points) < self.num_objects:
+            # Generate a new point
+            new_point = [random.uniform(-0.4, 0.4), random.uniform(-0.2, 0.2), random.uniform(0.6, 0.6), 0.0, 0.0, 0.0,
+                         random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), random.uniform(0.05, 0.05), 0.0, 0.0, 0.0,]
+            
+            # Check if the new point is far enough from all existing points
+            if all(self.distance(new_point, existing_point) > min_distance for existing_point in points):
+                points.append(new_point)
+
+        init_state = []
+        for i in range(self.num_objects):
+            init_state = init_state + points[i]
+        init_state = init_state + [0.0,0.0,0.0,0.0,] + [2.2,] + [0.0]*4 + [0.0,]
+
+        self.lateral_friction_coef = np.random.uniform(0.1,1)
+        for i in range(-1, self.num_links-1):
+            p.changeDynamics(self.gripperUid, i, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
+                            rollingFriction=0, linearDamping=0, angularDamping=0)
+        
+        return init_state
+
+    def run_forward_sim(self, total_time=5, num_via_points=10, id_traj=0, pre_time=0.5,):
+        num_steps = int(total_time * 240)  # Number of time steps
+        interval = int((num_steps-pre_time*240) / num_via_points)
+
+        # Step the simulation
+        self.heuristics_traj = []
+        via_points = []
+        self.constraint_added = 0
+        save_img_id_k = 0
+        save_img_id = 0
+        for t in range(num_steps):
+            # Apply the calculated torques to all joints at once  
+            p.setJointMotorControlArray(bodyUniqueId=self.gripperUid,
+                                        jointIndices=self.movable_joints,
+                                        controlMode=p.POSITION_CONTROL,
+                                        targetPositions=self.target_gripper_joint_pos,
+                                        targetVelocities=[0.0,]*len(self.movable_joints),
+                                        positionGains=self.stiffness,
+                                        velocityGains=self.damping,
+                                        # controlMode=p.TORQUE_CONTROL,
+                                        forces=[1.0,]*len(self.movable_joints),)
+            
+            # if t == pre_time*240:
+            #     joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
+            #     joint_positions = [state[0] for state in joint_states]
+            #     self.target_gripper_joint_pos = joint_positions
+
+            # apply upward force on the gripper
+            self.pos_gripper_base, _ = p.getBasePositionAndOrientation(self.gripperUid)
+            if t < pre_time*240:
+                p.applyExternalForce(objectUniqueId=self.gripperUid, linkIndex=-1, forceObj=[0,0,-self.force_z_on_gripper], posObj=self.pos_gripper_base, flags=p.WORLD_FRAME)
+            else:
+                p.applyExternalForce(objectUniqueId=self.gripperUid, linkIndex=-1, forceObj=[0,0,self.force_z_on_gripper], posObj=self.pos_gripper_base, flags=p.WORLD_FRAME)
+
+            p.stepSimulation()
+
+            # Print object via-points along the trajectory for visualization
+            if t > pre_time*240 and (t+1) % interval == 0:
+                # Get the object and gripper states
+                for i in range(self.num_objects):
+                    self.pos_object[i], self.quat_object[i] = p.getBasePositionAndOrientation(self.objectUid[i])
+                    # pos_object_GL = [pos[0], pos[2], pos[1]] # x,z,y
+                    self.eul_object[i] = p.getEulerFromQuaternion(self.quat_object[i]) # rad
+                    self.vel_object[i], self.vel_ang_object[i] = p.getBaseVelocity(self.objectUid[i])
+                    print("!!!!!", self.pos_object[i][2])
+                    print("!!!!!", self.vel_object[i][2])
+                    print("")
+
+                joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
+                self.pos_gripper = [state[0] for state in joint_states]
+                self.vel_gripper = [state[1] for state in joint_states]
+                self.pos_gripper_base, _ = p.getBasePositionAndOrientation(self.gripperUid)
+                self.vel_gripper_base, _ = p.getBaseVelocity(self.gripperUid)
+                
+                # Get contact forces
+                heuristics = []
+                for i in range(self.num_objects):
+                    for id in self.fingertip_link_ids:
+                        res = p.getContactPoints(self.gripperUid, self.objectUid[i], id, -1)
+                        all_contact_normal_forces = [contact[9] for contact in res]
+                        contact_normal_force = sum(all_contact_normal_forces) if len(all_contact_normal_forces)>0 else 0.0
+                        s_engage = contact_normal_force # engage metric
+                        contact_friction_force_1 = sum([contact[10] for contact in res]) if len(all_contact_normal_forces)>0 else 0
+                        contact_friction_force_2 = sum([contact[12] for contact in res]) if len(all_contact_normal_forces)>0 else 0
+                        contact_friction_force = np.sqrt(contact_friction_force_1**2 + contact_friction_force_2**2)
+
+                        # Sticking quality measure in the paper - Criteria for Maintaining Desired Contacts for Quasi-Static Systems
+                        s_stick = (self.lateral_friction_coef*contact_normal_force - contact_friction_force) * math.cos(np.arctan(self.lateral_friction_coef))
+
+                        # Get bodies closest points distance
+                        res = p.getClosestPoints(self.gripperUid, self.objectUid[i], 100, id, -1) # 1,3,
+                        dist = res[0][8] if (len(res)>0) else 0 # and res[0][8]>=0
+                        heuristics.append(dist)
+                        heuristics.append(s_stick)
+                        heuristics.append(s_engage)
+                self.heuristics_traj.append(heuristics)
+
+                new_states = []
+                for i in range(self.num_objects):
+                    new_states = new_states + list(self.pos_object[i]) + list(self.eul_object[i]) + list(self.vel_object[i]) + list(self.vel_ang_object[i])
+                new_states = new_states + self.pos_gripper + [self.pos_gripper_base[2],] + self.vel_gripper + [self.vel_gripper_base[2],]
+                via_points.append(new_states)
+
+                # # Save camera images
+                # img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                # image = Image.fromarray(img_arr)
+                # image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/gripper-sim/6-10-K-png/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
+                # save_img_id_k += 1
+
+            if self.gui:
+                time.sleep(3/240)
+
+            # # Save camera images
+            # if t % 4 == 0:
+            #     img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+            #     image = Image.fromarray(img_arr)
+            #     # image.save(f'image_{t}.png')  # Save the image
+            #     image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/gripper-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+            #     save_img_id += 1
+        
+        for i in range(self.num_objects):
+            self.pos_object[i], self.quat_object[i] = p.getBasePositionAndOrientation(self.objectUid[i])
+            # self.vel_object[i], _ = p.getBaseVelocity(self.objectUid[i])
+        self.success_all_label = 1 if all(self.pos_object[i][2] > self.success_z_thres for i in range(self.num_objects)) else 0
+        self.success_exists_label = 0 if all(self.pos_object[i][2] <= self.success_z_thres for i in range(self.num_objects)) else 1
+        return via_points
+
 
 class scriptedMovementSimWaterSwing(forwardSimulationWaterSwing):
     def __init__(self, cage, gui=False):

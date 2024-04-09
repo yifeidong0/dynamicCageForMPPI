@@ -241,7 +241,7 @@ class GripperMultiCaptureSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        if all((x[1+12*i] > self.z_thres and abs(x[8+12*i]) < self.vz_thres) for i in range(self.num_objects)):
+        if all((x[2+12*i] > self.z_thres and x[8+12*i] > self.vz_thres) for i in range(self.num_objects)):
             return True # capture indicated by the z-position over tabletop and small absolute z-velocity
         else:
             return False
@@ -262,7 +262,7 @@ class GripperMultiComplementCaptureSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        if all((x[1+12*i] < self.z_thres or abs(x[8+12*i]) > self.vz_thres) for i in range(self.num_objects)):
+        if all((x[2+12*i] < self.z_thres or x[8+12*i] < self.vz_thres) for i in range(self.num_objects)):
             return True # non-capture indicated by the z-position on/below tabletop or large absolute z-velocity
         else:
             return False
@@ -283,7 +283,7 @@ class GripperMultiSuccessSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        if all(x[1+12*i] > self.success_z_thres for i in range(self.num_objects)): # above a level
+        if all(x[2+12*i] > self.success_z_thres for i in range(self.num_objects)): # above a level
             return True # successfully lifted above a horizontal plane
         else:
             return False
@@ -303,7 +303,7 @@ class GripperMultiComplementSuccessSet(Set):
     def sample(self):
         pass
     def contains(self, x):
-        if all(x[1+12*i] < self.success_z_thres for i in range(self.num_objects)): # above a level
+        if all(x[2+12*i] < self.success_z_thres for i in range(self.num_objects)): # above a level
             return True # successfully lifted above a horizontal plane
         else:
             return False

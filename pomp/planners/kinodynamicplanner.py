@@ -1351,6 +1351,7 @@ class CostSpaceEST:
         count_non_capture = 0
         capture_exists_score = None
         success_exists_score = None
+        print("!!!!!!!!!!", len(V))
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
@@ -1377,7 +1378,7 @@ class CostSpaceEST:
             print("Success score (at least one object reaches success):", success_exists_score)
         print("Capture score (all objects are captured):", capture_score)
         print("Success score (all objects reach success):", success_score)
-        # print("Count_success:", count_success, "count_non_capture:", count_non_capture)
+        print("Count capture:", count_capture, "Count success:", count_success, "Count non-capture:", count_non_capture, "count non-success:", count_fail)
         return capture_exists_score, capture_score, success_score, success_exists_score
         
     def getBestPathCost(self):

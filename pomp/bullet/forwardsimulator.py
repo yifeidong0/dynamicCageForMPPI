@@ -1088,7 +1088,7 @@ class forwardSimulationGripper():
         self.num_links = 13
         self.non_movable_joints = [i for i in range(self.num_joints) if i not in self.movable_joints]
         self.dim_workspace = 3
-        self.fingertip_ids = [3, 7, 11]
+        self.fingertip_link_ids = [3, 7, 11]
         self.stiffness = [1e-2,] * self.num_movable_joints  # P gain for each joint
         self.damping = [1e-1,] * self.num_movable_joints  # D gain for each joint
 
@@ -1233,17 +1233,18 @@ class forwardSimulationGripperMulti():
     
     def set_params(self, params):
         # Kinodynamics
-        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.target_gripper_joint_pos, self.lateral_friction_coef, self.num_objects = params
+        self.mass_object, self.moment_object, self.length_object, self.movable_joints, self.target_gripper_joint_pos, self.lateral_friction_coef, self.num_objects, self.success_z_thres = params
         self.mass_table = 0
-        self.mass_gripper_base = 10
+        # self.mass_gripper_base = 10
         self.num_movable_joints = len(self.movable_joints)
         self.num_joints = 4
         self.num_links = self.num_joints + 1
         self.non_movable_joints = []
         self.dim_workspace = 3
-        # self.fingertip_ids = [3, 7, 11]
+        self.force_z_on_gripper = 15
         self.stiffness = [1e1,] * self.num_movable_joints  # P gain for each joint
         self.damping = [1e9,] * self.num_movable_joints  # D gain for each joint
+        self.fingertip_link_ids = [1,3,]
 
         self.pos_object = [-0.9,0,.6]
         self.quat_object = p.getQuaternionFromEuler([0,0,0])
@@ -1293,7 +1294,6 @@ class forwardSimulationGripperMulti():
     def reset_states(self, states):
         """states: 12n+(4+1)*2 DoF"""
         # Object kinematics
-        pos = states[:self.dim_workspace]
         self.pos_object = [states[12*i:12*i+self.dim_workspace] for i in range(self.num_objects)]
         self.eul_object = [states[12*i+self.dim_workspace:12*i+2*self.dim_workspace] for i in range(self.num_objects)]
         self.quat_object = [p.getQuaternionFromEuler(self.eul_object[i]) for i in range(self.num_objects)]
@@ -1306,7 +1306,7 @@ class forwardSimulationGripperMulti():
         self.pos_gripper_base = [0, 0, states[-1-self.num_joints-1]]
         self.vel_gripper_base = [0, 0, states[-1]]
 
-        # Reset the kinematics of the object, the gripper and the table
+        # Reset the kinematics of the object, the gripper
         for i in range(self.num_objects):
             p.resetBasePositionAndOrientation(self.objectUid[i], self.pos_object[i], self.quat_object[i])
             p.resetBaseVelocity(self.objectUid[i], self.vel_object[i], self.vel_ang_object[i])
@@ -1327,7 +1327,12 @@ class forwardSimulationGripperMulti():
         torque_on_object = [np.dot(np.diag(self.moment_object), np.asarray(inputs[6*i+4:6*i+7])).tolist() for i in range(self.num_objects)]
         for i in range(int(t*240)):
             # TODO: apply upward forces on the gripper base??
-
+            self.pos_gripper_base,_ = p.getBasePositionAndOrientation(self.gripperUid)
+            p.applyExternalForce(self.gripperUid, -1, 
+                                [0,0,self.force_z_on_gripper],
+                                self.pos_gripper_base, 
+                                p.WORLD_FRAME)
+            
             # Apply the calculated torques to all joints at once  
             p.setJointMotorControlArray(bodyUniqueId=self.gripperUid,
                                         jointIndices=self.movable_joints,

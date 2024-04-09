@@ -9,6 +9,7 @@ from pomp.example_problems.balancegrasp import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
 from pomp.example_problems.gripper import *
+from pomp.example_problems.grippermulti import *
 from pomp.planners import allplanners
 from pomp.visualizer import *
 import time
@@ -19,7 +20,7 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePushMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'WaterSwing', 'Shuffling'
+prname = 'GripperMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # 'mppi', "scripted", "realworld"
 vis = 0
 maxTime = 10000 # only used when vis=0
@@ -70,8 +71,9 @@ if prname == 'BoxPivot':
 if prname == 'Gripper':
     filenames = ['data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_viapoints_Gripper.csv',]
     filename_hyperparams = 'data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_maneuver_labels_Gripper.csv'
-# if prname == 'Shuffling':
-#     filenames = ['data/shuffling/scripted_movement_viapoints_Shuffling.csv',]
+if prname == 'GripperMulti':
+    filenames = ['scripted_movement_viapoints_GripperMulti.csv',]
+    filename_hyperparams = 'scripted_movement_capture_labels_GripperMulti.csv'
 
 def move_along_longer_side(pose, d):
     xo, yo, thetao, xg, yg = pose
@@ -143,6 +145,14 @@ for file_id, filename in enumerate(filenames):
             for id, row in enumerate(csv_reader):
                 fri_coeffs.append(float(row[3]))
                 obj_mass.append(float(row[4]))
+    if prname == 'GripperMulti':
+        fri_coeffs = []
+        obj_mass = []
+        with open(filename_hyperparams, 'r') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+            for id, row in enumerate(csv_reader):
+                fri_coeffs.append(float(row[4]))
     if prname == 'PlanePushReal':
         rows = rows[-100:] # Keep only the last 100 data points
     params = {'maxTime': maxTime}
@@ -170,7 +180,7 @@ for file_id, filename in enumerate(filenames):
             data_i = new_pose_5d[:3] + data_i[3:6] + new_pose_5d[3:] + data_i[8:12]
 
         if prname == 'PlanePush':
-            dynamics_sim = forwardSimulationPlanePush(gui=1)
+            dynamics_sim = forwardSimulationPlanePush(gui=0)
             problem = PlanePushTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
         if prname == 'PlanePushRrtstar':
             dynamics_sim = forwardSimulationPlanePushRrtstar(gui=0)
@@ -179,7 +189,7 @@ for file_id, filename in enumerate(filenames):
             dynamics_sim = forwardSimulationPlanePushMulti(gui=0)
             problem = PlanePushMultiTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
         if prname == 'PlanePushReal':
-            dynamics_sim = forwardSimulationPlanePushReal(gui=1)
+            dynamics_sim = forwardSimulationPlanePushReal(gui=0)
             problem = PlanePushRealTest(dynamics_sim, data_i, save_hyperparams=1)
             if record_capture_labels:
                 num_state_planner = 9
@@ -195,6 +205,9 @@ for file_id, filename in enumerate(filenames):
         if prname == 'Gripper':
             dynamics_sim = forwardSimulationGripper(gui=0)
             problem = GripperTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i], mass_object=obj_mass[i])
+        if prname == 'GripperMulti':
+            dynamics_sim = forwardSimulationGripperMulti(gui=0)
+            problem = GripperMultiTest(dynamics_sim, data_i, save_hyperparams=1, lateral_friction_coef=fri_coeffs[i])
 
         if vis:
             runVisualizer(problem, type=plannername, **params)
@@ -208,8 +221,8 @@ for file_id, filename in enumerate(filenames):
 
 # Save labels to a CSV file with headers
 if record_capture_labels:
-    filename_mnv_label = 'capture_labels_'+prname+'.csv'
-    with open(filename_mnv_label, mode='w', newline='') as file:
+    filename_capture_label = 'capture_labels_'+prname+'.csv'
+    with open(filename_capture_label, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['traj_id', 'data_id', 'capture_label',])
         writer.writerows(capture_exists_labels)

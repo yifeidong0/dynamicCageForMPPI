@@ -81,7 +81,7 @@ class GripperMultiControlSpace(ControlSpace):
         return LambdaInterpolator(lambda s:self.eval(x,u,s), self.configurationSpace(), 10, xnext=xnext)
 
 class GripperMulti:
-    def __init__(self, data, dynamics_sim, save_hyperparams=1, quasistatic_motion=0, lateral_friction_coef=0.1, mass_object=3.0):
+    def __init__(self, data, dynamics_sim, save_hyperparams=1, quasistatic_motion=0, lateral_friction_coef=0.1):
         self.dynamics_sim = dynamics_sim
         self.dim_se3 = 6
         self.movable_joints = [0,1,2,3,]
@@ -96,10 +96,10 @@ class GripperMulti:
         self.offset = 0.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 100
-        self.max_acceleration = 3
+        self.max_acceleration = 10
         self.max_ang_acceleration = .3
-        self.length_object = .1
-        self.mass_object = mass_object
+        self.length_object = 0.1
+        self.mass_object = 0.04
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
         self.lateral_friction_coef = lateral_friction_coef
 
@@ -111,23 +111,24 @@ class GripperMulti:
 
         self.start_state = data[:self.dim_state] # list[6n+4+1,]
         self.start_gripper_pos = self.start_state[-self.num_joints:] # list[4+1,]
-        self.target_gripper_joint_pos = [0,1.1,0,1.1] # list[4+1,]
+        self.target_gripper_joint_pos = [0.5, 1.1, 0.5, 1.1] # list[4+1,]
         self.time_range = 1e-1
-        self.params = [self.mass_object, self.moment_object, self.length_object, self.movable_joints, 
-                       self.target_gripper_joint_pos, self.lateral_friction_coef, self.num_objects]
-        self.obstacles = []
         self.gravity = -9.81
-
-        self.capture_z_thres = 0.1
-        self.capture_vz_thres = 0.3
-        self.success_z_thres = 0.3
+        self.capture_z_thres = 0.3 + self.length_object/2 + 0.1 # 0.3, half thickness of the table, 0.15: thickness of gripper finger tip plus tolerance
+        self.capture_vz_thres = -0.1
+        self.success_z_thres = 1.0
         self.cost_inv_coef = -3e0
+        self.obstacles = []
+        self.params = [self.mass_object, self.moment_object, self.length_object, self.movable_joints, 
+                       self.target_gripper_joint_pos, self.lateral_friction_coef, self.num_objects, self.success_z_thres,]
+
         self.hyperparams = [self.x_range, self.y_range, self.z_range, self.offset, self.max_velocity, self.max_ang_velocity, self.max_acceleration, 
                             self.max_ang_acceleration, self.time_range, self.gravity, self.capture_z_thres, self.capture_vz_thres,
-                            self.success_z_thres, self.cost_inv_coef] + self.params
+                            self.cost_inv_coef] + self.params
         self.hyperparams_header = ['x_range', 'y_range', 'z_range', 'offset', 'max_velocity', 'max_ang_velocity', 'max_acceleration', 'max_ang_acceleration', 
-                                   'time_range', 'gravity', 'capture_z_thres', 'capture_vz_thres', 'success_z_thres', 'cost_inv_coef',
-                                   'mass_object', 'moment_object', 'length_object', 'movable_joints', 'target_gripper_joint_pos', 'lateral_friction_coef']
+                                   'time_range', 'gravity', 'capture_z_thres', 'capture_vz_thres', 'cost_inv_coef',
+                                   'mass_object', 'moment_object', 'length_object', 'movable_joints', 'target_gripper_joint_pos', 'lateral_friction_coef',
+                                   'num_objects', 'success_z_thres',]
         if save_hyperparams:
             self.saveHyperparams()
 
@@ -135,12 +136,12 @@ class GripperMulti:
                     -math.pi, -math.pi, -math.pi,
                     -self.max_velocity, -self.max_velocity, -self.max_velocity,
                     -self.max_ang_velocity, -self.max_ang_velocity, -self.max_ang_velocity,] * self.num_objects + \
-                    [*[-5e-2,]*(self.num_joints-1), -1e3,]
+                    [-0.1, -0.1, -0.1, -0.1, -1,]
         self.bmax = [(self.x_range+self.offset)/2, (self.y_range+self.offset)/2, (self.z_range+self.offset)/2,
                     math.pi, math.pi, math.pi,
                     self.max_velocity, self.max_velocity, self.max_velocity,
                     self.max_ang_velocity, self.max_ang_velocity, self.max_ang_velocity,] * self.num_objects + \
-                    [*[math.pi/2,]*(self.num_joints-1), 1,]
+                    [0.1, 1.2, 0.1, 1.2,  10,]
 
     def saveHyperparams(self, filename='gripper_multi_hyperparams.csv'):
         with open(filename, 'w', newline='') as file:
@@ -149,8 +150,8 @@ class GripperMulti:
                 csv_writer.writerow([header, data])
 
     def controlSet(self):
-        return BoxSet(([-self.max_acceleration,-0.*self.max_acceleration,-self.max_acceleration,]+[-0.0*self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects,
-                      ([self.max_acceleration,0.*self.max_acceleration,+self.max_acceleration,]+[0.0*self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects)
+        return BoxSet(([-self.max_acceleration,-self.max_acceleration,-self.max_acceleration,]+[-self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects,
+                      ([self.max_acceleration,self.max_acceleration,+self.max_acceleration,]+[self.max_ang_acceleration,]*self.dim_workspace) * self.num_objects)
 
     def controlSpace(self):
         # System dynamics
@@ -174,8 +175,8 @@ class GripperMulti:
                                        *[BoxConfigurationSpace([-math.pi],[math.pi]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-self.max_velocity],[self.max_velocity]),]*self.dim_workspace,
                                        *[BoxConfigurationSpace([-self.max_ang_velocity],[self.max_ang_velocity]),]*self.dim_workspace,] * self.num_objects,
-                                       *[BoxConfigurationSpace([-5e-2],[0.06]), BoxConfigurationSpace([-5e-2],[1.05]),] * 2,
-                                       BoxConfigurationSpace([-1e3],[1]), 
+                                       *[BoxConfigurationSpace([-0.1],[0.1]), BoxConfigurationSpace([-0.1],[1.2]),] * 2,
+                                       BoxConfigurationSpace([-1],[10]), 
                                        )
         return res
 
@@ -244,16 +245,14 @@ class GripperMultiObjectiveFunction(ObjectiveFunction):
 def GripperMultiTest(dynamics_sim, 
                 data=[0.0, 0.0, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
                      [0.0, 0.2, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
-                     [0,1,0,1,] + [2.2,] + [0.0]*4 + [0.0,],
+                     [0,0,0,0,] + [2.2,] + [0.0]*4 + [0.0,],
                 save_hyperparams=False,
                 lateral_friction_coef=0.1,
-                mass_object=3.0,
                 ):
     p = GripperMulti(data, 
                 dynamics_sim, 
                 save_hyperparams=save_hyperparams,
                 lateral_friction_coef=lateral_friction_coef,
-                mass_object=mass_object,
                 )
     objective = GripperMultiObjectiveFunction(p)
     return PlanningProblem(objective.space,
@@ -263,6 +262,8 @@ def GripperMultiTest(dynamics_sim,
                            visualizer=p.workspace(),
                            euclidean=True,
                            successSet=p.successSet(),
+                           complementSuccessSet=p.complementSuccessSet(),
+                           captureSet=p.captureSet(),
                            complementCaptureSet=p.complementCaptureSet(),
                            )
 

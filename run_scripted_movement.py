@@ -5,12 +5,13 @@ from pomp.example_problems.waterswing import *
 from pomp.example_problems.boxpivot import *
 from pomp.example_problems.shuffling import *
 from pomp.example_problems.gripper import *
+from pomp.example_problems.grippermulti import *
 from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "PlanePushMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "Shuffling", "WaterSwing", 
-gui = 0
+problem_name = "GripperMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "GripperMulti", "Shuffling", "WaterSwing", 
+gui = 1
 num_via_points = 10
 num_trajs = 2
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
@@ -103,9 +104,31 @@ if problem_name == 'Gripper':
     x_init = fake_data
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimGripper(cage, gui=gui)
+if problem_name == 'GripperMulti':
+    total_time = 2
+    num_object = 2
+    num_state_planner = (6+6)*num_object+4+1
+    headers = ['num_traj', 'data_id',] + \
+              ['xo', 'zo', 'yo', 'thetaxo', 'thetayo', 'thetazo', 
+               'vxo', 'vyo', 'vzo', 'omegaxo', 'omegayo', 'omegazo',]*num_object + \
+              ['j0', 'j1', 'j2', 'j3','zt',
+               'jv0', 'jv1', 'jv2', 'jv3', 'vzt',]
+    headers_metric = ['num_traj', 'data_id', ] + \
+                     ['shortest_distance_1', 'S_stick_1', 'S_engage_1', 
+                      'shortest_distance_3', 'S_stick_3', 'S_engage_3',]*num_object
+    headers_success = ['num_traj', 'success_all_label', 'success_exists_label']
+    headers_capture = ['num_traj', 'data_id', 'capture_exists_label', 'capture_all_label', 'lateral_friction_coef',]
+    fake_data = [0.0, 0.0, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
+                [0.0, 0.2, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
+                [0,1,0,1,] + [2.2,] + [0.0]*4 + [0.0,]
+    dynamics_sim = forwardSimulationGripperMulti(gui=0)
+    cage = GripperMulti(fake_data, dynamics_sim)
+    x_init = fake_data
+    dynamics_sim.finish_sim()
+    sim = scriptedMovementSimGripperMulti(cage, gui=gui)
 if problem_name == 'WaterSwing':
     headers = ['data_id', 'xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao', 'xg', 'yg', 'thetag', 'vxg', 'vyg', 'omegag']
-    fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0,
+    fake_data = [3.0, 5.5, 0.0, 0.0, 0.0, 0.0,
                  3.0, 4.3, 0.0, 0.0, 0.0, 0.0]
     dynamics_sim = forwardSimulationWaterSwing(gui=0)
     cage = WaterSwing(fake_data, dynamics_sim)
@@ -139,7 +162,7 @@ capture_labelset = []
 for i in range(num_trajs):
     if problem_name == 'BoxPivot' or problem_name == 'Gripper':
         sim.sample_init_state()
-    elif problem_name == 'PlanePush' or problem_name == 'PlanePushMulti' or problem_name == 'BalanceGrasp':
+    elif problem_name == 'PlanePush' or problem_name == 'PlanePushMulti' or problem_name == 'BalanceGrasp' or problem_name == 'GripperMulti':
         x_init = sim.sample_init_state()
     
     sim.reset_states(x_init)
@@ -165,18 +188,23 @@ for i in range(num_trajs):
             cage = BoxPivot(x_news[k], dynamics_sim)
         elif problem_name == 'Gripper':
             cage = Gripper(x_news[k], dynamics_sim)
+        elif problem_name == 'GripperMulti':
+            cage = GripperMulti(x_news[k], dynamics_sim)
         capture_exists_label = 0 if cage.complementCaptureSet().contains(x_news[k][:num_state_planner]) else 1
         if problem_name == 'PlanePush':
             capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef, sim.lateral_friction_coef_perturb])
-        if problem_name == 'PlanePushMulti':
+        elif problem_name == 'PlanePushMulti':
             capture_all_label = 1 if cage.captureSet().contains(x_news[k][:num_state_planner]) else 0
             capture_labelset.append([i, k,] + [capture_exists_label, capture_all_label, sim.lateral_friction_coef])
         elif problem_name == 'BoxPivot':
             capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef,])
         elif problem_name == 'Gripper':
             capture_labelset.append([i, k,] + [capture_exists_label, sim.lateral_friction_coef, sim.mass_object])
+        elif problem_name == 'GripperMulti':
+            capture_all_label = 1 if cage.captureSet().contains(x_news[k][:num_state_planner]) else 0
+            capture_labelset.append([i, k,] + [capture_exists_label, capture_all_label, sim.lateral_friction_coef,])
 
-    if problem_name == 'PlanePushMulti':
+    if problem_name == 'PlanePushMulti' or problem_name == 'GripperMulti':
         success_labelset.append([i, sim.success_all_label, sim.success_exists_label,])
     else:
         success_labelset.append([i, sim.success_all_label,])
