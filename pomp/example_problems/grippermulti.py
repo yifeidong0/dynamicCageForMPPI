@@ -92,7 +92,7 @@ class GripperMulti:
         self.dim_state = 2*self.dim_object*self.num_objects + self.num_joints # 6+(4+1)
         self.x_range = 4
         self.y_range = 4
-        self.z_range = 4
+        self.z_range = 10
         self.offset = 0.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 100

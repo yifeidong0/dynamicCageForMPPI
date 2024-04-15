@@ -1351,7 +1351,7 @@ class CostSpaceEST:
         count_non_capture = 0
         capture_exists_score = None
         success_exists_score = None
-        print("!!!!!!!!!!", len(V))
+        print("!!!!!!!!!!len(V)", len(V))
         for v in V:
             prob_density = np.exp(self.baseControlSpace.cost_inv_coef * v[-1])
             total_prob += prob_density
