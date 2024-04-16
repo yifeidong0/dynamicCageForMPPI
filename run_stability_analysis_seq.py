@@ -12,17 +12,19 @@ from pomp.example_problems.gripper import *
 from pomp.example_problems.grippermulti import *
 from pomp.planners import allplanners
 from pomp.visualizer import *
+from tests.min_bound_ellipsoid import *
 import time
 import csv
 from main import *
 import os
+import numpy as np
 
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
 prname = 'PlanePushMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # 'mppi', "scripted", "realworld"
-vis = 1
+vis = 0
 maxTime = 10000 # only used when vis=0
 maxIters = 300
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
@@ -36,6 +38,7 @@ randomize_friction = 0
 randomize_velocity = 0
 randomize_position = 0
 randomize_all = 0
+randomize_ellipse_representation = 1
 fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
 if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
@@ -47,8 +50,8 @@ if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     if traj_type == 'mppi':
         filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
 if prname == 'PlanePushMulti':
-    filenames = ['scripted_movement_viapoints_PlanePushMulti.csv',]
-    filename_friction = 'scripted_movement_capture_labels_PlanePushMulti.csv'
+    filenames = ['data/evaluation/workshop/num_objects/10/scripted_movement_viapoints_PlanePushMulti.csv',]
+    filename_friction = 'data/evaluation/workshop/num_objects/10/scripted_movement_capture_labels_PlanePushMulti.csv'
 if prname == 'PlanePushReal':
     scale_factor = 10
     if traj_type == 'realworld':
@@ -181,6 +184,16 @@ for file_id, filename in enumerate(filenames):
             pose_5d = data_i[:3] + data_i[6:8]
             new_pose_5d = move_along_longer_side(pose_5d, random.uniform(-noise*pos_ratio, noise*pos_ratio))
             data_i = new_pose_5d[:3] + data_i[3:6] + new_pose_5d[3:] + data_i[8:12]
+        if randomize_ellipse_representation and prname == 'PlanePushMulti':
+            num_objects = int((len(data_i)-6)/6)
+            positions = [data_i[0+6*i:2+6*i] for i in range((num_objects))]
+            positions = np.array(positions)
+            center, radii, rotation = khachiyan_algorithm(positions)
+            points = sample_points_in_ellipse(center, radii, rotation, num_samples=num_objects)
+            # plot_ellipse_and_points(center, radii, rotation, points, positions)
+            for j in range(num_objects):
+                data_i[0+6*j:2+6*j] = points[j]
+                data_i[2+6*j:6+6*j] = [0,]*4
 
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
