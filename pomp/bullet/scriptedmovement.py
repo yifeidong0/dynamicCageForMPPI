@@ -104,7 +104,6 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
 
             # Print object via-points along the trajectory for visualization
             if t % interval == 0 or t == int(t*240)-1:
-                print("t: ", t)
                 # Get the object and gripper states
                 self.pos_object, self.quat_object = p.getBasePositionAndOrientation(self.objectUid)
                 self.eul_object = p.getEulerFromQuaternion(self.quat_object) # rad
@@ -202,14 +201,15 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
                 points.append(new_point)
 
         sum_xo = sum([point[0] for point in points])
-        xg = sum_xo/self.num_objects + random.uniform(-0.15, 0.15)
+        xg = sum_xo/self.num_objects + random.uniform(-0.0, 0.0)
         min_yo = min([point[1] for point in points])
         yg = min_yo + random.uniform(-0.3, -0.2)
-        vxg = random.uniform(-0.05, 0.05)
+        vxg = random.uniform(-0.1, 0.1)
         vyg = random.uniform(0.02, 0.06)
-        omegag = random.uniform(-0.1, 0.1)
+        alphag = random.uniform(-0.0, 0.0)
+        omegag = random.uniform(-0.0, 0.0)
         points = [point for sublist in points for point in sublist] # remove inner bracket of points
-        init_state = points + [xg, yg, 0, vxg, vyg, omegag]
+        init_state = points + [xg, yg, alphag, vxg, vyg, omegag]
 
         self.lateral_friction_coef = np.random.uniform(0.4,0.4)
         # self.lateral_friction_coef_perturb = self.lateral_friction_coef + np.random.uniform(-0.1,0.1)

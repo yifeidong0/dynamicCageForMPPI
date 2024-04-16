@@ -50,17 +50,17 @@ def get_m_metric(labels, predictions):
     print("AUC (Area Under Curve) for ROC: ", roc_auc)
     print("AP (Average Precision) for Precision-Recall Curve: ", average_precision)
 
-def get_s_metric(labels, predictions, predict_id=60):
+def get_s_metric(labels, predictions, predict_id=0):
     """ success metric
         metric_original: list of floats, len=num_traj*num_via_points
     """
     metrics_traj = []
     # list of weights of length 10 that add up to 1 and exponentially increase
-    weights = [1.4**i for i in range(num_via_points)]
+    weights = [1.0**i for i in range(num_via_points)]
     # weights = [w/sum(weights) for w in weights]
     for i in range(num_trajs):
         m = predictions[i*num_via_points:(i+1)*num_via_points]
-        metrics_traj.append(sum([w*m for w,m in zip(weights[:predict_id],m[:predict_id])]))
+        metrics_traj.append(sum([w*m for w,m in zip(weights[predict_id:],m[predict_id:])]))
 
     # Example usage with the AO-RRT success metrics
     roc_auc, average_precision = plot_metrics_and_curves(labels, metrics_traj)
@@ -95,7 +95,7 @@ if prname == 'PlanePushReal':
     f_aoest_metrics = 'data/evaluation/real-world/jaw-pushes-rectangle/ao_est.csv'
 
 if prname == 'PlanePushMulti':
-    num_trajs = 10
+    num_trajs = 20
     f_success_labels = 'scripted_movement_success_labels_PlanePushMulti.csv'
     f_maneuver_labels = 'scripted_movement_capture_labels_PlanePushMulti.csv'
     f_aoest_metrics = 'data/PlanePushMulti/ao_est.csv'
