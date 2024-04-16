@@ -134,10 +134,10 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
                             ]
                 via_points.append(new_states)
 
-                # Save camera images
-                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
-                image = Image.fromarray(img_arr)
-                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-10-K-png/image_{id_traj}_{t:04d}.png')  # Save the image
+                # # Save camera images
+                # img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                # image = Image.fromarray(img_arr)
+                # image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-10-K-png/image_{id_traj}_{t:04d}.png')  # Save the image
 
             p.stepSimulation()
 
@@ -152,12 +152,12 @@ class scriptedMovementSimPlanePush(forwardSimulationPlanePush):
             if self.gui:
                 time.sleep(2/240)
 
-            # Save camera images
-            if t % 5 == 0:
-                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
-                image = Image.fromarray(img_arr)
-                image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
-                save_img_id += 1
+            # # Save camera images
+            # if t % 5 == 0:
+            #     img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+            #     image = Image.fromarray(img_arr)
+            #     image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-trajs-png/image_{id_traj}_{save_img_id:04d}.png')  # Save the image
+            #     save_img_id += 1
 
         return via_points
 
@@ -189,29 +189,29 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
     def distance(self, p1, p2):
         return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
 
-    def sample_init_state(self, min_distance = 0.25):
-        # init_neutral = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,
-                        # 1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
-                        # 1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
-                        # 1.0, 0.1, 0.0, 0.0, 1.0, 0.2,]
+    def sample_init_state(self, min_distance = 0.1):
         # Generate points
         points = []
         while len(points) < self.num_objects:
             # Generate a new point
-            new_point = [random.uniform(0.7, 1.3), random.uniform(0.5, 1.0), 0.0,
+            new_point = [random.uniform(0.7, 1.3), random.uniform(0.6, 1.0), 0.0,
                          random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0.0]
             
             # Check if the new point is far enough from all existing points
             if all(self.distance(new_point, existing_point) > min_distance for existing_point in points):
                 points.append(new_point)
 
-        xg = (points[0][0]+points[1][0]+points[2][0])/3 + random.uniform(-0.3, 0.3)
-        yg = min(points[0][1], points[1][1], points[2][1]) + random.uniform(-0.35, -0.25)
+        sum_xo = sum([point[0] for point in points])
+        xg = sum_xo/self.num_objects + random.uniform(-0.15, 0.15)
+        min_yo = min([point[1] for point in points])
+        yg = min_yo + random.uniform(-0.3, -0.2)
         vxg = random.uniform(-0.05, 0.05)
-        vyg = random.uniform(0.2, 0.5)
-        init_state = points[0] + points[1] + points[2] + [xg, yg, 0, vxg, vyg, 0]
+        vyg = random.uniform(0.02, 0.06)
+        omegag = random.uniform(-0.1, 0.1)
+        points = [point for sublist in points for point in sublist] # remove inner bracket of points
+        init_state = points + [xg, yg, 0, vxg, vyg, omegag]
 
-        self.lateral_friction_coef = np.random.uniform(0.2,0.4)
+        self.lateral_friction_coef = np.random.uniform(0.4,0.4)
         # self.lateral_friction_coef_perturb = self.lateral_friction_coef + np.random.uniform(-0.1,0.1)
         p.changeDynamics(self.planeUid, -1, lateralFriction=self.lateral_friction_coef, spinningFriction=0, 
                             rollingFriction=0, linearDamping=0, angularDamping=0)

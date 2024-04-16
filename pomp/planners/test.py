@@ -13,7 +13,7 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
     print("Saving to",filename)
     if id == 0:
         f = open(filename,'a')
-        f.write("data_id,trial,plan_iters,plan_time,best_cost,capture_exists_score,capture_score,success_exists_score,success_score\n")
+        f.write("data_id,trial,plan_iters,plan_time,best_cost,capture_exists_score,capture_score,success_exists_score,success_score,runtime\n")
     elif id > 0:
         f = open(filename,'a')
     for trial in range(numTrials):
@@ -58,5 +58,5 @@ def testPlanner(planner, numTrials, maxTime, maxIters, filename, **params):
         print("Final cost:",curCost)
         print()
         f.write(str(id)+","+str(trial)+","+str(iters)+","+str(maxTime)+","+str(curCost)+","+str(capture_exists_score)+","+str(capture_score)
-                +","+str(success_exists_score)+","+str(success_score)+'\n')
+                +","+str(success_exists_score)+","+str(success_score)+","+str(time.time()-t0)+'\n')
     f.close()

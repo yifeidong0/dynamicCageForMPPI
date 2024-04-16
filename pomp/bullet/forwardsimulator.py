@@ -338,7 +338,7 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
                                                         self.quat_object))
             elif self.object_name == 'cylinder':
                 # objectId = p.createCollisionShape(p.GEOM_CYLINDER, radius=.2, height=2*self.z_bodies)
-                objectId.append(p.createCollisionShape(p.GEOM_CYLINDER, radius=.1, height=2*self.z_bodies))
+                objectId.append(p.createCollisionShape(p.GEOM_CYLINDER, radius=.05, height=2*self.z_bodies))
                 self.objectUid.append(p.createMultiBody(self.mass_object, 
                                                         objectId[i], 
                                                         self.visualShapeId, 
@@ -350,7 +350,7 @@ class forwardSimulationPlanePushMulti(forwardSimulationPlanePush):
         
         # Create a robot
         if self.gripper_name == 'box':
-            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.3, .1, self.z_bodies])
+            gripperId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[.4, .1, self.z_bodies])
             self.gripperUid = p.createMultiBody(self.mass_gripper, 
                                            gripperId, 
                                            self.visualShapeId, 

@@ -64,18 +64,18 @@ class PlanePushMulti:
         self.max_ang_acceleration = .5 * lateral_friction_coef/0.3
         self.angle_slope = 0.0 * math.pi  # equivalent to on a slope
         self.lateral_friction_coef = lateral_friction_coef
-        self.task_goal_margin = 0.05
-        self.capture_goal_margin = .3
+        self.task_goal_margin = 0.1
+        self.capture_goal_margin = .4
 
         if paper_version:
             self.x_range = 2
             self.y_range = 2
             # lateral_friction_coef = 0.5
-            self.max_acceleration = .8 * lateral_friction_coef/0.3
+            self.max_acceleration = 1 * lateral_friction_coef/0.2
             self.y_obstacle = 1.6 # the lower rim y_pos of the obstacle
             self.maneuver_goal_tmax = 1
             self.offset = 0.1 # extend the landscape
-            self.time_range = .5
+            self.time_range = .1
             self.cost_inv_coef = -5e0
             self.maneuver_goal_tmax = 1
         else:
@@ -93,7 +93,7 @@ class PlanePushMulti:
 
         self.object_name = 'cylinder' # 'box', 'cylinder'
         self.gripper_name = 'box' # 'box', 'cylinder', 'bowl'
-        self.mass_object = 1
+        self.mass_object = .2
         self.mass_gripper = 4
         factor_object = 1e-1 if self.object_name == 'box' else 1e-3
         factor_gripper = 1e-1 if (self.gripper_name == 'box' or self.gripper_name == 'bowl') else 1e-3
@@ -178,7 +178,7 @@ class PlanePushMulti:
     def startState(self):
         return self.start_state
 
-    def successSet(self, ball_rad=0.1):
+    def successSet(self, ball_rad=0.05):
         wsbmin = [-self.offset, self.y_obstacle-ball_rad-self.task_goal_margin,]
         wsbmax = [self.x_range+self.offset, self.y_obstacle-ball_rad+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
@@ -327,7 +327,7 @@ class PlanePushMultiObjectiveFunction(ObjectiveFunction):
         self.timestep = timestep
         self.xnext = None
 
-    def incremental(self, x, u):
+    def incremental(self, x, u, uparent=None):
         m = self.cage.mass_object
         I = self.cage.moment_object
 

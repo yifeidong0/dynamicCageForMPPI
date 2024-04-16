@@ -10,10 +10,10 @@ from pomp.bullet.scriptedmovement import *
 import time
 import csv
 
-problem_name = "GripperMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "GripperMulti", "Shuffling", "WaterSwing", 
-gui = 1
+problem_name = "PlanePushMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "GripperMulti", "Shuffling", "WaterSwing", 
+gui = 0
 num_via_points = 10
-num_trajs = 2
+num_trajs = 20
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -34,8 +34,8 @@ if problem_name == 'PlanePush':
     dynamics_sim.finish_sim()
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
 if problem_name == 'PlanePushMulti':
-    total_time = 2.5
-    num_object = 3
+    total_time = 2
+    num_object = 10
     num_state_planner = 3 + 6*num_object
     headers = ['num_traj', 'data_id', ] + \
                ['xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',]*num_object + \
@@ -43,10 +43,10 @@ if problem_name == 'PlanePushMulti':
     headers_metric = ['num_traj', 'data_id',] + ['shortest_distance', 'S_stick', 'S_engage']*num_object
     headers_success = ['num_traj', 'success_all_label', 'success_exists_label']
     headers_capture = ['num_traj', 'data_id', 'capture_exists_label', 'capture_all_label', 'lateral_friction_coef']
-    fake_data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,
-                1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
-                1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
-                1.0, 0.1, 0.0, 0.0, 1.0, 0.2,]
+    fake_data = [1.0, 0.4, 0.0, 0.0, 0.0, 0.0,]*num_object \
+                + [1.0, 0.1, 0.0, 0.0, 1.0, 0.2,]
+                # 1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 
+                # 1.4, 0.7, 0.0, 0.0, 0.0, 0.0, 
     dynamics_sim = forwardSimulationPlanePushMulti(gui=0)
     cage = PlanePushMulti(fake_data, dynamics_sim)
     x_init = fake_data
@@ -106,7 +106,7 @@ if problem_name == 'Gripper':
     sim = scriptedMovementSimGripper(cage, gui=gui)
 if problem_name == 'GripperMulti':
     total_time = 2
-    num_object = 2
+    num_object = 5
     num_state_planner = (6+6)*num_object+4+1
     headers = ['num_traj', 'data_id',] + \
               ['xo', 'zo', 'yo', 'thetaxo', 'thetayo', 'thetazo', 
@@ -118,8 +118,7 @@ if problem_name == 'GripperMulti':
                       'shortest_distance_3', 'S_stick_3', 'S_engage_3',]*num_object
     headers_success = ['num_traj', 'success_all_label', 'success_exists_label']
     headers_capture = ['num_traj', 'data_id', 'capture_exists_label', 'capture_all_label', 'lateral_friction_coef',]
-    fake_data = [0.0, 0.0, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
-                [0.0, 0.2, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6 +\
+    fake_data = ([0.0, 0.0, 0.9, 0.0, 0.0, 0.0] + [0.0,]*6)*num_object +\
                 [0,1,0,1,] + [2.2,] + [0.0]*4 + [0.0,]
     dynamics_sim = forwardSimulationGripperMulti(gui=0)
     cage = GripperMulti(fake_data, dynamics_sim)

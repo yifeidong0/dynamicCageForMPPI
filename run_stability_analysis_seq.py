@@ -20,11 +20,11 @@ import os
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'GripperMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
+prname = 'PlanePushMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # 'mppi', "scripted", "realworld"
 vis = 0
 maxTime = 10000 # only used when vis=0
-maxIters = 500
+maxIters = 300
 init_id = 4 if traj_type == 'mppi' else 2 # 0 for scripted, 2 for mppi
 record_capture_labels = 0
 use_default_friction = 0
@@ -38,14 +38,17 @@ randomize_position = 0
 randomize_all = 0
 fri_ratio, vel_ratio, pos_ratio = 1.0, 4.0, 2.0 # noise in [0,1]
 
-if prname == 'PlanePush' or prname == 'PlanePushRrtstar' or prname == 'PlanePushMulti':
+if prname == 'PlanePush' or prname == 'PlanePushRrtstar':
     if traj_type == 'scripted':
         # filenames = ['data/paper_vis/plane_push/scripted_movement_viapoints_PlanePush.csv',]
         # filename_friction = 'data/paper_vis/plane_push/scripted_movement_maneuver_labels_PlanePush.csv'
-        filenames = ['scripted_movement_viapoints_PlanePushMulti.csv',]
-        filename_friction = 'scripted_movement_capture_labels_PlanePushMulti.csv'
+        filenames = ['scripted_movement_viapoints_PlanePush.csv',]
+        filename_friction = 'scripted_movement_capture_labels_PlanePush.csv'
     if traj_type == 'mppi':
         filenames = ['data/18k_dataset_from_mppi/states_from_mppi.csv',]
+if prname == 'PlanePushMulti':
+    filenames = ['scripted_movement_viapoints_PlanePushMulti.csv',]
+    filename_friction = 'scripted_movement_capture_labels_PlanePushMulti.csv'
 if prname == 'PlanePushReal':
     scale_factor = 10
     if traj_type == 'realworld':
