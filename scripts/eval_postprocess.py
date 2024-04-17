@@ -69,7 +69,7 @@ def get_s_metric(labels, predictions, predict_id=0):
 
 ##################################
 
-prname = 'GripperMulti' # 'BalanceGrasp', 'PlanePush', 'PlanePushMulti', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'PlanePushMulti' # 'BalanceGrasp', 'PlanePush', 'PlanePushMulti', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 100 if prname == 'PlanePushReal' else 10
 num_trajs = 12 if prname == 'PlanePushReal' else 50
 
@@ -95,9 +95,9 @@ if prname == 'PlanePushReal':
     f_aoest_metrics = 'data/evaluation/real-world/jaw-pushes-rectangle/ao_est.csv'
 if prname == 'PlanePushMulti':
     num_trajs = 20
-    f_success_labels = 'data/evaluation/workshop/ellipse_representation/10/scripted_movement_success_labels_PlanePushMulti.csv'
-    f_maneuver_labels = 'data/evaluation/workshop/ellipse_representation/10/scripted_movement_capture_labels_PlanePushMulti.csv'
-    f_aoest_metrics = 'data/evaluation/workshop/ellipse_representation/10/original-data/ao_est.csv'
+    f_success_labels = 'data/evaluation/workshop/ellipse_representation/planepush-10objects/scripted_movement_success_labels_PlanePushMulti.csv'
+    f_maneuver_labels = 'data/evaluation/workshop/ellipse_representation/planepush-10objects/scripted_movement_capture_labels_PlanePushMulti.csv'
+    f_aoest_metrics = 'data/evaluation/workshop/ellipse_representation/planepush-10objects/original-data/ao_est.csv'
 
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'
@@ -125,9 +125,9 @@ if prname == 'Gripper':
     f_effort_aorrt = 'data/evaluation/gripper/rand_objmass_fri/approaches/effort-aorrt/ao_rrt.csv'
 if prname == 'GripperMulti':
     num_trajs = 20
-    f_success_labels = 'data/evaluation/workshop/grippermulti/scripted_movement_success_labels_GripperMulti.csv'
-    f_maneuver_labels = 'data/evaluation/workshop/grippermulti/scripted_movement_capture_labels_GripperMulti.csv'
-    f_aoest_metrics = 'data/evaluation/workshop/grippermulti/2/ao_est.csv'
+    f_success_labels = 'data/evaluation/workshop/ellipse_representation/gripper-5objects/scripted_movement_success_labels_GripperMulti.csv'
+    f_maneuver_labels = 'data/evaluation/workshop/ellipse_representation/gripper-5objects/scripted_movement_capture_labels_GripperMulti.csv'
+    f_aoest_metrics = 'data/evaluation/workshop/ellipse_representation/gripper-5objects/original/ao_est.csv'
 
 # # Read from the CSV file
 success_labels = []
@@ -161,6 +161,31 @@ with open(f_aoest_metrics, 'r') as file:
     for id, row in enumerate(csv_reader):
         success_metrics_aoest.append(float(row[8]))
         maneuverability_metric_aoest.append(float(row[6]))
+
+# # empty np arrays
+# error_success = []
+# error_maneuver = []
+# for i in range(5):
+#     success_metrics_aoest1 = []
+#     maneuverability_metric_aoest1 = []
+#     with open("data/evaluation/workshop/ellipse_representation/planepush-10objects/"+str(i+1)+"/ao_est.csv", 'r') as file:
+#         csv_reader = csv.reader(file)
+#         header = next(csv_reader)
+#         for id, row in enumerate(csv_reader):
+#             success_metrics_aoest1.append(float(row[8]))
+#             maneuverability_metric_aoest1.append(float(row[6]))
+#     error_success = error_success + [x-y for x, y in zip(success_metrics_aoest1, success_metrics_aoest)]
+#     error_maneuver = error_maneuver + [x-y for x, y in zip(maneuverability_metric_aoest1, maneuverability_metric_aoest)]
+# error_success = np.array(error_success)
+# error_maneuver = np.array(error_maneuver)                            
+# mean_error_success = np.mean(error_success)
+# mean_error_maneuver = np.mean(error_maneuver)
+# std_error_success = np.std(error_success)
+# std_error_maneuver = np.std(error_maneuver)
+# print("Mean error in success metric: ", mean_error_success)
+# print("Mean error in maneuverability metric: ", mean_error_maneuver)
+# print("Standard deviation in success metric: ", std_error_success)
+# print("Standard deviation in maneuverability metric: ", std_error_maneuver)
 
 # effort_aorrt_metrics = []
 # with open(f_effort_aorrt, 'r') as file:
