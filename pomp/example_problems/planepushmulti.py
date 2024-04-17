@@ -178,7 +178,7 @@ class PlanePushMulti:
     def startState(self):
         return self.start_state
 
-    def successSet(self, ball_rad=0.1):
+    def successSet(self, ball_rad=0.05):
         wsbmin = [-self.offset, self.y_obstacle-ball_rad-self.task_goal_margin,]
         wsbmax = [self.x_range+self.offset, self.y_obstacle-ball_rad+self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]
@@ -188,7 +188,7 @@ class PlanePushMulti:
         return MultiSet(*[BoxSet(wsbmin+bmin, wsbmax+bmax),]*self.num_objects, 
                         BoxSet(bmin_ee, bmax_ee)) # multiset: consistent with other sets
 
-    def complementSuccessSet(self, ball_rad=0.1):
+    def complementSuccessSet(self, ball_rad=0.05):
         wsbmin = [-self.offset, -self.offset,]
         wsbmax = [self.x_range+self.offset, self.y_obstacle-ball_rad-self.task_goal_margin,]
         bmin = [-math.pi, -self.max_velocity, -self.max_velocity, -self.max_ang_velocity,]

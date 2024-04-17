@@ -96,9 +96,9 @@ if prname == 'PlanePushReal':
 
 if prname == 'PlanePushMulti':
     num_trajs = 20
-    f_success_labels = 'scripted_movement_success_labels_PlanePushMulti.csv'
-    f_maneuver_labels = 'scripted_movement_capture_labels_PlanePushMulti.csv'
-    f_aoest_metrics = 'data/PlanePushMulti/ao_est.csv'
+    f_success_labels = 'data/evaluation/workshop/ellipse_representation/10/scripted_movement_success_labels_PlanePushMulti.csv'
+    f_maneuver_labels = 'data/evaluation/workshop/ellipse_representation/10/scripted_movement_capture_labels_PlanePushMulti.csv'
+    f_aoest_metrics = 'data/evaluation/workshop/ellipse_representation/10/original-data/ao_est.csv'
 
 if prname == 'BalanceGrasp':
     f_success_labels = 'data/evaluation/balance_grasp/rand_traj_1/dataset/scripted_movement_success_labels_BalanceGrasp.csv'

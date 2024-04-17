@@ -206,7 +206,7 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
         yg = min_yo + random.uniform(-0.3, -0.2)
         vxg = random.uniform(-0.1, 0.1)
         vyg = random.uniform(0.02, 0.06)
-        alphag = random.uniform(-0.0, 0.0)
+        alphag = random.uniform(-0.8, 0.8)
         omegag = random.uniform(-0.0, 0.0)
         points = [point for sublist in points for point in sublist] # remove inner bracket of points
         init_state = points + [xg, yg, alphag, vxg, vyg, omegag]
