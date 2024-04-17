@@ -96,9 +96,9 @@ class GripperMulti:
         self.offset = 0.0 # extend the landscape
         self.max_velocity = 100
         self.max_ang_velocity = 100
-        self.max_acceleration = 10
+        self.max_acceleration = 2
         self.max_ang_acceleration = .3
-        self.length_object = 0.1
+        self.length_object = 0.05
         self.mass_object = 0.04
         self.moment_object = [(1/12) * self.mass_object * (self.length_object**2 + self.length_object**2),]*self.dim_workspace
         self.lateral_friction_coef = lateral_friction_coef
@@ -114,9 +114,9 @@ class GripperMulti:
         self.target_gripper_joint_pos = [0.5, 1.1, 0.5, 1.1] # list[4+1,]
         self.time_range = 1e-1
         self.gravity = -9.81
-        self.capture_z_thres = 0.3 + self.length_object/2 + 0.1 # 0.3, half thickness of the table, 0.15: thickness of gripper finger tip plus tolerance
+        self.capture_z_thres = 0.3 + self.length_object/2 + 0.05 # 0.3, half thickness of the table, 0.15: thickness of gripper finger tip plus tolerance
         self.capture_vz_thres = -0.1
-        self.success_z_thres = 1.0
+        self.success_z_thres = 0.7
         self.cost_inv_coef = -3e0
         self.obstacles = []
         self.params = [self.mass_object, self.moment_object, self.length_object, self.movable_joints, 

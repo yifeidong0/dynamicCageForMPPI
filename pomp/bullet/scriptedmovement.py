@@ -764,7 +764,7 @@ class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
         points = []
         while len(points) < self.num_objects:
             # Generate a new point
-            new_point = [random.uniform(-0.4, 0.4), random.uniform(-0.2, 0.2), random.uniform(0.4, 0.4), 0.0, 0.0, 0.0,
+            new_point = [random.uniform(-0.4, 0.4), random.uniform(-0.1, 0.1), random.uniform(0.4, 0.4), 0.0, 0.0, 0.0,
                          random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), random.uniform(0.05, 0.05), 0.0, 0.0, 0.0,]
             
             # Check if the new point is far enough from all existing points

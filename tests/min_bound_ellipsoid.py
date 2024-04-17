@@ -42,6 +42,27 @@ def sample_points_in_ellipse(center, radii, rotation, num_samples=100):
 
     return points
 
+def sample_points_in_ellipsoid_3d(center, radii, rotation, num_samples=100):
+    # Generate random points in a unit sphere using spherical coordinates
+    u = np.random.uniform(0, 1, num_samples)
+    theta = np.random.uniform(0, 2 * np.pi, num_samples)
+    phi = np.arccos(1 - 2 * u)
+    r = np.cbrt(np.random.uniform(0, 1, num_samples))  # Cube root for volume uniformity
+
+    # Convert spherical to cartesian coordinates
+    points = np.vstack((r * np.sin(phi) * np.cos(theta), r * np.sin(phi) * np.sin(theta), r * np.cos(phi))).T
+
+    # Scale points by the radii of the ellipsoid
+    points *= radii
+
+    # Rotate points to align with the ellipsoid's axes
+    points = np.dot(points, rotation.T)
+
+    # Translate points to the center of the ellipsoid
+    points += center
+
+    return points
+
 def plot_ellipse_and_points(center, radii, rotation, points, P):
     fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
     ellipse = Ellipse(xy=center, width=2*radii[0], height=2*radii[1], angle=np.degrees(np.arctan2(*rotation[:,0][::-1])))
@@ -56,8 +77,48 @@ def plot_ellipse_and_points(center, radii, rotation, points, P):
     plt.grid(True)
     plt.show()
 
+from mpl_toolkits.mplot3d import Axes3D
+def plot_ellipsoid_and_points(center, radii, rotation, points, P):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Plot the original points
+    ax.scatter(P[:, 0], P[:, 1], P[:, 2], color='blue', s=50, label='Original Points')
+
+    # Generate a mesh for the ellipsoid
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
+    x = radii[0] * np.outer(np.cos(u), np.sin(v))
+    y = radii[1] * np.outer(np.sin(u), np.sin(v))
+    z = radii[2] * np.outer(np.ones_like(u), np.cos(v))
+
+    # Transform each point on the mesh
+    for i in range(len(x)):
+        for j in range(len(x[0])):
+            [x[i, j], y[i, j], z[i, j]] = np.dot([x[i, j], y[i, j], z[i, j]], rotation.T) + center
+
+    # Plot the ellipsoid
+    ax.plot_surface(x, y, z, rstride=4, cstride=4, color='b', alpha=0.25, label='Bounding Ellipsoid')
+
+    # Plot sampled points
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], color='red', s=20, label='Sampled Points')
+    
+    ax.set_xlabel('X Axis')
+    ax.set_ylabel('Y Axis')
+    ax.set_zlabel('Z Axis')
+    plt.title('Minimum Bounding Ellipsoid with Sampled Points')
+    # plt.legend()
+    plt.show()
+
+
 # # Example usage:
 # P = np.array([[1, 1], [2, -1], [1, 3], [3, 2], [0.5, 1.5]])
 # center, radii, rotation = khachiyan_algorithm(P)
 # points = sample_points_in_ellipse(center, radii, rotation, num_samples=5)
 # plot_ellipse_and_points(center, radii, rotation, points, P)
+    
+# # Example usage for 3D ellipsoid:
+# P = np.array([[1, 1, 1], [2, -1, 0], [1, 3, 2], [3, 2, -1], [0.5, 1.5, 1]])
+# center, radii, rotation = khachiyan_algorithm(P)
+# points = sample_points_in_ellipsoid_3d(center, radii, rotation, num_samples=300)
+# plot_ellipsoid_and_points(center, radii, rotation, points, P)

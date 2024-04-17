@@ -114,7 +114,8 @@
 		<child link="right_finger_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="0.0575" velocity="100000000000000000" />
-		<origin rpy="-3.141592653589793 -1.5707963057214722 0" xyz="-0.07658 -4.689172593935216e-18 0.1335" />
+		<!-- <origin rpy="1.874699728327322e-33 -1.5707963057214722 0" xyz="0.07658 4.689172593935216e-18 0.1335" /> -->
+		<origin rpy="-3.141592653589793 -1.5707963057214722 0" xyz="-0.06658 -4.689172593935216e-18 0.1335" />
 	</joint>
 	<joint name="right_tip" type="revolute">
 		<parent link="right_finger_link" />
@@ -128,7 +129,7 @@
 		<child link="left_finger_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="0.0575" velocity="100000000000000000" />
-		<origin rpy="1.874699728327322e-33 -1.5707963057214722 0" xyz="0.07658 4.689172593935216e-18 0.1335" />
+		<origin rpy="1.874699728327322e-33 -1.5707963057214722 0" xyz="0.06658 4.689172593935216e-18 0.1335" />
 	</joint>
 	<joint name="left_tip" type="revolute">
 		<parent link="left_finger_link" />

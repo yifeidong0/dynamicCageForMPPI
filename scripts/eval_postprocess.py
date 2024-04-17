@@ -69,7 +69,7 @@ def get_s_metric(labels, predictions, predict_id=0):
 
 ##################################
 
-prname = 'PlanePushMulti' # 'BalanceGrasp', 'PlanePush', 'PlanePushMulti', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
+prname = 'GripperMulti' # 'BalanceGrasp', 'PlanePush', 'PlanePushMulti', 'PlanePushRrtstar', 'PlanePushReal', 'BoxPivot', 'Gripper', 'Shuffling'
 num_via_points = 100 if prname == 'PlanePushReal' else 10
 num_trajs = 12 if prname == 'PlanePushReal' else 50
 
@@ -93,7 +93,6 @@ if prname == 'PlanePushReal':
     f_success_labels = 'data/evaluation/real-world/jaw-pushes-rectangle/labels.csv'
     f_maneuver_labels = 'data/evaluation/real-world/jaw-pushes-rectangle/maneuver_labels_PlanePushReal.csv'
     f_aoest_metrics = 'data/evaluation/real-world/jaw-pushes-rectangle/ao_est.csv'
-
 if prname == 'PlanePushMulti':
     num_trajs = 20
     f_success_labels = 'scripted_movement_success_labels_PlanePushMulti.csv'
@@ -124,6 +123,11 @@ if prname == 'Gripper':
     f_heuristics = 'data/evaluation/gripper/rand_objmass_fri/approaches/heuristics/scripted_movement_heuristics_Gripper.csv'
     f_effort_aoest = 'data/evaluation/gripper/rand_objmass_fri/approaches/effort-aoest/ao_est.csv'
     f_effort_aorrt = 'data/evaluation/gripper/rand_objmass_fri/approaches/effort-aorrt/ao_rrt.csv'
+if prname == 'GripperMulti':
+    num_trajs = 20
+    f_success_labels = 'data/evaluation/workshop/grippermulti/scripted_movement_success_labels_GripperMulti.csv'
+    f_maneuver_labels = 'data/evaluation/workshop/grippermulti/scripted_movement_capture_labels_GripperMulti.csv'
+    f_aoest_metrics = 'data/evaluation/workshop/grippermulti/2/ao_est.csv'
 
 # # Read from the CSV file
 success_labels = []

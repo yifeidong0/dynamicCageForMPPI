@@ -22,7 +22,7 @@ import numpy as np
 # !!! Things remember to do BEFORE running: pruning, quasistatic_motion, pChooseGoal, densityEstimationRadius, max_dimensions (ESTprojection), goal sets, costs...
 
 plannername = 'ao-est' # 'ao-est', 'rrt*', 'ao-rrt'
-prname = 'PlanePushMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
+prname = 'GripperMulti' # 'PlanePush', 'PlanePushRrtstar', 'PlanePushReal', 'PlanePushMulti', 'BalanceGrasp', 'BoxPivot', 'Gripper', 'GripperMulti', 'WaterSwing', 'Shuffling'
 traj_type = 'scripted' # 'mppi', "scripted", "realworld"
 vis = 0
 maxTime = 10000 # only used when vis=0
@@ -78,8 +78,8 @@ if prname == 'Gripper':
     filenames = ['data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_viapoints_Gripper.csv',]
     filename_hyperparams = 'data/evaluation/gripper/rand_objmass_fri/dataset/scripted_movement_maneuver_labels_Gripper.csv'
 if prname == 'GripperMulti':
-    filenames = ['scripted_movement_viapoints_GripperMulti.csv',]
-    filename_hyperparams = 'scripted_movement_capture_labels_GripperMulti.csv'
+    filenames = ['data/evaluation/workshop/grippermulti/scripted_movement_viapoints_GripperMulti.csv',]
+    filename_hyperparams = 'data/evaluation/workshop/grippermulti/scripted_movement_capture_labels_GripperMulti.csv'
 
 def move_along_longer_side(pose, d):
     xo, yo, thetao, xg, yg = pose
@@ -194,6 +194,16 @@ for file_id, filename in enumerate(filenames):
             for j in range(num_objects):
                 data_i[0+6*j:2+6*j] = points[j]
                 data_i[2+6*j:6+6*j] = [0,]*4
+        if randomize_ellipse_representation and prname == 'GripperMulti':
+            num_objects = int((len(data_i)-10)/12)
+            positions = [data_i[0+12*i:3+12*i] for i in range((num_objects))]
+            positions = np.array(positions)
+            center, radii, rotation = khachiyan_algorithm(positions)
+            points = sample_points_in_ellipsoid_3d(center, radii, rotation, num_samples=num_objects)
+            # plot_ellipsoid_and_points(center, radii, rotation, points, positions)
+            for j in range(num_objects):
+                data_i[0+12*j:3+12*j] = points[j]
+                data_i[3+12*j:12+12*j] = [0,]*9
 
         if prname == 'PlanePush':
             dynamics_sim = forwardSimulationPlanePush(gui=0)
