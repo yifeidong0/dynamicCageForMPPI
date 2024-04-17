@@ -35,7 +35,7 @@ if problem_name == 'PlanePush':
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
 if problem_name == 'PlanePushMulti':
     total_time = 2
-    num_object = 13
+    num_object = 5
     num_state_planner = 3 + 6*num_object
     headers = ['num_traj', 'data_id', ] + \
                ['xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',]*num_object + \
