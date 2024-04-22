@@ -285,8 +285,8 @@ class scriptedMovementSimPlanePushMulti(forwardSimulationPlanePushMulti):
 
                 # Save camera images
                 img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
-                # image = Image.fromarray(img_arr)
-                # image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/plane-push-sim/6-10-K-png/image_{id_traj}_{t:04d}.png')  # Save the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Downloads/image_{id_traj}_{t:04d}.png')  # Save the image
 
             p.stepSimulation()
 
@@ -747,9 +747,9 @@ class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
         far = 5
 
         # Camera position and orientation
-        camera_eye = [-1, 3.3, 1.3]  # Example values, adjust as needed
-        camera_target = [-.5, 0, 1]  # Point the camera is looking at
-        camera_up = [0, 0, 1]  # Up direction
+        camera_eye = [2, 2.3, 1.7]  # Example values, adjust as needed
+        camera_target = [0, 0, 1]  # Point the camera is looking at
+        camera_up = [0, 0, 1.3]  # Up direction
 
         self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, camera_up)
         self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
@@ -785,6 +785,7 @@ class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
 
     def run_forward_sim(self, total_time=5, num_via_points=10, id_traj=0, pre_time=0.5,):
         num_steps = int(total_time * 240)  # Number of time steps
+        num_via_points = 30
         interval = int((num_steps-pre_time*240) / num_via_points)
 
         # Step the simulation
@@ -820,16 +821,13 @@ class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
             p.stepSimulation()
 
             # Print object via-points along the trajectory for visualization
-            if t > pre_time*240 and (t+1) % interval == 0:
+            if (t+1) % interval == 0:
                 # Get the object and gripper states
                 for i in range(self.num_objects):
                     self.pos_object[i], self.quat_object[i] = p.getBasePositionAndOrientation(self.objectUid[i])
                     # pos_object_GL = [pos[0], pos[2], pos[1]] # x,z,y
                     self.eul_object[i] = p.getEulerFromQuaternion(self.quat_object[i]) # rad
                     self.vel_object[i], self.vel_ang_object[i] = p.getBaseVelocity(self.objectUid[i])
-                    print("!!!!!", self.pos_object[i][2])
-                    print("!!!!!", self.vel_object[i][2])
-                    print("")
 
                 joint_states = p.getJointStates(self.gripperUid, self.movable_joints)
                 self.pos_gripper = [state[0] for state in joint_states]
@@ -867,10 +865,10 @@ class scriptedMovementSimGripperMulti(forwardSimulationGripperMulti):
                 via_points.append(new_states)
 
                 # # Save camera images
-                # img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
-                # image = Image.fromarray(img_arr)
-                # image.save(f'/home/yif/Documents/KTH/research/dynamicCage/submission/sup-video/gripper-sim/6-10-K-png/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
-                # save_img_id_k += 1
+                img_arr = p.getCameraImage(self.width_cam, self.height_cam, self.view_matrix, self.projection_matrix)[2]  # Capture the image
+                image = Image.fromarray(img_arr)
+                image.save(f'/home/yif/Downloads/image_K_{id_traj}_{save_img_id_k:04d}.png')  # Save the image
+                save_img_id_k += 1
 
             if self.gui:
                 time.sleep(3/240)

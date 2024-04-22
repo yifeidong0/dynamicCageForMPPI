@@ -11,9 +11,9 @@ import time
 import csv
 
 problem_name = "GripperMulti" # "PlanePush", "PlanePushMulti", "BalanceGrasp", "BoxPivot", "Gripper", "GripperMulti", "Shuffling", "WaterSwing", 
-gui = 0
+gui = 1
 num_via_points = 10
-num_trajs = 20
+num_trajs = 1
 filename = "scripted_movement_viapoints_{}.csv".format(problem_name)
 filename_metric = "scripted_movement_heuristics_{}.csv".format(problem_name)
 filename_suc_label = "scripted_movement_success_labels_{}.csv".format(problem_name)
@@ -35,7 +35,7 @@ if problem_name == 'PlanePush':
     sim = scriptedMovementSimPlanePush(cage, gui=gui)
 if problem_name == 'PlanePushMulti':
     total_time = 2
-    num_object = 5
+    num_object = 10
     num_state_planner = 3 + 6*num_object
     headers = ['num_traj', 'data_id', ] + \
                ['xo', 'yo', 'thetao', 'vxo', 'vyo', 'omegao',]*num_object + \
