@@ -114,6 +114,7 @@
 		<child link="right_finger_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="0.0575" velocity="100000000000000000" />
+		<dynamics damping="10.0" friction="10.0" /> <!-- Added dynamics for stiffness -->
 		<!-- <origin rpy="1.874699728327322e-33 -1.5707963057214722 0" xyz="0.07658 4.689172593935216e-18 0.1335" /> -->
 		<origin rpy="-3.141592653589793 -1.5707963057214722 0" xyz="-0.06658 -4.689172593935216e-18 0.1335" />
 	</joint>
@@ -122,6 +123,7 @@
 		<child link="right_tip_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="1.0471975511965976" velocity="100000000000000000" />
+		<dynamics damping="1000.0" friction="1000.0" /> <!-- Added dynamics for stiffness -->
 		<origin rpy="-1.5707963267948963 0.87266404218453 3.141592653589793" xyz="0.0695 0.0 0.005375" />
 	</joint>
 	<joint name="left_base" type="prismatic">
@@ -129,6 +131,7 @@
 		<child link="left_finger_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="0.0575" velocity="100000000000000000" />
+		<dynamics damping="10.0" friction="10.0" /> <!-- Added dynamics for stiffness -->
 		<origin rpy="1.874699728327322e-33 -1.5707963057214722 0" xyz="0.06658 4.689172593935216e-18 0.1335" />
 	</joint>
 	<joint name="left_tip" type="revolute">
@@ -136,6 +139,7 @@
 		<child link="left_tip_link" />
 		<axis xyz="0 0 1" />
 		<limit effort="100000000000000000" lower="0" upper="1.0471975511965976" velocity="100000000000000000" />
+		<dynamics damping="1000.0" friction="1000.0" /> <!-- Added dynamics for stiffness -->
 		<origin rpy="-1.5707963267948968 0.8726640421845309 3.141592653589793" xyz="0.0695 0.0 0.005375" />
 	</joint>
 </robot>

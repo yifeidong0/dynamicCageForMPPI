@@ -13,7 +13,7 @@ p.setGravity(0, 0, -10)
 tex = p.loadTexture("uvmap.png")
 planeId = p.loadURDF("plane.urdf", [0,0,-2])
 
-boxId = p.loadURDF("cube.urdf", [0,3,2],useMaximalCoordinates = True)
+boxId = p.loadURDF("cube.urdf", [0,3,2], useMaximalCoordinates = True)
 
 # bunny2 = p.loadSoftBody("torus/torus_textured.obj", simFileName="asset/deformable/torus/torus.vtk", mass = 3, useNeoHookean = 1, NeoHookeanMu = 180, NeoHookeanLambda = 600, NeoHookeanDamping = 0.01, collisionMargin = 0.006, useSelfCollision = 1, frictionCoeff = 0.5, repulsionStiffness = 800)
 # p.changeVisualShape(bunny2, -1, rgbaColor=[1,1,1,1], textureUniqueId=tex, flags=0)
